@@ -288,6 +288,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         Logger.log("d", "Connection with instance %s with url %s started", self._key, self._base_url)
         self._update_timer.start()
 
+        self._startCamera()
+
         self._last_response_time = None
         self.setAcceptsCommands(False)
         self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._key))
