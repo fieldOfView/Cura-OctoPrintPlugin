@@ -241,12 +241,19 @@ Cura.MachineAction
                     CheckBox
                     {
                         id: storeOnSdCheckBox
-                        text: catalog.i18nc("@label", "Store gcode on SD card (if available)")
+                        text: catalog.i18nc("@label", "Store G-code on the printer SD card")
                         checked: Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_store_sd") == "true"
                         onClicked:
                         {
                             manager.setContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_store_sd", String(checked))
                         }
+                    }
+                    Label
+                    {
+                        visible: storeOnSdCheckBox.checked
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                        text: catalog.i18nc("@label", "Note: Transfering files to the printer SD card takes very long. Using this option is not recommended.")
                     }
                 }
 
