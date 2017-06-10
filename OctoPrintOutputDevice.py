@@ -510,35 +510,37 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         self.setConnectionState(ConnectionState.connected)
                     json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
 
-                    if not self._num_extruders_set:
-                        self._num_extruders = 0
-                        while "tool%d" % self._num_extruders in json_data["temperature"]:
-                            self._num_extruders = self._num_extruders + 1
+                    if "temperature" in json_data:
+                        if not self._num_extruders_set:
+                            self._num_extruders = 0
+                            while "tool%d" % self._num_extruders in json_data["temperature"]:
+                                self._num_extruders = self._num_extruders + 1
 
-                        # Reinitialise from PrinterOutputDevice to match the new _num_extruders
-                        self._hotend_temperatures = [0] * self._num_extruders
-                        self._target_hotend_temperatures = [0] * self._num_extruders
+                            # Reinitialise from PrinterOutputDevice to match the new _num_extruders
+                            self._hotend_temperatures = [0] * self._num_extruders
+                            self._target_hotend_temperatures = [0] * self._num_extruders
 
-                        self._num_extruders_set = True
+                            self._num_extruders_set = True
 
-                    # Check for hotend temperatures
-                    for index in range(0, self._num_extruders):
-                        temperature = json_data["temperature"]["tool%d" % index]["actual"] if ("tool%d" % index) in json_data["temperature"] else 0
-                        self._setHotendTemperature(index, temperature)
+                        # Check for hotend temperatures
+                        for index in range(0, self._num_extruders):
+                            temperature = json_data["temperature"]["tool%d" % index]["actual"] if ("tool%d" % index) in json_data["temperature"] else 0
+                            self._setHotendTemperature(index, temperature)
 
-                    bed_temperature = json_data["temperature"]["bed"]["actual"] if "bed" in json_data["temperature"] else 0
-                    self._setBedTemperature(bed_temperature)
+                        bed_temperature = json_data["temperature"]["bed"]["actual"] if "bed" in json_data["temperature"] else 0
+                        self._setBedTemperature(bed_temperature)
 
-                    job_state = "offline"
-                    if json_data["state"]["flags"]["error"]:
-                        job_state = "error"
-                    elif json_data["state"]["flags"]["paused"]:
-                        job_state = "paused"
-                    elif json_data["state"]["flags"]["printing"]:
-                        job_state = "printing"
-                    elif json_data["state"]["flags"]["ready"]:
-                        job_state = "ready"
-                    self._updateJobState(job_state)
+                    if "state" in json_data:
+                        job_state = "offline"
+                        if json_data["state"]["flags"]["error"]:
+                            job_state = "error"
+                        elif json_data["state"]["flags"]["paused"]:
+                            job_state = "paused"
+                        elif json_data["state"]["flags"]["printing"]:
+                            job_state = "printing"
+                        elif json_data["state"]["flags"]["ready"]:
+                            job_state = "ready"
+                        self._updateJobState(job_state)
                 elif http_status_code == 401:
                     self.setAcceptsCommands(False)
                     self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._key))
