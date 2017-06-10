@@ -12,6 +12,7 @@ from PyQt5.QtCore import QUrl, QTimer, pyqtSignal, pyqtProperty, pyqtSlot, QCore
 from PyQt5.QtGui import QImage, QDesktopServices
 
 import json
+import os.path
 from time import time
 
 i18n_catalog = i18nCatalog("cura")
@@ -47,6 +48,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._base_url = "%s://%s:%d%s" % (protocol, self._address, self._port, self._path)
         self._api_url = self._base_url + self._api_prefix
         self._camera_url = "%s://%s:8080/?action=stream" % (protocol, self._address)
+
+        self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem.qml")
 
         self.setPriority(2) # Make sure the output device gets selected above local file output
         self.setName(key)
