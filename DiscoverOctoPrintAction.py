@@ -2,7 +2,6 @@ from UM.i18n import i18nCatalog
 from UM.Logger import Logger
 from UM.Settings.DefinitionContainer import DefinitionContainer
 from UM.Application import Application
-from UM.PluginRegistry import PluginRegistry
 
 from UM.Settings.ContainerRegistry import ContainerRegistry
 from cura.MachineAction import MachineAction
@@ -141,7 +140,7 @@ class DiscoverOctoPrintAction(MachineAction):
     def _createAdditionalComponentsView(self):
         Logger.log("d", "Creating additional ui components for OctoPrint-connected printers.")
 
-        path = QUrl.fromLocalFile(os.path.join(PluginRegistry.getInstance().getPluginPath("OctoPrintPlugin"), "OctoPrintComponents.qml"))
+        path = QUrl.fromLocalFile(os.path.join(os.path.dirname(os.path.abspath(__file__)), "OctoPrintComponents.qml"))
         self._additional_component = QQmlComponent(Application.getInstance()._engine, path)
 
         # We need access to engine (although technically we can't)
