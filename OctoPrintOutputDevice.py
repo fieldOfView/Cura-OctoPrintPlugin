@@ -337,16 +337,20 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         if not global_container_stack:
             return
 
+        if self.jobState not in ["ready", ""]:
+            if self.jobState == "offline":
+                self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is offline. Unable to start a new job."))
+            else:
+                self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is busy. Unable to start a new job."))
+            self._error_message.show()
+            return
+
         self._preheat_timer.stop()
 
         self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
         if self._auto_print:
             Application.getInstance().showPrintMonitor.emit(True)
 
-        if self.jobState != "ready" and self.jobState != "":
-            self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is printing. Unable to start a new job."))
-            self._error_message.show()
-            return
         try:
             self._progress_message = Message(i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"), 0, False, -1)
             self._progress_message.show()
@@ -545,16 +549,16 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                             job_state = "ready"
                         self._updateJobState(job_state)
                 elif http_status_code == 401:
-                    self.setAcceptsCommands(False)
+                    self._updateJobState("offline")
                     self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._key))
                 elif http_status_code == 409:
                     if self._connection_state == ConnectionState.connecting:
                         self.setConnectionState(ConnectionState.connected)
 
-                    self.setAcceptsCommands(False)
+                    self._updateJobState("offline")
                     self.setConnectionText(i18n_catalog.i18nc("@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._key))
                 else:
-                    self.setAcceptsCommands(False)
+                    self._updateJobState("offline")
                     Logger.log("w", "Received an unexpected returncode: %d", http_status_code)
 
             elif "job" in reply.url().toString():  # Status update from /job:
