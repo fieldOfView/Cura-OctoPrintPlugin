@@ -44,10 +44,10 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._api_header = "X-Api-Key"
         self._api_key = None
 
-        protocol = "https" if properties.get(b'useHttps') == b"true" else "http"
-        self._base_url = "%s://%s:%d%s" % (protocol, self._address, self._port, self._path)
+        self._protocol = "https" if properties.get(b'useHttps') == b"true" else "http"
+        self._base_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, self._path)
         self._api_url = self._base_url + self._api_prefix
-        self._camera_url = "%s://%s:8080/?action=stream" % (protocol, self._address)
+        self._camera_url = "%s://%s:8080/?action=stream" % (self._protocol, self._address)
 
         self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem.qml")
 
@@ -64,6 +64,9 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._manager.finished.connect(self._onRequestFinished)
 
         ##  Hack to ensure that the qt networking stuff isn't garbage collected (unless we want it to)
+        self._settings_request = None
+        self._settings_reply = None
+
         self._printer_request = None
         self._printer_reply = None
 
@@ -298,6 +301,12 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._last_response_time = None
         self.setAcceptsCommands(False)
         self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._key))
+
+        ## Request 'settings' dump
+        url = QUrl(self._api_url + "settings")
+        self._settings_request = QNetworkRequest(url)
+        self._settings_request.setRawHeader(self._api_header.encode(), self._api_key.encode())
+        self._settings_reply = self._manager.get(self._settings_request)
 
     ##  Stop requesting data from the instance
     def disconnect(self):
@@ -599,6 +608,20 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                     self.setJobName(json_data["job"]["file"]["name"])
                 else:
                     pass  # TODO: Handle errors
+
+            elif "settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
+                if http_status_code == 200:
+                    json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+
+                    if "webcam" in json_data:
+                        stream_url = json_data["webcam"]["streamUrl"]
+                        if stream_url[:4].lower() == "http":
+                            self._camera_url = stream_url
+                        elif stream_url[:2] == "//":
+                            self._camera_url = "%s:%s" % (self._protocol, stream_url)
+                        elif stream_url[:1] == "/":
+                            self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
+                        Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if "files" in reply.url().toString():  # Result from /files command:
