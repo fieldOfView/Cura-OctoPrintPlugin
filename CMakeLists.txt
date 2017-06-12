@@ -8,6 +8,7 @@ install(FILES
     OctoPrintComponents.qml
     OctoPrintOutputDevice.py
     OctoPrintOutputDevicePlugin.py
+    MonitorItem.qml
     LICENSE
     README.md
     DESTINATION lib/cura/plugins/OctoPrintPlugin
