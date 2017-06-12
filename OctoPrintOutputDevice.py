@@ -353,6 +353,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         try:
             self._progress_message = Message(i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"), 0, False, -1)
+            self._progress_message.addAction("Cancel", catalog.i18nc("@action:button", "Cancel"), None, "")
+            self._progress_message.actionTriggered.connect(self._cancelSendGcode)
             self._progress_message.show()
 
             ## Mash the data into single string
@@ -413,6 +415,18 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         except Exception as e:
             self._progress_message.hide()
             Logger.log("e", "An exception occurred in network connection: %s" % str(e))
+
+    def _cancelSendGcode(self, message_id, action_id):
+        if self._post_reply:
+            Logger.log("d", "Stopping upload because the user pressed cancel.")
+            try:
+                self._post_reply.uploadProgress.disconnect(self._onUploadProgress)
+            except TypeError:
+                pass  # The disconnection can fail on mac in some cases. Ignore that.
+
+            self._post_reply.abort()
+            self._post_reply = None
+        self._progress_message.hide()
 
     def _sendCommand(self, command):
         self._sendCommandToApi("printer/command", command)
