@@ -518,7 +518,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             return
 
         if reply.operation() == QNetworkAccessManager.GetOperation:
-            if "printer" in reply.url().toString():  # Status update from /printer.
+            if self._api_prefix + "printer" in reply.url().toString():  # Status update from /printer.
                 if http_status_code == 200:
                     if not self.acceptsCommands:
                         self.setAcceptsCommands(True)
@@ -548,8 +548,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         bed_temperature = json_data["temperature"]["bed"]["actual"] if "bed" in json_data["temperature"] else 0
                         self._setBedTemperature(bed_temperature)
 
+                    job_state = "offline"
                     if "state" in json_data:
-                        job_state = "offline"
                         if json_data["state"]["flags"]["error"]:
                             job_state = "error"
                         elif json_data["state"]["flags"]["paused"]:
@@ -558,7 +558,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                             job_state = "printing"
                         elif json_data["state"]["flags"]["ready"]:
                             job_state = "ready"
-                        self._updateJobState(job_state)
+                    self._updateJobState(job_state)
+
                 elif http_status_code == 401:
                     self._updateJobState("offline")
                     self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._key))
@@ -572,7 +573,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                     self._updateJobState("offline")
                     Logger.log("w", "Received an unexpected returncode: %d", http_status_code)
 
-            elif "job" in reply.url().toString():  # Status update from /job:
+            elif self._api_prefix + "job" in reply.url().toString():  # Status update from /job:
                 if http_status_code == 200:
                     json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
 
@@ -598,7 +599,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                     pass  # TODO: Handle errors
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
-            if "files" in reply.url().toString():  # Result from /files command:
+            if self._api_prefix + "files" in reply.url().toString():  # Result from /files command:
                 if http_status_code == 201:
                     Logger.log("d", "Resource created on OctoPrint instance: %s", reply.header(QNetworkRequest.LocationHeader).toString())
                 else:
@@ -619,7 +620,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                     message.actionTriggered.connect(self._onMessageActionTriggered)
                     message.show()
 
-            elif "job" in reply.url().toString():  # Result from /job command:
+            elif self._api_prefix + "job" in reply.url().toString():  # Result from /job command:
                 if http_status_code == 204:
                     Logger.log("d", "Octoprint command accepted")
                 else:
