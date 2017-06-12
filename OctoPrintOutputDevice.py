@@ -47,7 +47,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._protocol = "https" if properties.get(b'useHttps') == b"true" else "http"
         self._base_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, self._path)
         self._api_url = self._base_url + self._api_prefix
-        self._camera_url = "%s://%s:8080/?action=stream" % (self._protocol, self._address)
 
         self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem.qml")
 
@@ -100,6 +99,9 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         self._camera_image_id = 0
         self._camera_image = QImage()
+        self._camera_mirror = ""
+        self._camera_rotation = 0
+        self._camera_url = ""
 
         self._connection_state_before_timeout = None
 
@@ -164,9 +166,18 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
     def baseURL(self):
         return self._base_url
 
+    cameraOrientationChanged = pyqtSignal()
+
+    @pyqtProperty("QVariantMap", notify = cameraOrientationChanged)
+    def cameraOrientation(self):
+        return {
+            "mirror": self._camera_mirror,
+            "rotation": self._camera_rotation,
+        }
+
     def _startCamera(self):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
-        if not global_container_stack or not parseBool(global_container_stack.getMetaDataEntry("octoprint_show_camera", False)):
+        if not global_container_stack or not parseBool(global_container_stack.getMetaDataEntry("octoprint_show_camera", False)) or self._camera_url == "":
             return
 
         # Start streaming mjpg stream
@@ -615,13 +626,33 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
                     if "webcam" in json_data:
                         stream_url = json_data["webcam"]["streamUrl"]
-                        if stream_url[:4].lower() == "http":
+                        if stream_url == "":
+                            self._camera_url = ""
+                        elif stream_url[:4].lower() == "http": # absolute uri
                             self._camera_url = stream_url
-                        elif stream_url[:2] == "//":
+                        elif stream_url[:2] == "//": # protocol-relative
                             self._camera_url = "%s:%s" % (self._protocol, stream_url)
-                        elif stream_url[:1] == "/":
+                        elif stream_url[:1] == ":": # domain-relative (on another port)
+                            self._camera_url = "%s://%s%s" % (self._protocol, self._address, stream_url)
+                        elif stream_url[:1] == "/": # domain-relative (on same port)
                             self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
+                        else: # safe default: use mjpgstreamer on the same domain
+                            self._camera_url = "%s://%s:8080/?action=stream" % (self._protocol, self._address)
+
                         Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
+
+                        self._camera_rotation = -90 if json_data["webcam"]["rotate90"] else 0
+                        if json_data["webcam"]["flipH"] and json_data["webcam"]["flipV"]:
+                            self._camera_mirror = False
+                            self._camera_rotation += 180
+                        elif json_data["webcam"]["flipH"]:
+                            self._camera_mirror = True
+                        elif json_data["webcam"]["flipV"]:
+                            self._camera_mirror = True
+                            self._camera_rotation += 180
+                        else:
+                            self._camera_mirror = False
+                        self.cameraOrientationChanged.emit()
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if "files" in reply.url().toString():  # Result from /files command:

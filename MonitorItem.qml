@@ -27,5 +27,8 @@ Component
             }
             return "";
         }
+
+        rotation: OutputDevice.cameraOrientation.rotation
+        mirror: OutputDevice.cameraOrientation.mirror
     }
 }
