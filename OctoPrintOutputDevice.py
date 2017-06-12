@@ -103,6 +103,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._camera_rotation = 0
         self._camera_url = ""
 
+        self._sd_supported = False
+
         self._connection_state_before_timeout = None
 
         self._last_response_time = None
@@ -413,7 +415,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             self._post_multi_part.append(self._post_part)
 
             destination = "local"
-            if parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
+            if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
                 destination = "sdcard"
 
             url = QUrl(self._api_url + "files/" + destination)
@@ -624,6 +626,9 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             elif self._api_prefix + "settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
                 if http_status_code == 200:
                     json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+
+                    if "feature" in json_data:
+                        self._sd_supported = json_data["feature"]["sdSupport"]
 
                     if "webcam" in json_data:
                         stream_url = json_data["webcam"]["streamUrl"]
