@@ -350,7 +350,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         try:
             self._progress_message = Message(i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"), 0, False, -1)
-            self._progress_message.addAction("Cancel", catalog.i18nc("@action:button", "Cancel"), None, "")
+            self._progress_message.addAction("Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), None, "")
             self._progress_message.actionTriggered.connect(self._cancelSendGcode)
             self._progress_message.show()
 
