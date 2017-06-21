@@ -6,16 +6,7 @@ from UM.i18n import i18nCatalog
 catalog = i18nCatalog("cura")
 
 def getMetaData():
-    return {
-        "type": "extension",
-        "plugin": {
-            "name": "OctoPrint connection",
-            "author": "fieldOfView",
-            "version": "master",
-            "description": catalog.i18nc("@info:whatsthis", "Allows sending prints to OctoPrint and monitoring the progress"),
-            "api": 3
-        }
-    }
+    return {}
 
 def register(app):
     return {
