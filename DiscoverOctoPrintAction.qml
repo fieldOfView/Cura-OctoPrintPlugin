@@ -283,7 +283,7 @@ Cura.MachineAction
 
                 Label
                 {
-                    text: catalog.i18nc("@label", "Note: Printing UltiGCode using OctoPrint does not work. Please switch your Gcode flavour to RepRap (Marlin/Sprinter).")
+                    text: catalog.i18nc("@label", "Note: Printing UltiGCode using OctoPrint does not work. Please switch your Gcode flavour to \"Marlin\".")
                     width: parent.width - UM.Theme.getSize("default_margin").width
                     wrapMode: Text.WordWrap
                     visible: machineGCodeFlavorProvider.properties.value == "UltiGCode"
