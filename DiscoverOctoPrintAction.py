@@ -9,8 +9,10 @@ from cura.MachineAction import MachineAction
 from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject
 from PyQt5.QtQml import QQmlComponent, QQmlContext
 from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager
 
 import os.path
+import json
 
 catalog = i18nCatalog("cura")
 
@@ -23,6 +25,14 @@ class DiscoverOctoPrintAction(MachineAction):
         self._context = None
 
         self._network_plugin = None
+
+        #   QNetwork manager needs to be created in advance. If we don't it can happen that it doesn't correctly
+        #   hook itself into the event loop, which results in events never being fired / done.
+        self._manager = QNetworkAccessManager()
+        self._manager.finished.connect(self._onRequestFinished)
+
+        self._settings_request = None
+        self._settings_reply = None
 
         ContainerRegistry.getInstance().containerAdded.connect(self._onContainerAdded)
         Application.getInstance().engineCreatedSignal.connect(self._createAdditionalComponentsView)
@@ -95,6 +105,26 @@ class DiscoverOctoPrintAction(MachineAction):
 
         return ""
 
+    @pyqtSlot(str, str)
+    def testApiKey(self, base_url, api_key):
+        self._valid_api_key = False
+        self._sd_supported = False
+        self._camera_supported = False
+
+        if api_key != "":
+            Logger.log("d", "Trying to access OctoPrint instance at %s with the provided API key." % base_url)
+
+            ## Request 'settings' dump
+            url = QUrl(base_url + "api/settings")
+            self._settings_request = QNetworkRequest(url)
+            self._settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
+            self._settings_reply = self._manager.get(self._settings_request)
+        else:
+            if self._image_reply:
+                self._settings_reply.abort()
+                self._settings_reply = None
+            self._settings_request = None
+
     @pyqtSlot(str)
     def setApiKey(self, api_key):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
@@ -153,3 +183,29 @@ class DiscoverOctoPrintAction(MachineAction):
             return
 
         Application.getInstance().addAdditionalComponent("monitorButtons", self._additional_components_view.findChild(QObject, "openOctoPrintButton"))
+
+    ##  Handler for all requests that have finished.
+    def _onRequestFinished(self, reply):
+
+        http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        if not http_status_code:
+            # Received no or empty reply
+            return
+
+        if reply.operation() == QNetworkAccessManager.GetOperation:
+            if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
+                if http_status_code == 200:
+                    Logger.log("d", "API key accepted by OctoPrint.")
+                    self._valid_api_key = True
+
+                    json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    if "feature" in json_data:
+                        self._sd_supported = True
+
+                    if "webcam" in json_data:
+                        stream_url = json_data["webcam"]["streamUrl"]
+                        if stream_url != "":
+                            self._camera_supported = True
+
+                elif http_status_code == 401:
+                    Logger.log("d", "Invalid API key for OctoPrint.")

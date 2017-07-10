@@ -201,6 +201,10 @@ Cura.MachineAction
                         id: apiKey
                         width: parent.width * 0.8 - UM.Theme.getSize("default_margin").width
                         text: manager.apiKey
+                        onEditingFinished:
+                        {
+                            manager.testApiKey(base.selectedInstance.baseURL, text);
+                        }
                     }
                 }
 
