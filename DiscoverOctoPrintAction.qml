@@ -248,8 +248,35 @@ Cura.MachineAction
 
                 Label
                 {
-                    visible: base.selectedInstance != null
-                    text: catalog.i18nc("@label", "Please enter the API key to access OctoPrint above. You can get the OctoPrint API key through the OctoPrint web page.")
+                    visible: base.selectedInstance != null && text != ""
+                    text:
+                    {
+                        var result = ""
+                        if (apiKey.text == "")
+                        {
+                            result = catalog.i18nc("@label", "Please enter the API key to access OctoPrint.");
+                        }
+                        else
+                        {
+                            if(manager.instanceResponded)
+                            {
+                                if(manager.instanceApiKeyAccepted)
+                                {
+                                    return "";
+                                }
+                                else
+                                {
+                                    result = catalog.i18nc("@label", "The API key is not valid.");
+                                }
+                            }
+                            else
+                            {
+                                return catalog.i18nc("@label", "Checking the API key...")
+                            }
+                        }
+                        result += " " + catalog.i18nc("@label", "You can get the API key through the OctoPrint web page.");
+                        return result;
+                    }
                     width: parent.width - UM.Theme.getSize("default_margin").width
                     wrapMode: Text.WordWrap
                 }
