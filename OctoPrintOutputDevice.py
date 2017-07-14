@@ -375,17 +375,23 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         if not global_container_stack:
             return
 
+        self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
+
         if self.jobState not in ["ready", ""]:
             if self.jobState == "offline":
                 self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is offline. Unable to start a new job."))
-            else:
+            elif self._auto_print:
                 self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is busy. Unable to start a new job."))
-            self._error_message.show()
-            return
+            else:
+                # allow queueing the job even if OctoPrint is currently busy if autoprinting is disabled
+                self._error_message = None
+
+            if self._error_message:
+                self._error_message.show()
+                return
 
         self._preheat_timer.stop()
 
-        self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
         if self._auto_print:
             Application.getInstance().showPrintMonitor.emit(True)
 
