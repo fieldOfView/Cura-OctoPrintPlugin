@@ -88,7 +88,7 @@ Cura.MachineAction
             {
                 id: objectListContainer
                 frameVisible: true
-                width: parent.width * 0.5
+                width: (parent.width * 0.5) | 0
                 height: base.height - parent.y
 
                 Rectangle
@@ -149,7 +149,7 @@ Cura.MachineAction
             }
             Column
             {
-                width: parent.width * 0.5
+                width: (parent.width * 0.5) | 0
                 spacing: UM.Theme.getSize("default_margin").height
                 Label
                 {
@@ -168,38 +168,38 @@ Cura.MachineAction
                     rowSpacing: UM.Theme.getSize("default_lining").height
                     Label
                     {
-                        width: parent.width * 0.2
+                        width: (parent.width * 0.2) | 0
                         wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "Version")
                     }
                     Label
                     {
-                        width: parent.width * 0.75
+                        width: (parent.width * 0.75) | 0
                         wrapMode: Text.WordWrap
                         text: base.selectedInstance ? base.selectedInstance.octoprintVersion : ""
                     }
                     Label
                     {
-                        width: parent.width * 0.2
+                        width: (parent.width * 0.2) | 0
                         wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "Address")
                     }
                     Label
                     {
-                        width: parent.width * 0.7
+                        width: (parent.width * 0.7) | 0
                         wrapMode: Text.WordWrap
                         text: base.selectedInstance ? "%1:%2".arg(base.selectedInstance.ipAddress).arg(String(base.selectedInstance.port)) : ""
                     }
                     Label
                     {
-                        width: parent.width * 0.2
+                        width: (parent.width * 0.2) | 0
                         wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "API Key")
                     }
                     TextField
                     {
                         id: apiKey
-                        width: parent.width * 0.8 - UM.Theme.getSize("default_margin").width
+                        width: (parent.width * 0.8 - UM.Theme.getSize("default_margin").width) | 0
                         text: manager.apiKey
                         onEditingFinished:
                         {
@@ -369,14 +369,14 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","Instance Name")
-                    width: parent.width * 0.4
+                    width: (parent.width * 0.4) | 0
                 }
 
                 TextField
                 {
                     id: nameField
                     maximumLength: 20
-                    width: parent.width * 0.6
+                    width: (parent.width * 0.6) | 0
                     validator: RegExpValidator
                     {
                         regExp: /[a-zA-Z0-9\.\-\_]*/
@@ -386,14 +386,14 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","IP Address or Hostname")
-                    width: parent.width * 0.4
+                    width: (parent.width * 0.4) | 0
                 }
 
                 TextField
                 {
                     id: addressField
                     maximumLength: 30
-                    width: parent.width * 0.6
+                    width: (parent.width * 0.6) | 0
                     validator: RegExpValidator
                     {
                         regExp: /[a-zA-Z0-9\.\-\_]*/
@@ -403,14 +403,14 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","Port Number")
-                    width: parent.width * 0.4
+                    width: (parent.width * 0.4) | 0
                 }
 
                 TextField
                 {
                     id: portField
                     maximumLength: 5
-                    width: parent.width * 0.6
+                    width: (parent.width * 0.6) | 0
                     validator: RegExpValidator
                     {
                         regExp: /[0-9]*/
@@ -420,14 +420,14 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","Path")
-                    width: parent.width * 0.4
+                    width: (parent.width * 0.4) | 0
                 }
 
                 TextField
                 {
                     id: pathField
                     maximumLength: 30
-                    width: parent.width * 0.6
+                    width: (parent.width * 0.6) | 0
                     validator: RegExpValidator
                     {
                         regExp: /[a-zA-Z0-9\.\-\_\/]*/
@@ -437,7 +437,7 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","Use HTTPS")
-                    width: parent.width * 0.4
+                    width: (parent.width * 0.4) | 0
                 }
 
                 CheckBox
