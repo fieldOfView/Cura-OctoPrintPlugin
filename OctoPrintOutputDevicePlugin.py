@@ -63,15 +63,17 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             additional_properties = {
                 b"path": properties["path"].encode("utf-8"),
                 b"useHttps": b"true" if properties.get("useHttps", False) else b"false",
+                b'userName': properties["userName"].encode("utf-8"),
+                b'password': properties["password"].encode("utf-8"),
                 b"manual": b"true"
             } # These additional properties use bytearrays to mimick the output of zeroconf
             self.addInstance(name, properties["address"], properties["port"], additional_properties)
 
-    def addManualInstance(self, name, address, port, path, useHttps = False):
-        self._manual_instances[name] = {"address": address, "port": port, "path": path, "useHttps": useHttps}
+    def addManualInstance(self, name, address, port, path, useHttps = False, userName = "", password = ""):
+        self._manual_instances[name] = {"address": address, "port": port, "path": path, "useHttps": useHttps, "userName": userName, "password": password}
         self._preferences.setValue("octoprint/manual_instances", json.dumps(self._manual_instances))
 
-        properties = { b"path": path.encode("utf-8"), b"useHttps": b"true" if useHttps else b"false", b"manual": b"true" }
+        properties = { b"path": path.encode("utf-8"), b"useHttps": b"true" if useHttps else b"false", b'userName': userName.encode("utf-8"), b'password': password.encode("utf-8"), b"manual": b"true" }
 
         if name in self._instances:
             self.removeInstance(name)

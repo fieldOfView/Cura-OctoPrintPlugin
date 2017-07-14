@@ -41,12 +41,19 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         self._api_version = "1"
         self._api_prefix = "api/"
-        self._api_header = "X-Api-Key"
+        self._api_header = "X-Api-Key".encode()
         self._api_key = None
 
         self._protocol = "https" if properties.get(b'useHttps') == b"true" else "http"
         self._base_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, self._path)
         self._api_url = self._base_url + self._api_prefix
+
+        self._basic_auth_header = "Authentication".encode()
+        self._basic_auth_data = None
+        basic_auth_username = properties.get(b"userName", b"").decode("utf-8")
+        basic_auth_password = properties.get(b"password", b"").decode("utf-8")
+        if basic_auth_username and basic_auth_password:
+            self._basic_auth_data = ("%s:%s" % (basic_auth_username, basic_auth_username)).encode()
 
         self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem.qml")
 
@@ -102,6 +109,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._camera_mirror = ""
         self._camera_rotation = 0
         self._camera_url = ""
+        self._camera_shares_proxy = False
 
         self._sd_supported = False
 
@@ -136,7 +144,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
     ##  Set the API key of this OctoPrint instance
     def setApiKey(self, api_key):
-        self._api_key = api_key
+        self._api_key = api_key.encode()
 
     ##  Name of the instance (as returned from the zeroConf properties)
     @pyqtProperty(str, constant = True)
@@ -185,6 +193,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         # Start streaming mjpg stream
         url = QUrl(self._camera_url)
         self._image_request = QNetworkRequest(url)
+        if self._camera_shares_proxy and self._basic_auth_data:
+            self._image_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
         self._image_reply = self._manager.get(self._image_request)
         self._image_reply.downloadProgress.connect(self._onStreamDownloadProgress)
 
@@ -266,13 +276,17 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         ## Request 'general' printer data
         url = QUrl(self._api_url + "printer")
         self._printer_request = QNetworkRequest(url)
-        self._printer_request.setRawHeader(self._api_header.encode(), self._api_key.encode())
+        self._printer_request.setRawHeader(self._api_header, self._api_key)
+        if self._basic_auth_data:
+            self._printer_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
         self._printer_reply = self._manager.get(self._printer_request)
 
         ## Request print_job data
         url = QUrl(self._api_url + "job")
         self._job_request = QNetworkRequest(url)
-        self._job_request.setRawHeader(self._api_header.encode(), self._api_key.encode())
+        self._job_request.setRawHeader(self._api_header, self._api_key)
+        if self._basic_auth_data:
+            self._job_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
         self._job_reply = self._manager.get(self._job_request)
 
     def _createNetworkManager(self):
@@ -318,7 +332,9 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         ## Request 'settings' dump
         url = QUrl(self._api_url + "settings")
         self._settings_request = QNetworkRequest(url)
-        self._settings_request.setRawHeader(self._api_header.encode(), self._api_key.encode())
+        self._settings_request.setRawHeader(self._api_header, self._api_key)
+        if self._basic_auth_data:
+            self._settings_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
         self._settings_reply = self._manager.get(self._settings_request)
 
     ##  Stop requesting data from the instance
@@ -422,7 +438,9 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
             ##  Create the QT request
             self._post_request = QNetworkRequest(url)
-            self._post_request.setRawHeader(self._api_header.encode(), self._api_key.encode())
+            self._post_request.setRawHeader(self._api_header, self._api_key)
+            if self._basic_auth_data:
+                self._post_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
 
             ##  Post request + data
             self._post_reply = self._manager.post(self._post_request, self._post_multi_part)
@@ -461,7 +479,9 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
     def _sendCommandToApi(self, endpoint, command):
         url = QUrl(self._api_url + endpoint)
         self._command_request = QNetworkRequest(url)
-        self._command_request.setRawHeader(self._api_header.encode(), self._api_key.encode())
+        self._command_request.setRawHeader(self._api_header, self._api_key)
+        if self._basic_auth_data:
+            self._command_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
         self._command_request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
 
         data = "{\"command\": \"%s\"}" % command
@@ -631,6 +651,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         self._sd_supported = json_data["feature"]["sdSupport"]
 
                     if "webcam" in json_data:
+                        self._camera_shares_proxy = False
                         stream_url = json_data["webcam"]["streamUrl"]
                         if stream_url == "":
                             self._camera_url = ""
@@ -642,6 +663,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                             self._camera_url = "%s://%s%s" % (self._protocol, self._address, stream_url)
                         elif stream_url[:1] == "/": # domain-relative (on same port)
                             self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
+                            self._camera_shares_proxy = True
                         else: # safe default: use mjpgstreamer on the same domain
                             self._camera_url = "%s://%s:8080/?action=stream" % (self._protocol, self._address)
 

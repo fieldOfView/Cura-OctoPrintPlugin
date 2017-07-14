@@ -47,7 +47,7 @@ Cura.MachineAction
                 text: catalog.i18nc("@action:button", "Add");
                 onClicked:
                 {
-                    manualPrinterDialog.showDialog("", "", "80", "/", false);
+                    manualPrinterDialog.showDialog("", "", "80", "/", false, "", "");
                 }
             }
 
@@ -60,7 +60,8 @@ Cura.MachineAction
                 {
                     manualPrinterDialog.showDialog(base.selectedInstance.name, base.selectedInstance.ipAddress,
                                                    base.selectedInstance.port, base.selectedInstance.path,
-                                                   base.selectedInstance.getProperty("useHttps") == "true");
+                                                   base.selectedInstance.getProperty("useHttps") == "true",
+                                                   base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"));
                 }
             }
 
@@ -382,15 +383,17 @@ Cura.MachineAction
         property alias addressText: addressField.text
         property alias portText: portField.text
         property alias pathText: pathField.text
+        property alias userNameText: userNameField.text
+        property alias passwordText: passwordField.text
 
         title: catalog.i18nc("@title:window", "Manually added OctoPrint instance")
 
         minimumWidth: 400 * Screen.devicePixelRatio
-        minimumHeight: 140 * Screen.devicePixelRatio
+        minimumHeight: showAdvancedOptions.checked ? 240 : 160
         width: minimumWidth
         height: minimumHeight
 
-        signal showDialog(string name, string address, string port, string path_, bool useHttps)
+        signal showDialog(string name, string address, string port, string path_, bool useHttps, string userName, string password)
         onShowDialog:
         {
             oldName = name;
@@ -402,6 +405,8 @@ Cura.MachineAction
             portText = port;
             pathText = path_;
             httpsCheckbox.checked = useHttps;
+            userNameText = userName;
+            passwordText = password;
 
             manualPrinterDialog.show();
         }
@@ -420,7 +425,7 @@ Cura.MachineAction
             {
                 pathText = "/" + pathText // ensure absolute path
             }
-            manager.setManualInstance(nameText, addressText, parseInt(portText), pathText, httpsCheckbox.checked)
+            manager.setManualInstance(nameText, addressText, parseInt(portText), pathText, httpsCheckbox.checked, userNameText, passwordText)
         }
 
         Column {
@@ -501,6 +506,21 @@ Cura.MachineAction
                         regExp: /[a-zA-Z0-9\.\-\_\/]*/
                     }
                 }
+            }
+
+            CheckBox
+            {
+                id: showAdvancedOptions
+                text: catalog.i18nc("@label","Reverse proxy options (advanced)")
+            }
+
+            Grid
+            {
+                columns: 2
+                visible: showAdvancedOptions.checked
+                width: parent.width
+                verticalItemAlignment: Grid.AlignVCenter
+                rowSpacing: UM.Theme.getSize("default_lining").height
 
                 Label
                 {
@@ -512,6 +532,35 @@ Cura.MachineAction
                 {
                     id: httpsCheckbox
                 }
+
+                Label
+                {
+                    text: catalog.i18nc("@label","Username")
+                    width: (parent.width * 0.4) | 0
+                }
+
+                TextField
+                {
+                    id: userNameField
+                    maximumLength: 64
+                    width: (parent.width * 0.6) | 0
+                }
+
+                Label
+                {
+                    text: catalog.i18nc("@label","Password")
+                    width: (parent.width * 0.4) | 0
+                }
+
+                TextField
+                {
+                    id: passwordField
+                    maximumLength: 64
+                    width: (parent.width * 0.6) | 0
+                    echoMode: TextInput.PasswordEchoOnEdit
+                }
+
+
             }
         }
 
