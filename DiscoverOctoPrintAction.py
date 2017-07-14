@@ -34,10 +34,12 @@ class DiscoverOctoPrintAction(MachineAction):
         self._settings_request = None
         self._settings_reply = None
 
+        self._instance_api_key_accepted = False
+        self._instance_supports_sd = False
+        self._instance_supports_camera = False
+
         ContainerRegistry.getInstance().containerAdded.connect(self._onContainerAdded)
         Application.getInstance().engineCreatedSignal.connect(self._createAdditionalComponentsView)
-
-    instancesChanged = pyqtSignal()
 
     @pyqtSlot()
     def startDiscovery(self):
@@ -73,6 +75,8 @@ class DiscoverOctoPrintAction(MachineAction):
         if isinstance(container, DefinitionContainer) and container.getMetaDataEntry("type") == "machine" and container.getMetaDataEntry("supports_usb_connection"):
             Application.getInstance().getMachineActionManager().addSupportedAction(container.getId(), self.getKey())
 
+    instancesChanged = pyqtSignal()
+
     @pyqtProperty("QVariantList", notify = instancesChanged)
     def discoveredInstances(self):
         if self._network_plugin:
@@ -107,9 +111,10 @@ class DiscoverOctoPrintAction(MachineAction):
 
     @pyqtSlot(str, str)
     def testApiKey(self, base_url, api_key):
-        self._valid_api_key = False
-        self._sd_supported = False
-        self._camera_supported = False
+        self._instance_api_key_accepted = False
+        self._instance_supports_sd = False
+        self._instance_supports_camera = False
+        self.selectedInstanceSettingsChanged.emit()
 
         if api_key != "":
             Logger.log("d", "Trying to access OctoPrint instance at %s with the provided API key." % base_url)
@@ -120,7 +125,7 @@ class DiscoverOctoPrintAction(MachineAction):
             self._settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
             self._settings_reply = self._manager.get(self._settings_request)
         else:
-            if self._image_reply:
+            if self._settings_reply:
                 self._settings_reply.abort()
                 self._settings_reply = None
             self._settings_request = None
@@ -149,6 +154,20 @@ class DiscoverOctoPrintAction(MachineAction):
             return global_container_stack.getMetaDataEntry("octoprint_api_key")
         else:
             return ""
+
+    selectedInstanceSettingsChanged = pyqtSignal()
+
+    @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
+    def instanceApiKeyAccepted(self):
+        return self._instance_api_key_accepted
+
+    @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
+    def instanceSupportsSd(self):
+        return self._instance_supports_sd
+
+    @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
+    def instanceSupportsCamera(self):
+        return self._instance_supports_camera
 
     @pyqtSlot(str, str, str)
     def setContainerMetaDataEntry(self, container_id, key, value):
@@ -196,16 +215,17 @@ class DiscoverOctoPrintAction(MachineAction):
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
                 if http_status_code == 200:
                     Logger.log("d", "API key accepted by OctoPrint.")
-                    self._valid_api_key = True
+                    self._instance_api_key_accepted = True
 
                     json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     if "feature" in json_data:
-                        self._sd_supported = True
+                        self._instance_supports_sd = True
 
                     if "webcam" in json_data:
                         stream_url = json_data["webcam"]["streamUrl"]
                         if stream_url != "":
-                            self._camera_supported = True
+                            self._instance_supports_camera = True
 
+                    self.selectedInstanceSettingsChanged.emit()
                 elif http_status_code == 401:
                     Logger.log("d", "Invalid API key for OctoPrint.")

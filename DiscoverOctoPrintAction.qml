@@ -116,7 +116,11 @@ Cura.MachineAction
                     }
                     width: parent.width
                     currentIndex: activeIndex
-                    onCurrentIndexChanged: base.selectedInstance = listview.model[currentIndex]
+                    onCurrentIndexChanged:
+                    {
+                        base.selectedInstance = listview.model[currentIndex];
+                        apiCheckDelay.throttledCheck();
+                    }
                     Component.onCompleted: manager.startDiscovery()
                     delegate: Rectangle
                     {
@@ -201,9 +205,43 @@ Cura.MachineAction
                         id: apiKey
                         width: (parent.width * 0.8 - UM.Theme.getSize("default_margin").width) | 0
                         text: manager.apiKey
-                        onEditingFinished:
+                        onTextChanged:
                         {
-                            manager.testApiKey(base.selectedInstance.baseURL, text);
+                            apiCheckDelay.throttledCheck()
+                        }
+                    }
+                    Timer
+                    {
+                        id: apiCheckDelay
+                        interval: 500
+
+                        signal throttledCheck
+                        signal check
+                        property bool checkOnTrigger: false
+
+                        onThrottledCheck:
+                        {
+                            if(running)
+                            {
+                                checkOnTrigger = true;
+                            }
+                            else
+                            {
+                                check();
+                            }
+                        }
+                        onCheck:
+                        {
+                            manager.testApiKey(base.selectedInstance.baseURL, apiKey.text)
+                            checkOnTrigger = false;
+                            restart();
+                        }
+                        onTriggered:
+                        {
+                            if(checkOnTrigger)
+                            {
+                                check();
+                            }
                         }
                     }
                 }
@@ -226,7 +264,8 @@ Cura.MachineAction
                     {
                         id: autoPrintCheckBox
                         text: catalog.i18nc("@label", "Automatically start print job after uploading")
-                        checked: Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_auto_print") != "false"
+                        enabled: manager.instanceApiKeyAccepted
+                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_auto_print") != "false"
                         onClicked:
                         {
                             manager.setContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_auto_print", String(checked))
@@ -235,8 +274,9 @@ Cura.MachineAction
                     CheckBox
                     {
                         id: showCameraCheckBox
-                        text: catalog.i18nc("@label", "Show webcam image (if available)")
-                        checked: Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_show_camera") == "true"
+                        text: catalog.i18nc("@label", "Show webcam image")
+                        enabled: manager.instanceSupportsCamera
+                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_show_camera") == "true"
                         onClicked:
                         {
                             manager.setContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_show_camera", String(checked))
@@ -246,7 +286,8 @@ Cura.MachineAction
                     {
                         id: storeOnSdCheckBox
                         text: catalog.i18nc("@label", "Store G-code on the printer SD card")
-                        checked: Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_store_sd") == "true"
+                        enabled: manager.instanceSupportsSd
+                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_store_sd") == "true"
                         onClicked:
                         {
                             manager.setContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_store_sd", String(checked))
@@ -275,7 +316,7 @@ Cura.MachineAction
                     Button
                     {
                         text: catalog.i18nc("@action:button", "Connect")
-                        enabled: apiKey.text != ""
+                        enabled: apiKey.text != "" && manager.instanceApiKeyAccepted
                         onClicked:
                         {
                             manager.setKey(base.selectedInstance.getKey())
