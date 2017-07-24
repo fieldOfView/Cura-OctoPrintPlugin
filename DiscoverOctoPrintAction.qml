@@ -389,7 +389,7 @@ Cura.MachineAction
         title: catalog.i18nc("@title:window", "Manually added OctoPrint instance")
 
         minimumWidth: 400 * Screen.devicePixelRatio
-        minimumHeight: showAdvancedOptions.checked ? 240 : 160
+        minimumHeight: showAdvancedOptions.checked ? 280 : 160
         width: minimumWidth
         height: minimumHeight
 
@@ -511,7 +511,7 @@ Cura.MachineAction
             CheckBox
             {
                 id: showAdvancedOptions
-                text: catalog.i18nc("@label","Reverse proxy options (advanced)")
+                text: catalog.i18nc("@label","Show reverse proxy options (advanced)")
             }
 
             Grid
@@ -535,7 +535,7 @@ Cura.MachineAction
 
                 Label
                 {
-                    text: catalog.i18nc("@label","Username")
+                    text: catalog.i18nc("@label","HTTP user name")
                     width: (parent.width * 0.4) | 0
                 }
 
@@ -548,7 +548,7 @@ Cura.MachineAction
 
                 Label
                 {
-                    text: catalog.i18nc("@label","Password")
+                    text: catalog.i18nc("@label","HTTP password")
                     width: (parent.width * 0.4) | 0
                 }
 
@@ -561,6 +561,14 @@ Cura.MachineAction
                 }
 
 
+            }
+
+            Label
+            {
+                visible: showAdvancedOptions.checked
+                wrapMode: Text.WordWrap
+                width: parent.width
+                text: catalog.i18nc("@label","NB: Only use these options if you access OctoPrint through a reverse proxy.")
             }
         }
 
