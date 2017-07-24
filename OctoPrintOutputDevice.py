@@ -35,11 +35,29 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._gcode = None
         self._auto_print = True
 
-        ##  We start with a single extruder, but update this when we get data from octoprint
+        # We start with a single extruder, but update this when we get data from octoprint
         self._num_extruders_set = False
         self._num_extruders = 1
 
-        self._api_version = "1"
+        # Try to get version information from plugin.json
+        plugin_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin.json")
+        try:
+            with open(plugin_file_path) as plugin_file:
+                plugin_info = json.load(plugin_file)
+                plugin_version = plugin_info["version"]
+        except:
+            # The actual version info is not critical to have so we can continue
+            plugin_version = "Unknown"
+            Logger.logException("w", "Could not get version information for the plugin")
+
+        self._user_agent_header = "User-Agent".encode()
+        self._user_agent = ("%s/%s %s/%s" % (
+            Application.getInstance().getApplicationName(),
+            Application.getInstance().getVersion(),
+            "OctoPrintPlugin",
+            Application.getInstance().getVersion()
+        )).encode()
+
         self._api_prefix = "api/"
         self._api_header = "X-Api-Key".encode()
         self._api_key = None
@@ -181,6 +199,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         # Start streaming mjpg stream
         url = QUrl(self._camera_url)
         image_request = QNetworkRequest(url)
+        image_request.setRawHeader(self._user_agent_header, self._user_agent)
         if self._camera_shares_proxy and self._basic_auth_data:
             image_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
         self._image_reply = self._manager.get(image_request)
@@ -262,20 +281,10 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                 self.setConnectionState(ConnectionState.error)
 
         ## Request 'general' printer data
-        url = QUrl(self._api_url + "printer")
-        printer_request = QNetworkRequest(url)
-        printer_request.setRawHeader(self._api_header, self._api_key)
-        if self._basic_auth_data:
-            printer_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-        self._printer_reply = self._manager.get(printer_request)
+        self._printer_reply = self._manager.get(self._createApiRequest("printer"))
 
         ## Request print_job data
-        url = QUrl(self._api_url + "job")
-        job_request = QNetworkRequest(url)
-        job_request.setRawHeader(self._api_header, self._api_key)
-        if self._basic_auth_data:
-            job_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-        self._job_reply = self._manager.get(job_request)
+        self._job_reply = self._manager.get(self._createApiRequest("job"))
 
     def _createNetworkManager(self):
         if self._manager:
@@ -283,6 +292,14 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         self._manager = QNetworkAccessManager()
         self._manager.finished.connect(self._onRequestFinished)
+
+    def _createApiRequest(self, end_point):
+        request = QNetworkRequest(QUrl(self._api_url + end_point))
+        request.setRawHeader(self._user_agent_header, self._user_agent)
+        request.setRawHeader(self._api_header, self._api_key)
+        if self._basic_auth_data:
+            request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+        return request
 
     def close(self):
         self._updateJobState("")
@@ -318,12 +335,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._key))
 
         ## Request 'settings' dump
-        url = QUrl(self._api_url + "settings")
-        settings_request = QNetworkRequest(url)
-        settings_request.setRawHeader(self._api_header, self._api_key)
-        if self._basic_auth_data:
-            settings_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-        self._settings_reply = self._manager.get(settings_request)
+        self._settings_reply = self._manager.get(self._createApiRequest("settings"))
 
     ##  Stop requesting data from the instance
     def disconnect(self):
@@ -428,15 +440,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
                 destination = "sdcard"
 
-            url = QUrl(self._api_url + "files/" + destination)
-
-            ##  Create the QT request
-            post_request = QNetworkRequest(url)
-            post_request.setRawHeader(self._api_header, self._api_key)
-            if self._basic_auth_data:
-                post_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-
             ##  Post request + data
+            post_request = self._createApiRequest("files/" + destination)
             self._post_reply = self._manager.post(post_request, self._post_multi_part)
             self._post_reply.uploadProgress.connect(self._onUploadProgress)
 
@@ -470,12 +475,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._sendCommandToApi("job", command)
         Logger.log("d", "Sent job command to OctoPrint instance: %s", command)
 
-    def _sendCommandToApi(self, endpoint, command):
-        url = QUrl(self._api_url + endpoint)
-        command_request = QNetworkRequest(url)
-        command_request.setRawHeader(self._api_header, self._api_key)
-        if self._basic_auth_data:
-            command_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+    def _sendCommandToApi(self, end_point, command):
+        command_request = self._createApiRequest(end_point)
         command_request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
 
         data = "{\"command\": \"%s\"}" % command
