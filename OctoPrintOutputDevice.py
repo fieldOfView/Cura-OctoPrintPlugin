@@ -69,31 +69,19 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._manager = QNetworkAccessManager()
         self._manager.finished.connect(self._onRequestFinished)
 
-        ##  Hack to ensure that the qt networking stuff isn't garbage collected (unless we want it to)
-        self._settings_request = None
+        ##  Ensure that the qt networking stuff isn't garbage collected (unless we want it to)
         self._settings_reply = None
-
-        self._printer_request = None
         self._printer_reply = None
+        self._job_reply = None
+        self._command_reply = None
 
-        self._print_job_request = None
-        self._print_job_reply = None
-
-        self._image_request = None
         self._image_reply = None
         self._stream_buffer = b""
         self._stream_buffer_start_index = -1
 
-        self._post_request = None
         self._post_reply = None
         self._post_multi_part = None
         self._post_part = None
-
-        self._job_request = None
-        self._job_reply = None
-
-        self._command_request = None
-        self._command_reply = None
 
         self._progress_message = None
         self._error_message = None
@@ -192,10 +180,10 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         # Start streaming mjpg stream
         url = QUrl(self._camera_url)
-        self._image_request = QNetworkRequest(url)
+        image_request = QNetworkRequest(url)
         if self._camera_shares_proxy and self._basic_auth_data:
-            self._image_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-        self._image_reply = self._manager.get(self._image_request)
+            image_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+        self._image_reply = self._manager.get(image_request)
         self._image_reply.downloadProgress.connect(self._onStreamDownloadProgress)
 
     def _stopCamera(self):
@@ -203,7 +191,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             self._image_reply.abort()
             self._image_reply.downloadProgress.disconnect(self._onStreamDownloadProgress)
             self._image_reply = None
-        self._image_request = None
+        image_request = None
 
         self._stream_buffer = b""
         self._stream_buffer_start_index = -1
@@ -275,19 +263,19 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         ## Request 'general' printer data
         url = QUrl(self._api_url + "printer")
-        self._printer_request = QNetworkRequest(url)
-        self._printer_request.setRawHeader(self._api_header, self._api_key)
+        printer_request = QNetworkRequest(url)
+        printer_request.setRawHeader(self._api_header, self._api_key)
         if self._basic_auth_data:
-            self._printer_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-        self._printer_reply = self._manager.get(self._printer_request)
+            printer_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+        self._printer_reply = self._manager.get(printer_request)
 
         ## Request print_job data
         url = QUrl(self._api_url + "job")
-        self._job_request = QNetworkRequest(url)
-        self._job_request.setRawHeader(self._api_header, self._api_key)
+        job_request = QNetworkRequest(url)
+        job_request.setRawHeader(self._api_header, self._api_key)
         if self._basic_auth_data:
-            self._job_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-        self._job_reply = self._manager.get(self._job_request)
+            job_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+        self._job_reply = self._manager.get(job_request)
 
     def _createNetworkManager(self):
         if self._manager:
@@ -331,11 +319,11 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         ## Request 'settings' dump
         url = QUrl(self._api_url + "settings")
-        self._settings_request = QNetworkRequest(url)
-        self._settings_request.setRawHeader(self._api_header, self._api_key)
+        settings_request = QNetworkRequest(url)
+        settings_request.setRawHeader(self._api_header, self._api_key)
         if self._basic_auth_data:
-            self._settings_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-        self._settings_reply = self._manager.get(self._settings_request)
+            settings_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+        self._settings_reply = self._manager.get(settings_request)
 
     ##  Stop requesting data from the instance
     def disconnect(self):
@@ -443,13 +431,13 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             url = QUrl(self._api_url + "files/" + destination)
 
             ##  Create the QT request
-            self._post_request = QNetworkRequest(url)
-            self._post_request.setRawHeader(self._api_header, self._api_key)
+            post_request = QNetworkRequest(url)
+            post_request.setRawHeader(self._api_header, self._api_key)
             if self._basic_auth_data:
-                self._post_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+                post_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
 
             ##  Post request + data
-            self._post_reply = self._manager.post(self._post_request, self._post_multi_part)
+            self._post_reply = self._manager.post(post_request, self._post_multi_part)
             self._post_reply.uploadProgress.connect(self._onUploadProgress)
 
             self._gcode = None
@@ -484,14 +472,14 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
     def _sendCommandToApi(self, endpoint, command):
         url = QUrl(self._api_url + endpoint)
-        self._command_request = QNetworkRequest(url)
-        self._command_request.setRawHeader(self._api_header, self._api_key)
+        command_request = QNetworkRequest(url)
+        command_request.setRawHeader(self._api_header, self._api_key)
         if self._basic_auth_data:
-            self._command_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-        self._command_request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
+            command_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+        command_request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
 
         data = "{\"command\": \"%s\"}" % command
-        self._command_reply = self._manager.post(self._command_request, data.encode())
+        self._command_reply = self._manager.post(command_request, data.encode())
 
     ##  Pre-heats the heated bed of the printer.
     #
