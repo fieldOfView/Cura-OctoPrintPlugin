@@ -31,8 +31,26 @@ class DiscoverOctoPrintAction(MachineAction):
         self._manager = QNetworkAccessManager()
         self._manager.finished.connect(self._onRequestFinished)
 
-        self._settings_request = None
         self._settings_reply = None
+
+        # Try to get version information from plugin.json
+        plugin_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin.json")
+        try:
+            with open(plugin_file_path) as plugin_file:
+                plugin_info = json.load(plugin_file)
+                plugin_version = plugin_info["version"]
+        except:
+            # The actual version info is not critical to have so we can continue
+            plugin_version = "Unknown"
+            Logger.logException("w", "Could not get version information for the plugin")
+
+        self._user_agent = ("%s/%s %s/%s" % (
+            Application.getInstance().getApplicationName(),
+            Application.getInstance().getVersion(),
+            "OctoPrintPlugin",
+            Application.getInstance().getVersion()
+        )).encode()
+
 
         self._instance_responded = False
         self._instance_api_key_accepted = False
@@ -123,14 +141,14 @@ class DiscoverOctoPrintAction(MachineAction):
 
             ## Request 'settings' dump
             url = QUrl(base_url + "api/settings")
-            self._settings_request = QNetworkRequest(url)
-            self._settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
-            self._settings_reply = self._manager.get(self._settings_request)
+            settings_request = QNetworkRequest(url)
+            settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
+            settings_request.setRawHeader("User-Agent".encode(), self._user_agent)
+            self._settings_reply = self._manager.get(settings_request)
         else:
             if self._settings_reply:
                 self._settings_reply.abort()
                 self._settings_reply = None
-            self._settings_request = None
 
     @pyqtSlot(str)
     def setApiKey(self, api_key):
