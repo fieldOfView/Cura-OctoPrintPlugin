@@ -233,7 +233,7 @@ Cura.MachineAction
                         }
                         onCheck:
                         {
-                            manager.testApiKey(base.selectedInstance.baseURL, apiKey.text)
+                            manager.testApiKey(base.selectedInstance.baseURL, apiKey.text, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
                             checkOnTrigger = false;
                             restart();
                         }

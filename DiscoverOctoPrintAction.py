@@ -128,8 +128,8 @@ class DiscoverOctoPrintAction(MachineAction):
 
         return ""
 
-    @pyqtSlot(str, str)
-    def testApiKey(self, base_url, api_key):
+    @pyqtSlot(str, str, str, str)
+    def testApiKey(self, base_url, api_key, basic_auth_username = "", basic_auth_password = ""):
         self._instance_responded = False
         self._instance_api_key_accepted = False
         self._instance_supports_sd = False
@@ -144,6 +144,8 @@ class DiscoverOctoPrintAction(MachineAction):
             settings_request = QNetworkRequest(url)
             settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
             settings_request.setRawHeader("User-Agent".encode(), self._user_agent)
+            if basic_auth_username and basic_auth_password:
+                settings_request.setRawHeader("Authentication".encode(), ("%s:%s" % (basic_auth_username, basic_auth_username)).encode())
             self._settings_reply = self._manager.get(settings_request)
         else:
             if self._settings_reply:
