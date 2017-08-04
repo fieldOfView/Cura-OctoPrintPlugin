@@ -642,7 +642,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                 if http_status_code == 200:
                     json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
 
-                    if "feature" in json_data:
+                    if "feature" in json_data and "sdSupport" in json_data["feature"]:
                         self._sd_supported = json_data["feature"]["sdSupport"]
 
                     if "webcam" in json_data and "streamURL" in json_data["webcam"]:
