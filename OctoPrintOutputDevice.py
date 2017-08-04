@@ -659,8 +659,9 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         elif stream_url[:1] == "/": # domain-relative (on same port)
                             self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
                             self._camera_shares_proxy = True
-                        else: # safe default: use mjpgstreamer on the same domain
-                            self._camera_url = "%s://%s:8080/?action=stream" % (self._protocol, self._address)
+                        else:
+                            Logger.log("w", "Unusable stream url received: %s", stream_url)
+                            self._camera_url = ""
 
                         Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
 
