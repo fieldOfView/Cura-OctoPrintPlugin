@@ -645,7 +645,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                     if "feature" in json_data:
                         self._sd_supported = json_data["feature"]["sdSupport"]
 
-                    if "webcam" in json_data:
+                    if "webcam" in json_data and "streamURL" in json_data["webcam"]:
                         self._camera_shares_proxy = False
                         stream_url = json_data["webcam"]["streamUrl"]
                         if stream_url == "":
