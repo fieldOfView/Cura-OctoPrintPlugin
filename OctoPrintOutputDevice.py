@@ -642,10 +642,10 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                 if http_status_code == 200:
                     json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
 
-                    if "feature" in json_data:
+                    if "feature" in json_data and "sdSupport" in json_data["feature"]:
                         self._sd_supported = json_data["feature"]["sdSupport"]
 
-                    if "webcam" in json_data:
+                    if "webcam" in json_data and "streamURL" in json_data["webcam"]:
                         self._camera_shares_proxy = False
                         stream_url = json_data["webcam"]["streamUrl"]
                         if stream_url == "":
@@ -659,8 +659,9 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         elif stream_url[:1] == "/": # domain-relative (on same port)
                             self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
                             self._camera_shares_proxy = True
-                        else: # safe default: use mjpgstreamer on the same domain
-                            self._camera_url = "%s://%s:8080/?action=stream" % (self._protocol, self._address)
+                        else:
+                            Logger.log("w", "Unusable stream url received: %s", stream_url)
+                            self._camera_url = ""
 
                         Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
 
