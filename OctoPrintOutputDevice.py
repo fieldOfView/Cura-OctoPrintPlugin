@@ -566,7 +566,11 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
                     if self._connection_state == ConnectionState.connecting:
                         self.setConnectionState(ConnectionState.connected)
-                    json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    try:
+                        json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    except json.decoder.JSONDecodeError:
+                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        json_data = {}
 
                     if "temperature" in json_data:
                         if not self._num_extruders_set:
@@ -615,7 +619,11 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
             elif self._api_prefix + "job" in reply.url().toString():  # Status update from /job:
                 if http_status_code == 200:
-                    json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    try:
+                        json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    except json.decoder.JSONDecodeError:
+                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        json_data = {}
 
                     progress = json_data["progress"]["completion"]
                     if progress:
@@ -640,7 +648,11 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
             elif self._api_prefix + "settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
                 if http_status_code == 200:
-                    json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    try:
+                        json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    except json.decoder.JSONDecodeError:
+                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        json_data = {}
 
                     if "feature" in json_data and "sdSupport" in json_data["feature"]:
                         self._sd_supported = json_data["feature"]["sdSupport"]
