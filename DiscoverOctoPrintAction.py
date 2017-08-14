@@ -243,11 +243,16 @@ class DiscoverOctoPrintAction(MachineAction):
                     Logger.log("d", "API key accepted by OctoPrint.")
                     self._instance_api_key_accepted = True
 
-                    json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
-                    if "feature" in json_data:
+                    try:
+                        json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    except json.decoder.JSONDecodeError:
+                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        json_data = {}
+
+                    if "feature" in json_data and "sdSupport" in json_data["feature"]:
                         self._instance_supports_sd = json_data["feature"]["sdSupport"]
 
-                    if "webcam" in json_data:
+                    if "webcam" in json_data and "streamURL" in json_data["webcam"]:
                         stream_url = json_data["webcam"]["streamUrl"]
                         if stream_url != "":
                             self._instance_supports_camera = True
