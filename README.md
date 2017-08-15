@@ -19,7 +19,7 @@ Installation
 * Cura PPA (*Ubuntu):
   - Add the cura PPA via (if not already done): `sudo add-apt-repository ppa:thopiekar/cura`
   - Update APT via: `sudo apt update`
-  - Install the plugin via: `sudo apt install cura-extra-plugin-octoprint`
+  - Install the plugin via: `sudo apt install cura-plugin-octoprint`
 
 
 How to use
