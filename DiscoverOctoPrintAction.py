@@ -252,7 +252,7 @@ class DiscoverOctoPrintAction(MachineAction):
                     if "feature" in json_data and "sdSupport" in json_data["feature"]:
                         self._instance_supports_sd = json_data["feature"]["sdSupport"]
 
-                    if "webcam" in json_data and "streamURL" in json_data["webcam"]:
+                    if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
                         stream_url = json_data["webcam"]["streamUrl"]
                         if stream_url != "":
                             self._instance_supports_camera = True
