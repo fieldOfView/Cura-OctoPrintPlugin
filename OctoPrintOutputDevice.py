@@ -504,13 +504,51 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._setTargetBedTemperature(0)
         self._preheat_timer.stop()
 
+    ##  Changes the target bed temperature on the OctoPrint instance.
+    #
+    #   /param temperature The new target temperature of the bed.
     def _setTargetBedTemperature(self, temperature):
+        if not self._updateTargetBedTemperature(temperature):
+            Logger.log("d", "Target bed temperature is already set to %s", temperature)
+            return
+
         Logger.log("d", "Setting bed temperature to %s", temperature)
         self._sendCommand("M140 S%s" % temperature)
 
+    ##  Updates the target bed temperature from the printer, and emit a signal if it was changed.
+    #
+    #   /param temperature The new target temperature of the bed.
+    #   /return boolean, True if the temperature was changed, false if the new temperature has the same value as the already stored temperature
+    def _updateTargetBedTemperature(self, temperature):
+        if self._target_bed_temperature == temperature:
+            return False
+        self._target_bed_temperature = temperature
+        self.targetBedTemperatureChanged.emit()
+        return True
+
+    ##  Changes the target bed temperature on the OctoPrint instance.
+    #
+    #   /param index The index of the hotend.
+    #   /param temperature The new target temperature of the bed.
     def _setTargetHotendTemperature(self, index, temperature):
+        if not self._updateTargetHotendTemperature(index, temperature):
+            Logger.log("d", "Target hotend %s temperature is already set to %s", index, temperature)
+            return
+
         Logger.log("d", "Setting hotend %s temperature to %s", index, temperature)
         self._sendCommand("M104 T%s S%s" % (index, temperature))
+
+    ##  Updates the target hotend temperature from the printer, and emit a signal if it was changed.
+    #
+    #   /param index The index of the hotend.
+    #   /param temperature The new target temperature of the hotend.
+    #   /return boolean, True if the temperature was changed, false if the new temperature has the same value as the already stored temperature
+    def _updateTargetHotendTemperature(self, index, temperature):
+        if self._target_hotend_temperatures[index] == temperature:
+            return False
+        self._target_hotend_temperatures[index] = temperature
+        self.targetHotendTemperaturesChanged.emit()
+        return True
 
     def _setHeadPosition(self, x, y , z, speed):
         self._sendCommand("G0 X%s Y%s Z%s F%s" % (x, y, z, speed))
@@ -586,11 +624,21 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
                         # Check for hotend temperatures
                         for index in range(0, self._num_extruders):
-                            temperature = json_data["temperature"]["tool%d" % index]["actual"] if ("tool%d" % index) in json_data["temperature"] else 0
-                            self._setHotendTemperature(index, temperature)
+                            if ("tool%d" % index) in json_data["temperature"]:
+                                hotend_temperatures = json_data["temperature"]["tool%d" % index]
+                                self._setHotendTemperature(index, hotend_temperatures["actual"])
+                                self._updateTargetHotendTemperature(index, hotend_temperatures["target"])
+                            else:
+                                self._setHotendTemperature(index, 0)
+                                self._updateTargetHotendTemperature(index, 0)
 
-                        bed_temperature = json_data["temperature"]["bed"]["actual"] if "bed" in json_data["temperature"] else 0
-                        self._setBedTemperature(bed_temperature)
+                        if "bed" in json_data["temperature"]:
+                            bed_temperatures = json_data["temperature"]["bed"]
+                            self._setBedTemperature(bed_temperatures["actual"])
+                            self._updateTargetBedTemperature(bed_temperatures["target"])
+                        else:
+                            self._setBedTemperature(0)
+                            self._updateTargetBedTemperature(0)
 
                     job_state = "offline"
                     if "state" in json_data:
