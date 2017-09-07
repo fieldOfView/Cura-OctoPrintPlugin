@@ -13,6 +13,7 @@ from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager
 
 import os.path
 import json
+import base64
 
 catalog = i18nCatalog("cura")
 
@@ -145,7 +146,8 @@ class DiscoverOctoPrintAction(MachineAction):
             settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
             settings_request.setRawHeader("User-Agent".encode(), self._user_agent)
             if basic_auth_username and basic_auth_password:
-                settings_request.setRawHeader("Authentication".encode(), ("%s:%s" % (basic_auth_username, basic_auth_username)).encode())
+                data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
+                settings_request.setRawHeader("Authorization".encode(), ("Basic %s" % data).encode())
             self._settings_reply = self._manager.get(settings_request)
         else:
             if self._settings_reply:

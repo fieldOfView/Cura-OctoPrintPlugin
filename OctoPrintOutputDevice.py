@@ -14,6 +14,7 @@ from PyQt5.QtGui import QImage, QDesktopServices
 import json
 import os.path
 from time import time
+import base64
 
 i18n_catalog = i18nCatalog("cura")
 
@@ -66,12 +67,13 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._base_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, self._path)
         self._api_url = self._base_url + self._api_prefix
 
-        self._basic_auth_header = "Authentication".encode()
+        self._basic_auth_header = "Authorization".encode()
         self._basic_auth_data = None
         basic_auth_username = properties.get(b"userName", b"").decode("utf-8")
         basic_auth_password = properties.get(b"password", b"").decode("utf-8")
         if basic_auth_username and basic_auth_password:
-            self._basic_auth_data = ("%s:%s" % (basic_auth_username, basic_auth_username)).encode()
+            data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
+            self._basic_auth_data = ("basic %s" % data).encode()
 
         self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem.qml")
 
