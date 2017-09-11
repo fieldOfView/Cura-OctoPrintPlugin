@@ -256,7 +256,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
                     if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
                         stream_url = json_data["webcam"]["streamUrl"]
-                        if stream_url != "":
+                        if stream_url: #not empty string or None
                             self._instance_supports_camera = True
 
                 elif http_status_code == 401:
