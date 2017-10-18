@@ -18,7 +18,7 @@ import re
 class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     def __init__(self):
         super().__init__()
-        self._zero_conf = Zeroconf()
+        self._zero_conf = None
         self._browser = None
         self._instances = {}
 
@@ -55,8 +55,14 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             self._printers = {}
         self.instanceListChanged.emit()
 
-        self._zero_conf.__init__()
-        self._browser = ServiceBrowser(self._zero_conf, u'_octoprint._tcp.local.', [self._onServiceChanged])
+        try:
+            self._zero_conf = Zeroconf()
+        except Exception:
+            self._zero_conf = None
+            Logger.logException("e", "Failed to create Zeroconf instance. Auto-discovery will not work.")
+
+        if self._zero_conf:
+            self._browser = ServiceBrowser(self._zero_conf, u'_octoprint._tcp.local.', [self._onServiceChanged])
 
         # Add manual instances from preference
         for name, properties in self._manual_instances.items():
@@ -94,7 +100,8 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     def stop(self):
         self._browser.cancel()
         self._browser = None
-        self._zero_conf.close()
+        if self._zero_conf:
+            self._zero_conf.close()
 
     def getInstances(self):
         return self._instances
