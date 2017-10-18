@@ -388,8 +388,8 @@ Cura.MachineAction
 
         title: catalog.i18nc("@title:window", "Manually added OctoPrint instance")
 
-        minimumWidth: 400 * Screen.devicePixelRatio
-        minimumHeight: showAdvancedOptions.checked ? 280 : 160
+        minimumWidth: 400 * screenScaleFactor
+        minimumHeight: (showAdvancedOptions.checked ? 280 : 160) * screenScaleFactor
         width: minimumWidth
         height: minimumHeight
 
