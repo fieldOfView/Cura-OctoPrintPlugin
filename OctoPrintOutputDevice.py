@@ -562,10 +562,10 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._sendCommand("G0 Y%s F%s" % (y, speed))
 
     def _setHeadZ(self, z, speed):
-        self._sendCommand("G0 Y%s F%s" % (z, speed))
+        self._sendCommand("G0 Z%s F%s" % (z, speed))
 
     def _homeHead(self):
-        self._sendCommand("G28")
+        self._sendCommand("G28 X Y")
 
     def _homeBed(self):
         self._sendCommand("G28 Z")
