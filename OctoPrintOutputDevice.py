@@ -477,11 +477,14 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._sendCommandToApi("job", command)
         Logger.log("d", "Sent job command to OctoPrint instance: %s", command)
 
-    def _sendCommandToApi(self, end_point, command):
+    def _sendCommandToApi(self, end_point, commands):
         command_request = self._createApiRequest(end_point)
         command_request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
 
-        data = "{\"command\": \"%s\"}" % command
+        if isinstance(commands, list):
+            data = json.dumps({"commands": commands})
+        else:
+            data = json.dumps({"command": commands})
         self._command_reply = self._manager.post(command_request, data.encode())
 
     ##  Pre-heats the heated bed of the printer.
@@ -571,9 +574,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._sendCommand("G28 Z")
 
     def _moveHead(self, x, y, z, speed):
-        self._sendCommand("G91")
-        self._sendCommand("G0 X%s Y%s Z%s F%s" % (x, y, z, speed))
-        self._sendCommand("G90")
+        self._sendCommand(["G91", "G0 X%s Y%s Z%s F%s" % (x, y, z, speed), "G90"])
 
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply):
