@@ -69,8 +69,8 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             additional_properties = {
                 b"path": properties["path"].encode("utf-8"),
                 b"useHttps": b"true" if properties.get("useHttps", False) else b"false",
-                b'userName': properties["userName"].encode("utf-8"),
-                b'password': properties["password"].encode("utf-8"),
+                b'userName': properties.get("userName", "").encode("utf-8"),
+                b'password': properties.get("password", "").encode("utf-8"),
                 b"manual": b"true"
             } # These additional properties use bytearrays to mimick the output of zeroconf
             self.addInstance(name, properties["address"], properties["port"], additional_properties)
