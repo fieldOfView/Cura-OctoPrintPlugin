@@ -328,6 +328,20 @@ Cura.MachineAction
                         width: parent.width
                         text: catalog.i18nc("@label", "Note: Transfering files to the printer SD card takes very long. Using this option is not recommended.")
                     }
+                    CheckBox
+                    {
+                        id: fixGcodeFlavor
+                        text: catalog.i18nc("@label", "Set Gcode flavor to \"Marlin\"")
+                        checked: true
+                        visible: machineGCodeFlavorProvider.properties.value == "UltiGCode"
+                    }
+                    Label
+                    {
+                        text: catalog.i18nc("@label", "Note: Printing UltiGCode using OctoPrint does not work. Setting Gcode flavor to \"Marlin\" fixes this, but overrides material settings on your printer.")
+                        width: parent.width - UM.Theme.getSize("default_margin").width
+                        wrapMode: Text.WordWrap
+                        visible: fixGcodeFlavor.visible
+                    }
                 }
 
                 Flow
@@ -347,19 +361,15 @@ Cura.MachineAction
                         enabled: apiKey.text != "" && manager.instanceApiKeyAccepted
                         onClicked:
                         {
+                            if(fixGcodeFlavor.visible)
+                            {
+                                manager.applyGcodeFlavorFix(fixGcodeFlavor.checked)
+                            }
                             manager.setKey(base.selectedInstance.getKey())
                             manager.setApiKey(apiKey.text)
                             completed()
                         }
                     }
-                }
-
-                Label
-                {
-                    text: catalog.i18nc("@label", "Note: Printing UltiGCode using OctoPrint does not work. Please use \"Machine Setting\" to switch your Gcode flavor to \"Marlin\".")
-                    width: parent.width - UM.Theme.getSize("default_margin").width
-                    wrapMode: Text.WordWrap
-                    visible: machineGCodeFlavorProvider.properties.value == "UltiGCode"
                 }
             }
         }
