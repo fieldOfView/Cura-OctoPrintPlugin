@@ -35,6 +35,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         self._gcode = None
         self._auto_print = True
+        self._forced_queue = False
 
         # We start with a single extruder, but update this when we get data from octoprint
         self._num_extruders_set = False
@@ -377,11 +378,20 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         if not global_container_stack:
             return
 
+        if self._error_message:
+            self._error_message.hide()
+            self._error_message = None
+
+        if self._progress_message:
+            self._progress_message.hide()
+            self._progress_message = None
+
         self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
+        self._forced_queue = False
 
         if self.jobState not in ["ready", ""]:
             if self.jobState == "offline":
-                self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is offline. Unable to start a new job."))
+                self._error_message = Message(i18n_catalog.i18nc("@info:status", "The printer is offline. Unable to start a new job."))
             elif self._auto_print:
                 self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is busy. Unable to start a new job."))
             else:
@@ -389,12 +399,23 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                 self._error_message = None
 
             if self._error_message:
+                self._error_message.addAction("Queue", i18n_catalog.i18nc("@action:button", "Queue job"), None, i18n_catalog.i18nc("@action:tooltip", "Queue this print job so it can be printed later"))
+                self._error_message.actionTriggered.connect(self._queuePrint)
                 self._error_message.show()
                 return
 
+        self._startPrint()
+
+    def _queuePrint(self, message_id, action_id):
+        if self._error_message:
+            self._error_message.hide()
+        self._forced_queue = True
+        self._startPrint()
+
+    def _startPrint(self):
         self._preheat_timer.stop()
 
-        if self._auto_print:
+        if self._auto_print and not self._forced_queue:
             Application.getInstance().showPrintMonitor.emit(True)
 
         try:
@@ -427,7 +448,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             self._post_part.setBody(b"true")
             self._post_multi_part.append(self._post_part)
 
-            if self._auto_print:
+            if self._auto_print and not self._forced_queue:
                 self._post_part = QHttpPart()
                 self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"print\"")
                 self._post_part.setBody(b"true")
@@ -467,7 +488,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
             self._post_reply.abort()
             self._post_reply = None
-        self._progress_message.hide()
+        if self._progress_message:
+            self._progress_message.hide()
 
     def _sendCommand(self, command):
         self._sendCommandToApi("printer/command", command)
@@ -751,7 +773,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                 reply.uploadProgress.disconnect(self._onUploadProgress)
                 self._progress_message.hide()
                 global_container_stack = Application.getInstance().getGlobalContainerStack()
-                if not self._auto_print:
+                if self._forced_queue or not self._auto_print:
                     location = reply.header(QNetworkRequest.LocationHeader)
                     if location:
                         file_name = QUrl(reply.header(QNetworkRequest.LocationHeader).toString()).fileName()
