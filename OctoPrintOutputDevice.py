@@ -780,7 +780,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint as {0}").format(file_name))
                     else:
                         message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint"))
-                    message.addAction("open_browser", i18n_catalog.i18nc("@action:button", "Open OctoPrint..."), "globe",
+                    message.addAction("open_browser", i18n_catalog.i18nc("@action:button", "OctoPrint..."), "globe",
                                         i18n_catalog.i18nc("@info:tooltip", "Open the OctoPrint web interface"))
                     message.actionTriggered.connect(self._onMessageActionTriggered)
                     message.show()
