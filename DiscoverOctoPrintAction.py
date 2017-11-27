@@ -22,8 +22,6 @@ class DiscoverOctoPrintAction(MachineAction):
         super().__init__("DiscoverOctoPrintAction", catalog.i18nc("@action", "Connect OctoPrint"))
 
         self._qml_url = "DiscoverOctoPrintAction.qml"
-        self._window = None
-        self._context = None
 
         self._network_plugin = None
 
@@ -52,11 +50,12 @@ class DiscoverOctoPrintAction(MachineAction):
             Application.getInstance().getVersion()
         )).encode()
 
-
         self._instance_responded = False
         self._instance_api_key_accepted = False
         self._instance_supports_sd = False
         self._instance_supports_camera = False
+
+        self._additional_components = None
 
         ContainerRegistry.getInstance().containerAdded.connect(self._onContainerAdded)
         Application.getInstance().engineCreatedSignal.connect(self._createAdditionalComponentsView)
@@ -269,19 +268,13 @@ class DiscoverOctoPrintAction(MachineAction):
     def _createAdditionalComponentsView(self):
         Logger.log("d", "Creating additional ui components for OctoPrint-connected printers.")
 
-        path = QUrl.fromLocalFile(os.path.join(os.path.dirname(os.path.abspath(__file__)), "OctoPrintComponents.qml"))
-        self._additional_component = QQmlComponent(Application.getInstance()._engine, path)
-
-        # We need access to engine (although technically we can't)
-        self._additional_components_context = QQmlContext(Application.getInstance()._engine.rootContext())
-        self._additional_components_context.setContextProperty("manager", self)
-
-        self._additional_components_view = self._additional_component.create(self._additional_components_context)
-        if not self._additional_components_view:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "OctoPrintComponents.qml")
+        self._additional_components = Application.getInstance().createQmlComponent(path, {"manager": self})
+        if not self._additional_components:
             Logger.log("w", "Could not create additional components for OctoPrint-connected printers.")
             return
 
-        Application.getInstance().addAdditionalComponent("monitorButtons", self._additional_components_view.findChild(QObject, "openOctoPrintButton"))
+        Application.getInstance().addAdditionalComponent("monitorButtons", self._additional_components.findChild(QObject, "openOctoPrintButton"))
 
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply):
