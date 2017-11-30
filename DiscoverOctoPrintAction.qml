@@ -89,7 +89,7 @@ Cura.MachineAction
             {
                 id: objectListContainer
                 frameVisible: true
-                width: (parent.width * 0.5) | 0
+                width: Math.floor(parent.width * 0.5)
                 height: base.height - parent.y
 
                 Rectangle
@@ -154,7 +154,7 @@ Cura.MachineAction
             }
             Column
             {
-                width: (parent.width * 0.5) | 0
+                width: Math.floor(parent.width * 0.5)
                 spacing: UM.Theme.getSize("default_margin").height
                 Label
                 {
@@ -173,38 +173,38 @@ Cura.MachineAction
                     rowSpacing: UM.Theme.getSize("default_lining").height
                     Label
                     {
-                        width: (parent.width * 0.2) | 0
+                        width: Math.floor(parent.width * 0.2)
                         wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "Version")
                     }
                     Label
                     {
-                        width: (parent.width * 0.75) | 0
+                        width: Math.floor(parent.width * 0.75)
                         wrapMode: Text.WordWrap
                         text: base.selectedInstance ? base.selectedInstance.octoprintVersion : ""
                     }
                     Label
                     {
-                        width: (parent.width * 0.2) | 0
+                        width: Math.floor(parent.width * 0.2)
                         wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "Address")
                     }
                     Label
                     {
-                        width: (parent.width * 0.7) | 0
+                        width: Math.floor(parent.width * 0.7)
                         wrapMode: Text.WordWrap
                         text: base.selectedInstance ? "%1:%2".arg(base.selectedInstance.ipAddress).arg(String(base.selectedInstance.port)) : ""
                     }
                     Label
                     {
-                        width: (parent.width * 0.2) | 0
+                        width: Math.floor(parent.width * 0.2)
                         wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "API Key")
                     }
                     TextField
                     {
                         id: apiKey
-                        width: (parent.width * 0.8 - UM.Theme.getSize("default_margin").width) | 0
+                        width: Math.floor(parent.width * 0.8 - UM.Theme.getSize("default_margin").width)
                         text: manager.apiKey
                         onTextChanged:
                         {
@@ -452,14 +452,14 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","Instance Name")
-                    width: (parent.width * 0.4) | 0
+                    width: Math.floor(parent.width * 0.4)
                 }
 
                 TextField
                 {
                     id: nameField
                     maximumLength: 20
-                    width: (parent.width * 0.6) | 0
+                    width: Math.floor(parent.width * 0.6)
                     validator: RegExpValidator
                     {
                         regExp: /[a-zA-Z0-9\.\-\_]*/
@@ -469,14 +469,14 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","IP Address or Hostname")
-                    width: (parent.width * 0.4) | 0
+                    width: Math.floor(parent.width * 0.4)
                 }
 
                 TextField
                 {
                     id: addressField
                     maximumLength: 30
-                    width: (parent.width * 0.6) | 0
+                    width: Math.floor(parent.width * 0.6)
                     validator: RegExpValidator
                     {
                         regExp: /[a-zA-Z0-9\.\-\_]*/
@@ -486,14 +486,14 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","Port Number")
-                    width: (parent.width * 0.4) | 0
+                    width: Math.floor(parent.width * 0.4)
                 }
 
                 TextField
                 {
                     id: portField
                     maximumLength: 5
-                    width: (parent.width * 0.6) | 0
+                    width: Math.floor(parent.width * 0.6)
                     validator: RegExpValidator
                     {
                         regExp: /[0-9]*/
@@ -503,14 +503,14 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","Path")
-                    width: (parent.width * 0.4) | 0
+                    width: Math.floor(parent.width * 0.4)
                 }
 
                 TextField
                 {
                     id: pathField
                     maximumLength: 30
-                    width: (parent.width * 0.6) | 0
+                    width: Math.floor(parent.width * 0.6)
                     validator: RegExpValidator
                     {
                         regExp: /[a-zA-Z0-9\.\-\_\/]*/
@@ -535,7 +535,7 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","Use HTTPS")
-                    width: (parent.width * 0.4) | 0
+                    width: Math.floor(parent.width * 0.4)
                 }
 
                 CheckBox
@@ -546,27 +546,27 @@ Cura.MachineAction
                 Label
                 {
                     text: catalog.i18nc("@label","HTTP user name")
-                    width: (parent.width * 0.4) | 0
+                    width: Math.floor(parent.width * 0.4)
                 }
 
                 TextField
                 {
                     id: userNameField
                     maximumLength: 64
-                    width: (parent.width * 0.6) | 0
+                    width: Math.floor(parent.width * 0.6)
                 }
 
                 Label
                 {
                     text: catalog.i18nc("@label","HTTP password")
-                    width: (parent.width * 0.4) | 0
+                    width: Math.floor(parent.width * 0.4)
                 }
 
                 TextField
                 {
                     id: passwordField
                     maximumLength: 64
-                    width: (parent.width * 0.6) | 0
+                    width: Math.floor(parent.width * 0.6)
                     echoMode: TextInput.PasswordEchoOnEdit
                 }
 
