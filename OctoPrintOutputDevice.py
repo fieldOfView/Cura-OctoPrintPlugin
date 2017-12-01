@@ -460,6 +460,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             self._post_multi_part.append(self._post_part)
 
             destination = "local"
+            global_container_stack = Application.getInstance().getGlobalContainerStack()
             if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
                 destination = "sdcard"
 
