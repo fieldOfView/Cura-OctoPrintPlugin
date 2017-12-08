@@ -46,7 +46,15 @@ Component
         width: proportionalHeight ? _width : sourceSize.width * _height / sourceSize.height
         height: !proportionalHeight ? _height : sourceSize.height * _width / sourceSize.width
         anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
 
+        Component.onCompleted:
+        {
+            if(visible)
+            {
+                OutputDevice.startCamera()
+            }
+        }
         onVisibleChanged:
         {
             if(visible)
