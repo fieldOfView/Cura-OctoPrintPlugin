@@ -8,11 +8,11 @@ Component
         property bool rotatedImage: (OutputDevice.cameraOrientation.rotation / 90) % 2
         property bool proportionalHeight:
         {
-            if(sourceSize.height == 0 || maximumHeight == 0)
+            if (sourceSize.height == 0 || maximumHeight == 0)
             {
                 return true;
             }
-            if(!rotatedImage)
+            if (!rotatedImage)
             {
                 return (sourceSize.width / sourceSize.height) > (maximumWidth / maximumHeight);
             }
@@ -23,7 +23,7 @@ Component
         }
         property real _width:
         {
-            if(!rotatedImage)
+            if (!rotatedImage)
             {
                 return Math.min(maximumWidth, sourceSize.width);
             }
@@ -34,7 +34,7 @@ Component
         }
         property real _height:
         {
-            if(!rotatedImage)
+            if (!rotatedImage)
             {
                 return Math.min(maximumHeight, sourceSize.height);
             }
@@ -50,26 +50,29 @@ Component
 
         Component.onCompleted:
         {
-            if(visible)
+            if (visible && OutputDevice.activePrinter != null && OutputDevice.activePrinter.camera != null)
             {
-                OutputDevice.startCamera()
+                    OutputDevice.activePrinter.camera.start();
             }
         }
         onVisibleChanged:
         {
-            if(visible)
+            if (OutputDevice.activePrinter != null && OutputDevice.activePrinter.camera != null)
             {
-                OutputDevice.startCamera()
-            } else
-            {
-                OutputDevice.stopCamera()
+                if (visible)
+                {
+                    OutputDevice.activePrinter.camera.start();
+                } else
+                {
+                    OutputDevice.activePrinter.camera.stop();
+                }
             }
         }
         source:
         {
-            if(OutputDevice.cameraImage)
+            if(OutputDevice.activePrinter != null && OutputDevice.activePrinter.camera != null && OutputDevice.activePrinter.camera.latestImage)
             {
-                return OutputDevice.cameraImage;
+                return OutputDevice.activePrinter.camera.latestImage;
             }
             return "";
         }

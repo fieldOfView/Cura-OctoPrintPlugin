@@ -119,8 +119,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
-        self._camera_image_id = 0
-        self._camera_image = QImage()
         self._camera_mirror = ""
         self._camera_rotation = 0
         self._camera_url = ""
@@ -197,33 +195,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             "mirror": self._camera_mirror,
             "rotation": self._camera_rotation,
         }
-
-    def _startCamera(self):
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
-        if not global_container_stack or not parseBool(global_container_stack.getMetaDataEntry("octoprint_show_camera", False)) or self._camera_url == "":
-            return
-
-        # Start streaming mjpg stream
-        url = QUrl(self._camera_url)
-        image_request = QNetworkRequest(url)
-        image_request.setRawHeader(self._user_agent_header, self._user_agent)
-        if self._camera_shares_proxy and self._basic_auth_data:
-            image_request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
-        self._image_reply = self._manager.get(image_request)
-        self._image_reply.downloadProgress.connect(self._onStreamDownloadProgress)
-
-    def _stopCamera(self):
-        if self._image_reply:
-            self._image_reply.abort()
-            self._image_reply.downloadProgress.disconnect(self._onStreamDownloadProgress)
-            self._image_reply = None
-        image_request = None
-
-        self._stream_buffer = b""
-        self._stream_buffer_start_index = -1
-
-        self._camera_image = QImage()
-        self.newImage.emit()
 
     def _update(self):
         if self._last_response_time:
@@ -317,8 +288,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             self._error_message.hide()
         self._update_timer.stop()
 
-        self._stopCamera()
-
     def requestWrite(self, node, file_name = None, filter_by_machine = False, file_handler = None, **kwargs):
         self.writeStarted.emit(self)
         self._gcode = getattr(Application.getInstance().getController().getScene(), "gcode_list")
@@ -348,20 +317,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
     def disconnect(self):
         Logger.log("d", "Connection with instance %s with url %s stopped", self._key, self._base_url)
         self.close()
-
-    newImage = pyqtSignal()
-
-    @pyqtProperty(QUrl, notify = newImage)
-    def cameraImage(self):
-        self._camera_image_id += 1
-        # There is an image provider that is called "camera". In order to ensure that the image qml object, that
-        # requires a QUrl to function, updates correctly we add an increasing number. This causes to see the QUrl
-        # as new (instead of relying on cached version and thus forces an update.
-        temp = "image://camera/" + str(self._camera_image_id)
-        return QUrl(temp, QUrl.TolerantMode)
-
-    def getCameraImage(self):
-        return self._camera_image
 
     def pausePrint(self):
         self._sendJobCommand("pause")
@@ -542,7 +497,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             if self._api_prefix + "printer" in reply.url().toString():  # Status update from /printer.
                 if not self._printers:
                     self._printers = [PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)]
-                    #self._printers[0].setCamera(NetworkCamera("http://" + self._address + ":8080/?action=stream"))
+                    self._printers[0].setCamera(NetworkCamera(self._camera_url))
                     self.printersChanged.emit()
 
                 # An OctoPrint instance has a single printer.
@@ -677,10 +632,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                     pass  # TODO: Handle errors
 
             elif self._api_prefix + "settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
-                if not self._printers:
-                    return  # Ignore the data for now, we don't have info about a printer yet.
-                printer = self._printers[0]
-
                 if http_status_code == 200:
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
@@ -708,8 +659,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         else:
                             Logger.log("w", "Unusable stream url received: %s", stream_url)
                             self._camera_url = ""
-
-                        printer.setCamera(NetworkCamera(self._camera_url))
 
                         Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
 
@@ -756,21 +705,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         else:
             Logger.log("d", "OctoPrintOutputDevice got an unhandled operation %s", reply.operation())
-
-    def _onStreamDownloadProgress(self, bytes_received, bytes_total):
-        self._stream_buffer += self._image_reply.readAll()
-
-        if self._stream_buffer_start_index == -1:
-            self._stream_buffer_start_index = self._stream_buffer.indexOf(b'\xff\xd8')
-        stream_buffer_end_index = self._stream_buffer.lastIndexOf(b'\xff\xd9')
-
-        if self._stream_buffer_start_index != -1 and stream_buffer_end_index != -1:
-            jpg_data = self._stream_buffer[self._stream_buffer_start_index:stream_buffer_end_index + 2]
-            self._stream_buffer = self._stream_buffer[stream_buffer_end_index + 2:]
-            self._stream_buffer_start_index = -1
-
-            self._camera_image.loadFromData(jpg_data)
-            self.newImage.emit()
 
     def _onUploadProgress(self, bytes_sent, bytes_total):
         if bytes_total > 0:
