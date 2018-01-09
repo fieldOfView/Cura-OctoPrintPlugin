@@ -6,6 +6,7 @@ from UM.Message import Message
 from UM.Util import parseBool
 
 from cura.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
+from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
 from cura.PrinterOutput.PrintJobOutputModel import PrintJobOutputModel
 from cura.PrinterOutput.NetworkCamera import NetworkCamera
@@ -26,9 +27,9 @@ i18n_catalog = i18nCatalog("cura")
 
 ##  OctoPrint connected (wifi / lan) printer using the OctoPrint API
 @signalemitter
-class OctoPrintOutputDevice(PrinterOutputDevice):
-    def __init__(self, key, address, port, properties):
-        super().__init__(key)
+class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
+    def __init__(self, key, address: str, port, properties, parent = None):
+        super().__init__(device_id = key, address = address, properties = properties, parent = parent)
 
         self._address = address
         self._port = port
@@ -165,6 +166,13 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
     ## IPadress of this instance
     @pyqtProperty(str, constant=True)
     def ipAddress(self):
+        return self._address
+
+    ## IPadress of this instance
+    #  Overridden from NetworkedPrinterOutputDevice because OctoPrint does not
+    #  send the ip address with zeroconf
+    @pyqtProperty(str, constant=True)
+    def address(self):
         return self._address
 
     ## port of this instance
