@@ -363,25 +363,14 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
     def getCameraImage(self):
         return self._camera_image
 
-    def _setJobState(self, job_state):
-        if job_state == "abort":
-            command = "cancel"
-        elif job_state == "print":
-            if self.jobState == "paused":
-                command = "pause"
-            else:
-                command = "start"
-        elif job_state == "pause":
-            command = "pause"
-
-        if command:
-            self._sendJobCommand(command)
-
     def pausePrint(self):
         self._sendJobCommand("pause")
 
     def resumePrint(self):
-        if self.jobState == "paused":
+        if not self._printers[0].activePrintJob:
+            return
+
+        if self._printers[0].activePrintJob.state == "paused":
             self._sendJobCommand("pause")
         else:
             self._sendJobCommand("start")
@@ -616,30 +605,36 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                     printer.updateState(printer_state)
 
                 elif http_status_code == 401:
-                    #self._updateJobState("offline")
+                    printer.updateState("offline")
+                    if printer.activePrintJob:
+                        printer.activePrintJob.updateState("offline")
                     #self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._key))
                     pass
                 elif http_status_code == 409:
                     if self._connection_state == ConnectionState.connecting:
                         self.setConnectionState(ConnectionState.connected)
 
-                    #self._updateJobState("offline")
+                    printer.updateState("offline")
+                    if printer.activePrintJob:
+                        printer.activePrintJob.updateState("offline")
                     #self.setConnectionText(i18n_catalog.i18nc("@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._key))
                 else:
-                    #self._updateJobState("offline")
+                    printer.updateState("offline")
+                    if printer.activePrintJob:
+                        printer.activePrintJob.updateState("offline")
                     Logger.log("w", "Received an unexpected returncode: %d", http_status_code)
 
             elif self._api_prefix + "job" in reply.url().toString():  # Status update from /job:
+                if not self._printers:
+                    return  # Ignore the data for now, we don't have info about a printer yet.
+                printer = self._printers[0]
+
                 if http_status_code == 200:
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
                         json_data = {}
-
-                    if not self._printers:
-                        return  # Ignore the data for now, we don't have info about a printer yet.
-                    printer = self._printers[0]
 
                     progress = json_data["progress"]["completion"]
 
@@ -650,6 +645,19 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         print_job = printer.activePrintJob
 
                     print_job.updateState(json_data["state"])
+                    print_job_state = "offline"
+                    if "state" in json_data:
+                        if json_data["state"] == "Error":
+                            print_job_state = "error"
+                        elif json_data["state"] == "Paused":
+                            print_job_state = "paused"
+                        elif json_data["state"] == "Printing":
+                            print_job_state = "printing"
+                        elif json_data["state"] == "Operational":
+                            print_job_state = "idle"
+                            printer.updateState("idle")
+                    print_job.updateState(print_job_state)
+
                     if json_data["progress"]["printTime"]:
                         print_job.updateTimeElapsed(json_data["progress"]["printTime"])
                         if json_data["progress"]["printTimeLeft"]:
@@ -665,31 +673,14 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         print_job.updateTimeTotal(0)
 
                     print_job.updateName(json_data["job"]["file"]["name"])
-
-                    '''
-                    if progress:
-                        self.setProgress(progress)
-
-                    if json_data["progress"]["printTime"]:
-                        self.setTimeElapsed(json_data["progress"]["printTime"])
-                        if json_data["progress"]["printTimeLeft"]:
-                            self.setTimeTotal(json_data["progress"]["printTime"] + json_data["progress"]["printTimeLeft"])
-                        elif json_data["job"]["estimatedPrintTime"]:
-                            self.setTimeTotal(max(json_data["job"]["estimatedPrintTime"], json_data["progress"]["printTime"]))
-                        elif progress > 0:
-                            self.setTimeTotal(json_data["progress"]["printTime"] / (progress / 100))
-                        else:
-                            self.setTimeTotal(0)
-                        pass
-                    else:
-                        self.setTimeElapsed(0)
-                        self.setTimeTotal(0)
-                    self.setJobName(json_data["job"]["file"]["name"])
-                    '''
                 else:
                     pass  # TODO: Handle errors
 
             elif self._api_prefix + "settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
+                if not self._printers:
+                    return  # Ignore the data for now, we don't have info about a printer yet.
+                printer = self._printers[0]
+
                 if http_status_code == 200:
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
@@ -717,6 +708,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         else:
                             Logger.log("w", "Unusable stream url received: %s", stream_url)
                             self._camera_url = ""
+
+                        printer.setCamera(NetworkCamera(self._camera_url))
 
                         Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
 
