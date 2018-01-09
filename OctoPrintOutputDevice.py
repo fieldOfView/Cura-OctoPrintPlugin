@@ -8,7 +8,6 @@ from UM.Util import parseBool
 from cura.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
 from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
 from cura.PrinterOutput.PrintJobOutputModel import PrintJobOutputModel
-from cura.PrinterOutput.MaterialOutputModel import MaterialOutputModel
 from cura.PrinterOutput.NetworkCamera import NetworkCamera
 
 from .OctoPrintOutputController import OctoPrintOutputController
@@ -101,10 +100,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._printer_reply = None
         self._job_reply = None
         self._command_reply = None
-
-        self._image_reply = None
-        self._stream_buffer = b""
-        self._stream_buffer_start_index = -1
 
         self._post_reply = None
         self._post_multi_part = None
@@ -293,9 +288,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._gcode = getattr(Application.getInstance().getController().getScene(), "gcode_list")
 
         self.startPrint()
-
-    def isConnected(self):
-        return self._connection_state != ConnectionState.closed and self._connection_state != ConnectionState.error
 
     ##  Start requesting data from the instance
     def connect(self):
