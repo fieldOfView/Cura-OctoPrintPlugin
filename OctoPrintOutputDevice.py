@@ -520,24 +520,27 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         if not self._number_of_extruders_set:
                             self._number_of_extruders = 0
                             while "tool%d" % self._number_of_extruders in json_data["temperature"]:
-                                self._number_of_extruders = self._number_of_extruders + 1
+                                self._number_of_extruders += 1
 
-                            # Reinitialise from PrinterOutputDevice to match the new _number_of_extruders
-                            self._hotend_temperatures = [0] * self._number_of_extruders
-                            self._target_hotend_temperatures = [0] * self._number_of_extruders
+                            if self._number_of_extruders > 1:
+                                # Recreate list of printers to match the new _number_of_extruders
+                                self._printers = [PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)]
+                                self._printers[0].setCamera(NetworkCamera(self._camera_url))
+                                self.printersChanged.emit()
+                                printer = self._printers[0]
 
                             self._number_of_extruders_set = True
 
                         # Check for hotend temperatures
                         for index in range(0, self._number_of_extruders):
+                            extruder = printer.extruders[index]
                             if ("tool%d" % index) in json_data["temperature"]:
                                 hotend_temperatures = json_data["temperature"]["tool%d" % index]
-                                #self._setHotendTemperature(index, hotend_temperatures["actual"])
-                                #self._updateTargetHotendTemperature(index, hotend_temperatures["target"])
+                                extruder.updateTargetHotendTemperature(hotend_temperatures["target"])
+                                extruder.updateHotendTemperature(hotend_temperatures["actual"])
                             else:
-                                pass
-                                #self._setHotendTemperature(index, 0)
-                                #self._updateTargetHotendTemperature(index, 0)
+                                extruder.updateTargetHotendTemperature(0)
+                                extruder.updateHotendTemperature(0)
 
                         if "bed" in json_data["temperature"]:
                             bed_temperatures = json_data["temperature"]["bed"]
