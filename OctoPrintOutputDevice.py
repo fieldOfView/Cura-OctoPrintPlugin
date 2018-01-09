@@ -395,7 +395,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                     # Ensure that the GUI keeps updated at least 20 times per second.
                     QCoreApplication.processEvents()
                     last_process_events = time()
-            print("1")
+
             job_name = Application.getInstance().getPrintInformation().jobName.strip()
             if job_name is "":
                 job_name = "untitled_print"
@@ -403,24 +403,24 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
             ##  Create multi_part request
             self._post_multi_part = QHttpMultiPart(QHttpMultiPart.FormDataType)
-            print("2")
+
             ##  Create parts (to be placed inside multipart)
             self._post_part = QHttpPart()
             self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"select\"")
             self._post_part.setBody(b"true")
             self._post_multi_part.append(self._post_part)
-            print("3")
+
             if self._auto_print and not self._forced_queue:
                 self._post_part = QHttpPart()
                 self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"print\"")
                 self._post_part.setBody(b"true")
                 self._post_multi_part.append(self._post_part)
-            print("4")
+
             self._post_part = QHttpPart()
             self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
             self._post_part.setBody(single_string_file_data.encode())
             self._post_multi_part.append(self._post_part)
-            print("5")
+
             destination = "local"
             if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
                 destination = "sdcard"
@@ -429,7 +429,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             post_request = self._createApiRequest("files/" + destination)
             self._post_reply = self._manager.post(post_request, self._post_multi_part)
             self._post_reply.uploadProgress.connect(self._onUploadProgress)
-            print("6")
+
             self._gcode = None
 
         except IOError:
