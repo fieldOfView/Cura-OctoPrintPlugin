@@ -488,9 +488,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         if reply.operation() == QNetworkAccessManager.GetOperation:
             if self._api_prefix + "printer" in reply.url().toString():  # Status update from /printer.
                 if not self._printers:
-                    self._printers = [PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)]
-                    self._printers[0].setCamera(NetworkCamera(self._camera_url))
-                    self.printersChanged.emit()
+                    self._createPrinterList()
 
                 # An OctoPrint instance has a single printer.
                 printer = self._printers[0]
@@ -516,9 +514,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
                             if self._number_of_extruders > 1:
                                 # Recreate list of printers to match the new _number_of_extruders
-                                self._printers = [PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)]
-                                self._printers[0].setCamera(NetworkCamera(self._camera_url))
-                                self.printersChanged.emit()
+                                self._createPrinterList()
                                 printer = self._printers[0]
 
                             self._number_of_extruders_set = True
@@ -717,6 +713,13 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                 self._progress_message.show()
         else:
             self._progress_message.setProgress(0)
+
+    def _createPrinterList(self):
+        printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
+        printer.setCamera(NetworkCamera(self._camera_url))
+        printer.updateName(self.name)
+        self._printers = [printer]
+        self.printersChanged.emit()
 
     def _onMessageActionTriggered(self, message, action):
         if action == "open_browser":
