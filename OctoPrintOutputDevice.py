@@ -6,6 +6,12 @@ from UM.Message import Message
 from UM.Util import parseBool
 
 from cura.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
+from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
+from cura.PrinterOutput.PrintJobOutputModel import PrintJobOutputModel
+from cura.PrinterOutput.MaterialOutputModel import MaterialOutputModel
+from cura.PrinterOutput.NetworkCamera import NetworkCamera
+
+from .OctoPrintOutputController import OctoPrintOutputController
 
 from PyQt5.QtNetwork import QHttpMultiPart, QHttpPart, QNetworkRequest, QNetworkAccessManager, QNetworkReply
 from PyQt5.QtCore import QUrl, QTimer, pyqtSignal, pyqtProperty, pyqtSlot, QCoreApplication
@@ -38,8 +44,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._forced_queue = False
 
         # We start with a single extruder, but update this when we get data from octoprint
-        self._num_extruders_set = False
-        self._num_extruders = 1
+        self._number_of_extruders_set = False
+        self._number_of_extruders = 1
 
         # Try to get version information from plugin.json
         plugin_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin.json")
@@ -83,7 +89,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self.setShortDescription(i18n_catalog.i18nc("@action:button", "Print with OctoPrint"))
         self.setDescription(i18n_catalog.i18nc("@properties:tooltip", "Print with OctoPrint"))
         self.setIconName("print")
-        self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._key))
+        #self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._key))
 
         #   QNetwork manager needs to be created in advance. If we don't it can happen that it doesn't correctly
         #   hook itself into the event loop, which results in events never being fired / done.
@@ -130,9 +136,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._recreate_network_manager_time = 30 # If we have no connection, re-create network manager every 30 sec.
         self._recreate_network_manager_count = 1
 
-        self._preheat_timer = QTimer()
-        self._preheat_timer.setSingleShot(True)
-        self._preheat_timer.timeout.connect(self.cancelPreheatBed)
+        self._output_controller = OctoPrintOutputController(self)
 
     def getProperties(self):
         return self._properties
@@ -305,7 +309,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         return request
 
     def close(self):
-        self._updateJobState("")
+        #self._updateJobState("")
         self.setConnectionState(ConnectionState.closed)
         if self._progress_message:
             self._progress_message.hide()
@@ -334,8 +338,8 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._update_timer.start()
 
         self._last_response_time = None
-        self.setAcceptsCommands(False)
-        self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._key))
+        self._setAcceptsCommands(False)
+        #self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._key))
 
         ## Request 'settings' dump
         self._settings_reply = self._manager.get(self._createApiRequest("settings"))
@@ -373,6 +377,18 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         if command:
             self._sendJobCommand(command)
 
+    def pausePrint(self):
+        self._sendJobCommand("pause")
+
+    def resumePrint(self):
+        if self.jobState == "paused":
+            self._sendJobCommand("pause")
+        else:
+            self._sendJobCommand("start")
+
+    def cancelPrint(self):
+        self._sendJobCommand("cancel")
+
     def startPrint(self):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if not global_container_stack:
@@ -389,8 +405,9 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
         self._forced_queue = False
 
-        if self.jobState not in ["ready", ""]:
-            if self.jobState == "offline":
+        if self.activePrinter.state not in ["idle", ""]:
+            Logger.log("d", "Tried starting a print, but current state is %s" % self.activePrinter.state)
+            if self.activePrinter.state == "offline":
                 self._error_message = Message(i18n_catalog.i18nc("@info:status", "The printer is offline. Unable to start a new job."))
             elif self._auto_print:
                 self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is busy. Unable to start a new job."))
@@ -413,7 +430,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         self._startPrint()
 
     def _startPrint(self):
-        self._preheat_timer.stop()
+        #self._output_controller.cancelPreheatBed()
 
         if self._auto_print and not self._forced_queue:
             Application.getInstance().showPrintMonitor.emit(True)
@@ -423,17 +440,18 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             self._progress_message.addAction("Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), None, "")
             self._progress_message.actionTriggered.connect(self._cancelSendGcode)
             self._progress_message.show()
-
+            print("0")
             ## Mash the data into single string
             single_string_file_data = ""
             last_process_events = time()
-            for line in self._gcode:
+
+            for line in self._gcode[0]:
                 single_string_file_data += line
                 if time() > last_process_events + 0.05:
                     # Ensure that the GUI keeps updated at least 20 times per second.
                     QCoreApplication.processEvents()
                     last_process_events = time()
-
+            print("1")
             job_name = Application.getInstance().getPrintInformation().jobName.strip()
             if job_name is "":
                 job_name = "untitled_print"
@@ -441,24 +459,24 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
             ##  Create multi_part request
             self._post_multi_part = QHttpMultiPart(QHttpMultiPart.FormDataType)
-
+            print("2")
             ##  Create parts (to be placed inside multipart)
             self._post_part = QHttpPart()
             self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"select\"")
             self._post_part.setBody(b"true")
             self._post_multi_part.append(self._post_part)
-
+            print("3")
             if self._auto_print and not self._forced_queue:
                 self._post_part = QHttpPart()
                 self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"print\"")
                 self._post_part.setBody(b"true")
                 self._post_multi_part.append(self._post_part)
-
+            print("4")
             self._post_part = QHttpPart()
             self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
             self._post_part.setBody(single_string_file_data.encode())
             self._post_multi_part.append(self._post_part)
-
+            print("5")
             destination = "local"
             if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
                 destination = "sdcard"
@@ -467,7 +485,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             post_request = self._createApiRequest("files/" + destination)
             self._post_reply = self._manager.post(post_request, self._post_multi_part)
             self._post_reply.uploadProgress.connect(self._onUploadProgress)
-
+            print("6")
             self._gcode = None
 
         except IOError:
@@ -491,7 +509,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         if self._progress_message:
             self._progress_message.hide()
 
-    def _sendCommand(self, command):
+    def sendCommand(self, command):
         self._sendCommandToApi("printer/command", command)
         Logger.log("d", "Sent gcode command to OctoPrint instance: %s", command)
 
@@ -508,95 +526,6 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
         else:
             data = json.dumps({"command": commands})
         self._command_reply = self._manager.post(command_request, data.encode())
-
-    ##  Pre-heats the heated bed of the printer.
-    #
-    #   \param temperature The temperature to heat the bed to, in degrees
-    #   Celsius.
-    #   \param duration How long the bed should stay warm, in seconds.
-    @pyqtSlot(float, float)
-    def preheatBed(self, temperature, duration):
-        self._setTargetBedTemperature(temperature)
-        if duration > 0:
-            self._preheat_timer.setInterval(duration * 1000)
-            self._preheat_timer.start()
-        else:
-            self._preheat_timer.stop()
-
-    ##  Cancels pre-heating the heated bed of the printer.
-    #
-    #   If the bed is not pre-heated, nothing happens.
-    @pyqtSlot()
-    def cancelPreheatBed(self):
-        self._setTargetBedTemperature(0)
-        self._preheat_timer.stop()
-
-    ##  Changes the target bed temperature on the OctoPrint instance.
-    #
-    #   /param temperature The new target temperature of the bed.
-    def _setTargetBedTemperature(self, temperature):
-        if not self._updateTargetBedTemperature(temperature):
-            Logger.log("d", "Target bed temperature is already set to %s", temperature)
-            return
-
-        Logger.log("d", "Setting bed temperature to %s", temperature)
-        self._sendCommand("M140 S%s" % temperature)
-
-    ##  Updates the target bed temperature from the printer, and emit a signal if it was changed.
-    #
-    #   /param temperature The new target temperature of the bed.
-    #   /return boolean, True if the temperature was changed, false if the new temperature has the same value as the already stored temperature
-    def _updateTargetBedTemperature(self, temperature):
-        if self._target_bed_temperature == temperature:
-            return False
-        self._target_bed_temperature = temperature
-        self.targetBedTemperatureChanged.emit()
-        return True
-
-    ##  Changes the target bed temperature on the OctoPrint instance.
-    #
-    #   /param index The index of the hotend.
-    #   /param temperature The new target temperature of the bed.
-    def _setTargetHotendTemperature(self, index, temperature):
-        if not self._updateTargetHotendTemperature(index, temperature):
-            Logger.log("d", "Target hotend %s temperature is already set to %s", index, temperature)
-            return
-
-        Logger.log("d", "Setting hotend %s temperature to %s", index, temperature)
-        self._sendCommand("M104 T%s S%s" % (index, temperature))
-
-    ##  Updates the target hotend temperature from the printer, and emit a signal if it was changed.
-    #
-    #   /param index The index of the hotend.
-    #   /param temperature The new target temperature of the hotend.
-    #   /return boolean, True if the temperature was changed, false if the new temperature has the same value as the already stored temperature
-    def _updateTargetHotendTemperature(self, index, temperature):
-        if self._target_hotend_temperatures[index] == temperature:
-            return False
-        self._target_hotend_temperatures[index] = temperature
-        self.targetHotendTemperaturesChanged.emit()
-        return True
-
-    def _setHeadPosition(self, x, y , z, speed):
-        self._sendCommand("G0 X%s Y%s Z%s F%s" % (x, y, z, speed))
-
-    def _setHeadX(self, x, speed):
-        self._sendCommand("G0 X%s F%s" % (x, speed))
-
-    def _setHeadY(self, y, speed):
-        self._sendCommand("G0 Y%s F%s" % (y, speed))
-
-    def _setHeadZ(self, z, speed):
-        self._sendCommand("G0 Z%s F%s" % (z, speed))
-
-    def _homeHead(self):
-        self._sendCommand("G28 X Y")
-
-    def _homeBed(self):
-        self._sendCommand("G28 Z")
-
-    def _moveHead(self, x, y, z, speed):
-        self._sendCommand(["G91", "G0 X%s Y%s Z%s F%s" % (x, y, z, speed), "G90"])
 
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply):
@@ -622,10 +551,18 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
         if reply.operation() == QNetworkAccessManager.GetOperation:
             if self._api_prefix + "printer" in reply.url().toString():  # Status update from /printer.
+                if not self._printers:
+                    self._printers = [PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)]
+                    #self._printers[0].setCamera(NetworkCamera("http://" + self._address + ":8080/?action=stream"))
+                    self.printersChanged.emit()
+
+                # An OctoPrint instance has a single printer.
+                printer = self._printers[0]
+
                 if http_status_code == 200:
                     if not self.acceptsCommands:
-                        self.setAcceptsCommands(True)
-                        self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._key))
+                        self._setAcceptsCommands(True)
+                        #self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._key))
 
                     if self._connection_state == ConnectionState.connecting:
                         self.setConnectionState(ConnectionState.connected)
@@ -636,58 +573,60 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         json_data = {}
 
                     if "temperature" in json_data:
-                        if not self._num_extruders_set:
-                            self._num_extruders = 0
-                            while "tool%d" % self._num_extruders in json_data["temperature"]:
-                                self._num_extruders = self._num_extruders + 1
+                        if not self._number_of_extruders_set:
+                            self._number_of_extruders = 0
+                            while "tool%d" % self._number_of_extruders in json_data["temperature"]:
+                                self._number_of_extruders = self._number_of_extruders + 1
 
-                            # Reinitialise from PrinterOutputDevice to match the new _num_extruders
-                            self._hotend_temperatures = [0] * self._num_extruders
-                            self._target_hotend_temperatures = [0] * self._num_extruders
+                            # Reinitialise from PrinterOutputDevice to match the new _number_of_extruders
+                            self._hotend_temperatures = [0] * self._number_of_extruders
+                            self._target_hotend_temperatures = [0] * self._number_of_extruders
 
-                            self._num_extruders_set = True
+                            self._number_of_extruders_set = True
 
                         # Check for hotend temperatures
-                        for index in range(0, self._num_extruders):
+                        for index in range(0, self._number_of_extruders):
                             if ("tool%d" % index) in json_data["temperature"]:
                                 hotend_temperatures = json_data["temperature"]["tool%d" % index]
-                                self._setHotendTemperature(index, hotend_temperatures["actual"])
-                                self._updateTargetHotendTemperature(index, hotend_temperatures["target"])
+                                #self._setHotendTemperature(index, hotend_temperatures["actual"])
+                                #self._updateTargetHotendTemperature(index, hotend_temperatures["target"])
                             else:
-                                self._setHotendTemperature(index, 0)
-                                self._updateTargetHotendTemperature(index, 0)
+                                pass
+                                #self._setHotendTemperature(index, 0)
+                                #self._updateTargetHotendTemperature(index, 0)
 
                         if "bed" in json_data["temperature"]:
                             bed_temperatures = json_data["temperature"]["bed"]
-                            self._setBedTemperature(bed_temperatures["actual"])
-                            self._updateTargetBedTemperature(bed_temperatures["target"])
+                            printer.updateBedTemperature(bed_temperatures["actual"])
+                            printer.updateTargetBedTemperature(bed_temperatures["target"])
                         else:
-                            self._setBedTemperature(0)
-                            self._updateTargetBedTemperature(0)
+                            printer.updateBedTemperature(0)
+                            printer.updateTargetBedTemperature(0)
 
-                    job_state = "offline"
+                    printer_state = "offline"
                     if "state" in json_data:
                         if json_data["state"]["flags"]["error"]:
-                            job_state = "error"
+                            printer_state = "error"
                         elif json_data["state"]["flags"]["paused"]:
-                            job_state = "paused"
+                            printer_state = "paused"
                         elif json_data["state"]["flags"]["printing"]:
-                            job_state = "printing"
+                            printer_state = "printing"
                         elif json_data["state"]["flags"]["ready"]:
-                            job_state = "ready"
-                    self._updateJobState(job_state)
+                            printer_state = "idle"
+                    printer.updateState(printer_state)
 
                 elif http_status_code == 401:
-                    self._updateJobState("offline")
-                    self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._key))
+                    #self._updateJobState("offline")
+                    #self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._key))
+                    pass
                 elif http_status_code == 409:
                     if self._connection_state == ConnectionState.connecting:
                         self.setConnectionState(ConnectionState.connected)
 
-                    self._updateJobState("offline")
-                    self.setConnectionText(i18n_catalog.i18nc("@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._key))
+                    #self._updateJobState("offline")
+                    #self.setConnectionText(i18n_catalog.i18nc("@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._key))
                 else:
-                    self._updateJobState("offline")
+                    #self._updateJobState("offline")
                     Logger.log("w", "Received an unexpected returncode: %d", http_status_code)
 
             elif self._api_prefix + "job" in reply.url().toString():  # Status update from /job:
@@ -698,7 +637,36 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
                         json_data = {}
 
+                    if not self._printers:
+                        return  # Ignore the data for now, we don't have info about a printer yet.
+                    printer = self._printers[0]
+
                     progress = json_data["progress"]["completion"]
+
+                    if printer.activePrintJob is None:
+                        print_job = PrintJobOutputModel(output_controller=self._output_controller)
+                        printer.updateActivePrintJob(print_job)
+                    else:
+                        print_job = printer.activePrintJob
+
+                    print_job.updateState(json_data["state"])
+                    if json_data["progress"]["printTime"]:
+                        print_job.updateTimeElapsed(json_data["progress"]["printTime"])
+                        if json_data["progress"]["printTimeLeft"]:
+                            print_job.updateTimeTotal(json_data["progress"]["printTime"] + json_data["progress"]["printTimeLeft"])
+                        elif json_data["job"]["estimatedPrintTime"]:
+                            print_job.updateTimeTotal(max(json_data["job"]["estimatedPrintTime"], json_data["progress"]["printTime"]))
+                        elif progress > 0:
+                            print_job.updateTimeTotal(json_data["progress"]["printTime"] / (progress / 100))
+                        else:
+                            print_job.updateTimeTotal(0)
+                    else:
+                        print_job.updateTimeElapsed(0)
+                        print_job.updateTimeTotal(0)
+
+                    print_job.updateName(json_data["job"]["file"]["name"])
+
+                    '''
                     if progress:
                         self.setProgress(progress)
 
@@ -712,10 +680,12 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
                             self.setTimeTotal(json_data["progress"]["printTime"] / (progress / 100))
                         else:
                             self.setTimeTotal(0)
+                        pass
                     else:
                         self.setTimeElapsed(0)
                         self.setTimeTotal(0)
                     self.setJobName(json_data["job"]["file"]["name"])
+                    '''
                 else:
                     pass  # TODO: Handle errors
 
