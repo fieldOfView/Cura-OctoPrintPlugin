@@ -89,7 +89,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self.setShortDescription(i18n_catalog.i18nc("@action:button", "Print with OctoPrint"))
         self.setDescription(i18n_catalog.i18nc("@properties:tooltip", "Print with OctoPrint"))
         self.setIconName("print")
-        #self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._key))
+        self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._key))
 
         #   QNetwork manager needs to be created in advance. If we don't it can happen that it doesn't correctly
         #   hook itself into the event loop, which results in events never being fired / done.
@@ -308,7 +308,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._last_response_time = None
         self._setAcceptsCommands(False)
-        #self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._key))
+        self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._key))
 
         ## Request 'settings' dump
         self._settings_reply = self._manager.get(self._createApiRequest("settings"))
@@ -504,7 +504,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 if http_status_code == 200:
                     if not self.acceptsCommands:
                         self._setAcceptsCommands(True)
-                        #self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._key))
+                        self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._key))
 
                     if self._connection_state == ConnectionState.connecting:
                         self.setConnectionState(ConnectionState.connected)
@@ -562,7 +562,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     printer.updateState("offline")
                     if printer.activePrintJob:
                         printer.activePrintJob.updateState("offline")
-                    #self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._key))
+                    self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._key))
                     pass
                 elif http_status_code == 409:
                     if self._connection_state == ConnectionState.connecting:
@@ -571,7 +571,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     printer.updateState("offline")
                     if printer.activePrintJob:
                         printer.activePrintJob.updateState("offline")
-                    #self.setConnectionText(i18n_catalog.i18nc("@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._key))
+                    self.setConnectionText(i18n_catalog.i18nc("@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._key))
                 else:
                     printer.updateState("offline")
                     if printer.activePrintJob:
