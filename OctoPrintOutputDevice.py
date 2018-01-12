@@ -377,7 +377,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         #self._output_controller.cancelPreheatBed()
 
         if self._auto_print and not self._forced_queue:
-            Application.getInstance().showPrintMonitor.emit(True)
+            Application.getInstance().getController().setActiveStage("MonitorStage")
 
         try:
             self._progress_message = Message(i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"), 0, False, -1)
