@@ -5,6 +5,7 @@ from UM.Application import Application
 
 from UM.Settings.ContainerRegistry import ContainerRegistry
 from cura.MachineAction import MachineAction
+from cura.Settings.CuraStackBuilder import CuraStackBuilder
 
 from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject
 from PyQt5.QtQml import QQmlComponent, QQmlContext
