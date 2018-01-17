@@ -26,6 +26,30 @@ class OctoPrintOutputController(PrinterOutputController):
 
         self.can_control_manually = True
 
+        self._output_device.printersChanged.connect(self._onPrintersChanged)
+        self._active_printer = None
+        self._active_printer_state = ""
+
+    def _onPrintersChanged(self):
+        if self._active_printer:
+            self._active_printer.stateChanged.disconnect(self._onPrinterStateChanged)
+
+        self._active_printer = self._output_device.activePrinter
+        if self._active_printer:
+            self._active_printer.stateChanged.connect(self._onPrinterStateChanged)
+
+    def _onPrinterStateChanged(self):
+        self._active_printer_state = self._output_device.activePrinter.state
+
+        if self._active_printer_state != "idle":
+            if self._preheat_bed_timer.isActive():
+                self._preheat_bed_timer.stop()
+                self._preheat_printer.updateIsPreheating(False)
+            if self._preheat_hotends_timer.isActive():
+                self._preheat_hotends_timer.stop()
+                for extruder in self._preheat_hotends:
+                    extruder.updateIsPreheating(False)
+                self._preheat_hotends = set()
 
     def setJobState(self, job: "PrintJobOutputModel", state: str):
         if state == "pause":
@@ -40,9 +64,14 @@ class OctoPrintOutputController(PrinterOutputController):
 
     def setTargetBedTemperature(self, printer: "PrinterOutputModel", temperature: int):
         self._output_device.sendCommand("M140 S%s" % temperature)
+        if temperature == 0:
+            self._preheat_bed_timer.stop()
+            printer.updateIsPreheating(False)
 
     def setTargetHotendTemperature(self, printer: "PrinterOutputModel", position: int, temperature: int):
         self._output_device.sendCommand("M104 S%s T%s" % (temperature, position))
+        if temperature == 0:
+            printer.extruders[position].updateIsPreheating(False)
 
     def moveHead(self, printer: "PrinterOutputModel", x, y, z, speed):
         self._output_device.sendCommand(["G91", "G0 X%s Y%s Z%s F%s" % (x, y, z, speed), "G90"])
@@ -58,9 +87,9 @@ class OctoPrintOutputController(PrinterOutputController):
         self._preheat_printer.updateIsPreheating(False)
 
     def cancelPreheatBed(self, printer: "PrinterOutputModel"):
-        self.preheatBed(printer, temperature=0, duration=0)
+        if self._active_printer_state == "idle":
+            self.preheatBed(printer, temperature=0, duration=0)
         self._preheat_bed_timer.stop()
-        printer.updateIsPreheating(False)
 
     def preheatBed(self, printer: "PrinterOutputModel", temperature, duration):
         try:
@@ -79,15 +108,17 @@ class OctoPrintOutputController(PrinterOutputController):
         for extruder in self._preheat_hotends:
             self.setTargetHotendTemperature(extruder.getPrinter(), extruder.getPosition(), 0)
         self._preheat_hotends = set()
-        self._preheat_printer.updateIsPreheating(False)
 
     def cancelPreheatHotend(self, extruder: "ExtruderOutputModel"):
-        self.preheatHotend(extruder, temperature=0, duration=0)
-        self._preheat_hotends_timer.stop()
+        if self._active_printer_state == "idle":
+            self.preheatHotend(extruder, temperature=0, duration=0)
+
         try:
             self._preheat_hotends.remove(extruder)
         except KeyError:
             pass
+        if not self._preheat_hotends:
+            self._preheat_hotends_timer.stop()
         extruder.updateIsPreheating(False)
 
     def preheatHotend(self, extruder: "ExtruderOutputModel", temperature, duration):
@@ -107,4 +138,3 @@ class OctoPrintOutputController(PrinterOutputController):
         self._preheat_hotends_timer.start()
         self._preheat_hotends.add(extruder)
         extruder.updateIsPreheating(True)
-
