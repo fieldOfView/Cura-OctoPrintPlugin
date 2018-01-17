@@ -33,10 +33,16 @@ class OctoPrintOutputController(PrinterOutputController):
     def _onPrintersChanged(self):
         if self._active_printer:
             self._active_printer.stateChanged.disconnect(self._onPrinterStateChanged)
+            self._active_printer.targetBedTemperatureChanged.disconnect(self._onTargetBedTemperatureChanged)
+            for extruder in self._active_printer.extruders:
+                extruder.targetHotendTemperatureChanged.disconnect(self._onTargetHotendTemperatureChanged)
 
         self._active_printer = self._output_device.activePrinter
         if self._active_printer:
             self._active_printer.stateChanged.connect(self._onPrinterStateChanged)
+            self._active_printer.targetBedTemperatureChanged.connect(self._onTargetBedTemperatureChanged)
+            for extruder in self._active_printer.extruders:
+                extruder.targetHotendTemperatureChanged.connect(self._onTargetHotendTemperatureChanged)
 
     def _onPrinterStateChanged(self):
         self._active_printer_state = self._output_device.activePrinter.state
@@ -64,14 +70,25 @@ class OctoPrintOutputController(PrinterOutputController):
 
     def setTargetBedTemperature(self, printer: "PrinterOutputModel", temperature: int):
         self._output_device.sendCommand("M140 S%s" % temperature)
-        if temperature == 0:
+
+    def _onTargetBedTemperatureChanged(self):
+        if self._preheat_printer.targetBedTemperature == 0 and self._preheat_bed_timer.isActive():
             self._preheat_bed_timer.stop()
-            printer.updateIsPreheating(False)
+            self._preheat_printer.updateIsPreheating(False)
 
     def setTargetHotendTemperature(self, printer: "PrinterOutputModel", position: int, temperature: int):
         self._output_device.sendCommand("M104 S%s T%s" % (temperature, position))
-        if temperature == 0:
-            printer.extruders[position].updateIsPreheating(False)
+
+    def _onTargetHotendTemperatureChanged(self):
+        if not self._preheat_hotends_timer.isActive():
+            return
+
+        for extruder in self._active_printer.extruders:
+            if extruder in self._preheat_hotends and extruder.targetHotendTemperature == 0:
+                extruder.updateIsPreheating(False)
+                self._preheat_hotends.remove(extruder)
+        if not self._preheat_hotends:
+            self._preheat_hotends_timer.stop()
 
     def moveHead(self, printer: "PrinterOutputModel", x, y, z, speed):
         self._output_device.sendCommand(["G91", "G0 X%s Y%s Z%s F%s" % (x, y, z, speed), "G90"])
