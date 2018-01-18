@@ -42,9 +42,7 @@ class OctoPrintOutputController(PrinterOutputController):
                 extruder.targetHotendTemperatureChanged.connect(self._onTargetHotendTemperatureChanged)
 
     def _onPrinterStateChanged(self):
-        self._active_printer_state = self._output_device.activePrinter.state
-
-        if self._active_printer_state != "idle":
+        if self._active_printer.state != "idle":
             if self._preheat_bed_timer.isActive():
                 self._preheat_bed_timer.stop()
                 self._preheat_printer.updateIsPreheating(False)
@@ -83,7 +81,7 @@ class OctoPrintOutputController(PrinterOutputController):
         self._output_device.sendCommand("M140 S%s" % temperature)
 
     def _onTargetBedTemperatureChanged(self):
-        if self._preheat_printer.targetBedTemperature == 0 and self._preheat_bed_timer.isActive():
+        if self._preheat_bed_timer.isActive() and self._preheat_printer.targetBedTemperature == 0:
             self._preheat_bed_timer.stop()
             self._preheat_printer.updateIsPreheating(False)
 
