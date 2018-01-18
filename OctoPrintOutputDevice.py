@@ -293,7 +293,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def requestWrite(self, node, file_name = None, filter_by_machine = False, file_handler = None, **kwargs):
         self.writeStarted.emit(self)
-        self._gcode = getattr(Application.getInstance().getController().getScene(), "gcode_list")
+        self._gcode = getattr(Application.getInstance().getController().getScene(), "gcode_dict")
 
         self.startPrint()
 
