@@ -11,7 +11,7 @@ from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
 from cura.PrinterOutput.PrintJobOutputModel import PrintJobOutputModel
 from cura.PrinterOutput.NetworkCamera import NetworkCamera
 
-from .OctoPrintOutputController import OctoPrintOutputController
+from cura.PrinterOutput.GenericOutputController import GenericOutputController
 
 from PyQt5.QtNetwork import QHttpMultiPart, QHttpPart, QNetworkRequest, QNetworkAccessManager, QNetworkReply
 from PyQt5.QtCore import QUrl, QTimer, pyqtSignal, pyqtProperty, pyqtSlot, QCoreApplication
@@ -130,7 +130,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._recreate_network_manager_time = 30 # If we have no connection, re-create network manager every 30 sec.
         self._recreate_network_manager_count = 1
 
-        self._output_controller = OctoPrintOutputController(self)
+        self._output_controller = GenericOutputController(self)
 
     def getProperties(self):
         return self._properties
