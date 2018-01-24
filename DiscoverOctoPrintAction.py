@@ -199,7 +199,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
     @pyqtSlot(str, str, str)
     def setContainerMetaDataEntry(self, container_id, key, value):
-        containers = ContainerRegistry.getInstance().findContainers(None, id = container_id)
+        containers = ContainerRegistry.getInstance().findContainers(id = container_id)
         if not containers:
             UM.Logger.log("w", "Could not set metadata of container %s because it was not found.", container_id)
             return False
