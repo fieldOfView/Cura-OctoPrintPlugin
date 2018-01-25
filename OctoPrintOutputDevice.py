@@ -756,18 +756,19 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
                         Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
 
-                        self._camera_rotation = -90 if json_data["webcam"]["rotate90"] else 0
-                        if json_data["webcam"]["flipH"] and json_data["webcam"]["flipV"]:
-                            self._camera_mirror = False
-                            self._camera_rotation += 180
-                        elif json_data["webcam"]["flipH"]:
-                            self._camera_mirror = True
-                        elif json_data["webcam"]["flipV"]:
-                            self._camera_mirror = True
-                            self._camera_rotation += 180
-                        else:
-                            self._camera_mirror = False
-                        self.cameraOrientationChanged.emit()
+                        if "rotate90" in json_data["webcam"]:
+                            self._camera_rotation = -90 if json_data["webcam"]["rotate90"] else 0
+                            if json_data["webcam"]["flipH"] and json_data["webcam"]["flipV"]:
+                                self._camera_mirror = False
+                                self._camera_rotation += 180
+                            elif json_data["webcam"]["flipH"]:
+                                self._camera_mirror = True
+                            elif json_data["webcam"]["flipV"]:
+                                self._camera_mirror = True
+                                self._camera_rotation += 180
+                            else:
+                                self._camera_mirror = False
+                            self.cameraOrientationChanged.emit()
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if self._api_prefix + "files" in reply.url().toString():  # Result from /files command:
