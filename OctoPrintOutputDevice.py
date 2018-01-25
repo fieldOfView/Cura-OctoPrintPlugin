@@ -317,7 +317,13 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
     def requestWrite(self, node, file_name = None, filter_by_machine = False, file_handler = None, **kwargs):
         self.writeStarted.emit(self)
-        self._gcode = getattr(Application.getInstance().getController().getScene(), "gcode_dict")
+
+        active_build_plate = Application.getInstance().getBuildPlateModel().activeBuildPlate
+        scene = Application.getInstance().getController().getScene()
+        gcode_dict = getattr(scene, "gcode_dict", None)
+        if not gcode_dict:
+            return
+        self._gcode = gcode_dict.get(active_build_plate, None)
 
         self.startPrint()
 
@@ -427,7 +433,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             ## Mash the data into single string
             single_string_file_data = ""
             last_process_events = time()
-            for line in self._gcode[0]:
+            for line in self._gcode:
                 single_string_file_data += line
                 if time() > last_process_events + 0.05:
                     # Ensure that the GUI keeps updated at least 20 times per second.
