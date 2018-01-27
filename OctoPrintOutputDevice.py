@@ -466,7 +466,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
             self._post_multi_part.append(self._post_part)
 
             destination = "local"
-            if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
+            if self._sd_supported and parseBool(Application.getInstance().getGlobalContainerStack().getMetaDataEntry("octoprint_store_sd", False)):
                 destination = "sdcard"
 
             ##  Post request + data
@@ -779,7 +779,7 @@ class OctoPrintOutputDevice(PrinterOutputDevice):
 
                 reply.uploadProgress.disconnect(self._onUploadProgress)
                 self._progress_message.hide()
-                global_container_stack = Application.getInstance().getGlobalContainerStack()
+
                 if self._forced_queue or not self._auto_print:
                     location = reply.header(QNetworkRequest.LocationHeader)
                     if location:
