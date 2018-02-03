@@ -2,7 +2,7 @@
     "name": "OctoPrint connection",
     "author": "fieldOfView",
     "version": "master",
-    "description": "Enables sending prints to OctoPrint and monitoring the progress",
+    "description": "Enables networked printing and monitoring with OctoPrint",
     "api": 4,
     "i18n-catalog": "cura"
 }
