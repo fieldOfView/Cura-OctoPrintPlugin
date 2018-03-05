@@ -7,6 +7,7 @@ Component
         Image
         {
             id: cameraImage
+            property real maximumZoom: 2
             property bool rotatedImage: (OutputDevice.cameraOrientation.rotation / 90) % 2
             property bool proportionalHeight:
             {
@@ -27,22 +28,22 @@ Component
             {
                 if(!rotatedImage)
                 {
-                    return Math.min(maximumWidth, sourceSize.width);
+                    return Math.min(maximumWidth, sourceSize.width * screenScaleFactor * maximumZoom);
                 }
                 else
                 {
-                    return Math.min(maximumHeight, sourceSize.width);
+                    return Math.min(maximumHeight, sourceSize.width * screenScaleFactor * maximumZoom);
                 }
             }
             property real _height:
             {
                 if(!rotatedImage)
                 {
-                    return Math.min(maximumHeight, sourceSize.height);
+                    return Math.min(maximumHeight, sourceSize.height * screenScaleFactor * maximumZoom);
                 }
                 else
                 {
-                    return Math.min(maximumWidth, sourceSize.height);
+                    return Math.min(maximumWidth, sourceSize.height * screenScaleFactor * maximumZoom);
                 }
             }
             width: proportionalHeight ? _width : sourceSize.width * _height / sourceSize.height
