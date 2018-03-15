@@ -595,8 +595,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
                         json_data = {}
 
-                    progress = json_data["progress"]["completion"]
-
                     if printer.activePrintJob is None:
                         print_job = PrintJobOutputModel(output_controller=self._output_controller)
                         printer.updateActivePrintJob(print_job)
@@ -622,8 +620,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             print_job.updateTimeTotal(json_data["progress"]["printTime"] + json_data["progress"]["printTimeLeft"])
                         elif json_data["job"]["estimatedPrintTime"]:
                             print_job.updateTimeTotal(max(json_data["job"]["estimatedPrintTime"], json_data["progress"]["printTime"]))
-                        elif progress > 0:
-                            print_job.updateTimeTotal(json_data["progress"]["printTime"] / (progress / 100))
+                        elif json_data["progress"]["completion"]: # not 0 or None or ""
+                            print_job.updateTimeTotal(json_data["progress"]["printTime"] / (json_data["progress"]["completion"] / 100))
                         else:
                             print_job.updateTimeTotal(0)
                     else:
