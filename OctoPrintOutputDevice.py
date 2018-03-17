@@ -530,7 +530,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                                 self._createPrinterList()
                                 printer = self._printers[0]
 
-                            self._number_of_extruders_set = True
+                            if self._number_of_extruders > 0:
+                                self._number_of_extruders_set = True
 
                         # Check for hotend temperatures
                         for index in range(0, self._number_of_extruders):
