@@ -110,6 +110,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._error_message = None
         self._connection_message = None
 
+        self._queued_gcode_commands = []
+        self._queued_gcode_timer = QTimer()
+        self._queued_gcode_timer.setInterval(0)
+        self._queued_gcode_timer.setSingleShot(True)
+        self._queued_gcode_timer.timeout.connect(self._sendQueuedGcode)
+
         self._update_timer = QTimer()
         self._update_timer.setInterval(2000)  # TODO; Add preference for update interval
         self._update_timer.setSingleShot(False)
@@ -283,7 +289,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         return request
 
     def close(self):
-        #self._updateJobState("")
         self.setConnectionState(ConnectionState.closed)
         if self._progress_message:
             self._progress_message.hide()
@@ -380,8 +385,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._startPrint()
 
     def _startPrint(self):
-        #self._output_controller.cancelPreheatBed()
-
         if self._auto_print and not self._forced_queue:
             Application.getInstance().getController().setActiveStage("MonitorStage")
 
@@ -459,8 +462,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
 
     def sendCommand(self, command):
-        self._sendCommandToApi("printer/command", command)
-        Logger.log("d", "Sent gcode command to OctoPrint instance: %s", command)
+        self._queued_gcode_commands.append(command)
+        self._queued_gcode_timer.start()
+
+    # Send gcode commands that are queued in quick succession as a single batch
+    def _sendQueuedGcode(self):
+        if self._queued_gcode_commands:
+            self._sendCommandToApi("printer/command", self._queued_gcode_commands)
+            Logger.log("d", "Sent gcode command to OctoPrint instance: %s", self._queued_gcode_commands)
+            self._queued_gcode_commands = []
 
     def _sendJobCommand(self, command):
         self._sendCommandToApi("job", command)
@@ -700,9 +710,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     message.actionTriggered.connect(self._onMessageActionTriggered)
                     message.show()
 
-            elif self._api_prefix + "job" in reply.url().toString():  # Result from /job command:
+            elif self._api_prefix + "job" in reply.url().toString():  # Result from /job command (eg start/pause):
                 if http_status_code == 204:
-                    Logger.log("d", "Octoprint command accepted")
+                    Logger.log("d", "Octoprint job command accepted")
+                else:
+                    pass  # TODO: Handle errors
+
+            elif self._api_prefix + "printer/command" in reply.url().toString():  # Result from /printer/command (gcode statements):
+                if http_status_code == 204:
+                    Logger.log("d", "Octoprint gcode command(s) accepted")
                 else:
                     pass  # TODO: Handle errors
 
