@@ -388,6 +388,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if self._auto_print and not self._forced_queue:
             Application.getInstance().getController().setActiveStage("MonitorStage")
 
+            # cancel any ongoing preheat timer before starting a print
+            try:
+                self._printers[0].stopPreheatTimers()
+            except AttributeError:
+                # stopPreheatTimers was added after Cura 3.3 beta
+                pass
+
         try:
             self._progress_message = Message(i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"), 0, False, -1)
             self._progress_message.addAction("Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), None, "")
