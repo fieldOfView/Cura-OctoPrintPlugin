@@ -395,57 +395,55 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 # stopPreheatTimers was added after Cura 3.3 beta
                 pass
 
-        try:
-            self._progress_message = Message(i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"), 0, False, -1)
-            self._progress_message.addAction("Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), None, "")
-            self._progress_message.actionTriggered.connect(self._cancelSendGcode)
-            self._progress_message.show()
+        self._progress_message = Message(i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"), 0, False, -1)
+        self._progress_message.addAction("Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), None, "")
+        self._progress_message.actionTriggered.connect(self._cancelSendGcode)
+        self._progress_message.show()
 
-            ## Mash the data into single string
-            single_string_file_data = ""
-            last_process_events = time()
-            for line in self._gcode:
-                single_string_file_data += line
-                if time() > last_process_events + 0.05:
-                    # Ensure that the GUI keeps updated at least 20 times per second.
-                    QCoreApplication.processEvents()
-                    last_process_events = time()
+        ## Mash the data into single string
+        single_string_file_data = ""
+        last_process_events = time()
+        for line in self._gcode:
+            single_string_file_data += line
+            if time() > last_process_events + 0.05:
+                # Ensure that the GUI keeps updated at least 20 times per second.
+                QCoreApplication.processEvents()
+                last_process_events = time()
 
-            job_name = Application.getInstance().getPrintInformation().jobName.strip()
-            if job_name is "":
-                job_name = "untitled_print"
-            file_name = "%s.gcode" % job_name
+        job_name = Application.getInstance().getPrintInformation().jobName.strip()
+        if job_name is "":
+            job_name = "untitled_print"
+        file_name = "%s.gcode" % job_name
 
-            ##  Create multi_part request
-            self._post_multi_part = QHttpMultiPart(QHttpMultiPart.FormDataType)
+        ##  Create multi_part request
+        self._post_multi_part = QHttpMultiPart(QHttpMultiPart.FormDataType)
 
-            ##  Create parts (to be placed inside multipart)
+        ##  Create parts (to be placed inside multipart)
+        self._post_part = QHttpPart()
+        self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"select\"")
+        self._post_part.setBody(b"true")
+        self._post_multi_part.append(self._post_part)
+
+        if self._auto_print and not self._forced_queue:
             self._post_part = QHttpPart()
-            self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"select\"")
+            self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"print\"")
             self._post_part.setBody(b"true")
             self._post_multi_part.append(self._post_part)
 
-            if self._auto_print and not self._forced_queue:
-                self._post_part = QHttpPart()
-                self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"print\"")
-                self._post_part.setBody(b"true")
-                self._post_multi_part.append(self._post_part)
+        self._post_part = QHttpPart()
+        self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
+        self._post_part.setBody(single_string_file_data.encode())
+        self._post_multi_part.append(self._post_part)
 
-            self._post_part = QHttpPart()
-            self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
-            self._post_part.setBody(single_string_file_data.encode())
-            self._post_multi_part.append(self._post_part)
+        destination = "local"
+        if self._sd_supported and parseBool(Application.getInstance().getGlobalContainerStack().getMetaDataEntry("octoprint_store_sd", False)):
+            destination = "sdcard"
 
-            destination = "local"
-            if self._sd_supported and parseBool(Application.getInstance().getGlobalContainerStack().getMetaDataEntry("octoprint_store_sd", False)):
-                destination = "sdcard"
-
+        try:
             ##  Post request + data
             post_request = self._createApiRequest("files/" + destination)
             self._post_reply = self._manager.post(post_request, self._post_multi_part)
             self._post_reply.uploadProgress.connect(self._onUploadProgress)
-
-            self._gcode = None
 
         except IOError:
             self._progress_message.hide()
@@ -454,6 +452,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         except Exception as e:
             self._progress_message.hide()
             Logger.log("e", "An exception occurred in network connection: %s" % str(e))
+
+        self._gcode = None
 
     def _cancelSendGcode(self, message_id, action_id):
         if self._post_reply:
