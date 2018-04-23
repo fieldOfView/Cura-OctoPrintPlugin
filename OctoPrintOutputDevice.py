@@ -104,7 +104,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._post_reply = None
         self._post_multi_part = None
-        self._post_part = None
 
         self._progress_message = None
         self._error_message = None
@@ -419,21 +418,21 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._post_multi_part = QHttpMultiPart(QHttpMultiPart.FormDataType)
 
         ##  Create parts (to be placed inside multipart)
-        self._post_part = QHttpPart()
-        self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"select\"")
-        self._post_part.setBody(b"true")
-        self._post_multi_part.append(self._post_part)
+        post_part = QHttpPart()
+        post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"select\"")
+        post_part.setBody(b"true")
+        self._post_multi_part.append(post_part)
 
         if self._auto_print and not self._forced_queue:
-            self._post_part = QHttpPart()
-            self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"print\"")
-            self._post_part.setBody(b"true")
-            self._post_multi_part.append(self._post_part)
+            post_part = QHttpPart()
+            post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"print\"")
+            post_part.setBody(b"true")
+            self._post_multi_part.append(post_part)
 
-        self._post_part = QHttpPart()
-        self._post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
-        self._post_part.setBody(single_string_file_data.encode())
-        self._post_multi_part.append(self._post_part)
+        post_part = QHttpPart()
+        post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
+        post_part.setBody(single_string_file_data.encode())
+        self._post_multi_part.append(post_part)
 
         destination = "local"
         if self._sd_supported and parseBool(Application.getInstance().getGlobalContainerStack().getMetaDataEntry("octoprint_store_sd", False)):
