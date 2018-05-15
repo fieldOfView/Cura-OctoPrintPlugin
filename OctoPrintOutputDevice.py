@@ -564,7 +564,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             bed_temperatures = json_data["temperature"]["bed"]
                             actual_temperature = bed_temperatures["actual"] if bed_temperatures["actual"] is not None else -1
                             printer.updateBedTemperature(actual_temperature)
-                            printer.updateTargetBedTemperature(bed_temperatures["target"])
+                            target_temperature = bed_temperatures["target"] if bed_temperatures["target"] is not None else -1
+                            printer.updateTargetBedTemperature(target_temperature)
                         else:
                             printer.updateBedTemperature(-1)
                             printer.updateTargetBedTemperature(0)
