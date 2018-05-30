@@ -631,14 +631,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             printer.updateState("idle")
                     print_job.updateState(print_job_state)
 
-                    if json_data["progress"]["printTime"]:
-                        print_job.updateTimeElapsed(json_data["progress"]["printTime"])
-                        if json_data["progress"]["printTimeLeft"]:
-                            print_job.updateTimeTotal(json_data["progress"]["printTime"] + json_data["progress"]["printTimeLeft"])
-                        elif json_data["job"]["estimatedPrintTime"]:
-                            print_job.updateTimeTotal(max(json_data["job"]["estimatedPrintTime"], json_data["progress"]["printTime"]))
-                        elif json_data["progress"]["completion"]: # not 0 or None or ""
-                            print_job.updateTimeTotal(json_data["progress"]["printTime"] / (json_data["progress"]["completion"] / 100))
+                    print_time = json_data["progress"]["printTime"]
+                    if print_time:
+                        print_job.updateTimeElapsed(print_time)
+                        if json_data["progress"]["completion"]: # not 0 or None or ""
+                            print_job.updateTimeTotal(print_time / (json_data["progress"]["completion"] / 100))
                         else:
                             print_job.updateTimeTotal(0)
                     else:
