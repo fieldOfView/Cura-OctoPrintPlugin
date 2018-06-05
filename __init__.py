@@ -29,18 +29,21 @@ def __matchVersion():
         Logger.log("d", "Running Cura from source, ignoring version of the plugin")
         return True
     cura_version = Version(cura_version)
+    cura_version = Version([cura_version.getMajor(), cura_version.getMinor()])
 
     # Get version information from plugin.json
     plugin_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin.json")
     try:
         with open(plugin_file_path) as plugin_file:
             plugin_info = json.load(plugin_file)
-            plugin_version = Version(plugin_info["version"])
+            minimum_cura_version = Version(plugin_info["minimum_cura_version"])
+            maximum_cura_version = Version(plugin_info["maximum_cura_version"])
     except:
         Logger.log("w", "Could not get version information for the plugin")
         return False
 
-    if plugin_version.getMajor() == cura_version.getMajor() and plugin_version.getMinor() == cura_version.getMinor():
+    if cura_version >= minimum_cura_version and cura_version <= maximum_cura_version:
         return True
     else:
-        return False
+        Logger.log("d", "This version of the plugin is not compatible with this version of Cura. Please check for an update.")
+return False
