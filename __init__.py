@@ -46,4 +46,4 @@ def __matchVersion():
         return True
     else:
         Logger.log("d", "This version of the plugin is not compatible with this version of Cura. Please check for an update.")
-return False
+        return False
