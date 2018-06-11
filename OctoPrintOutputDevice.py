@@ -678,6 +678,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             self._camera_url = ""
 
                         Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
+                        if self._camera_url != "" and len(self._printers) > 0:
+                            self._printers[0].setCamera(NetworkCamera(self._camera_url))
 
                         if "rotate90" in json_data["webcam"]:
                             self._camera_rotation = -90 if json_data["webcam"]["rotate90"] else 0
@@ -749,7 +751,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _createPrinterList(self):
         printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
-        printer.setCamera(NetworkCamera(self._camera_url))
+        if self._camera_url != "":
+            printer.setCamera(NetworkCamera(self._camera_url))
         printer.updateName(self.name)
         self._printers = [printer]
         self.printersChanged.emit()
