@@ -110,10 +110,7 @@ class DiscoverOctoPrintAction(MachineAction):
     def setKey(self, key):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if global_container_stack:
-            if "octoprint_id" in global_container_stack.getMetaData():
-                global_container_stack.setMetaDataEntry("octoprint_id", key)
-            else:
-                global_container_stack.addMetaDataEntry("octoprint_id", key)
+            global_container_stack.setMetaDataEntry("octoprint_id", key)
 
         if self._network_plugin:
             # Ensure that the connection states are refreshed.
@@ -158,10 +155,7 @@ class DiscoverOctoPrintAction(MachineAction):
     def setApiKey(self, api_key):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if global_container_stack:
-            if "octoprint_api_key" in global_container_stack.getMetaData():
-                global_container_stack.setMetaDataEntry("octoprint_api_key", api_key)
-            else:
-                global_container_stack.addMetaDataEntry("octoprint_api_key", api_key)
+            global_container_stack.setMetaDataEntry("octoprint_api_key", api_key)
 
         if self._network_plugin:
             # Ensure that the connection states are refreshed.
@@ -204,11 +198,7 @@ class DiscoverOctoPrintAction(MachineAction):
             UM.Logger.log("w", "Could not set metadata of container %s because it was not found.", container_id)
             return False
 
-        container = containers[0]
-        if key in container.getMetaData():
-            container.setMetaDataEntry(key, value)
-        else:
-            container.addMetaDataEntry(key, value)
+        containers[0].setMetaDataEntry(key, value)
 
     @pyqtSlot(bool)
     def applyGcodeFlavorFix(self, apply_fix):
@@ -240,10 +230,7 @@ class DiscoverOctoPrintAction(MachineAction):
         material_container = global_container_stack.material
 
         if has_materials:
-            if "has_materials" in global_container_stack.getMetaData():
-                global_container_stack.setMetaDataEntry("has_materials", True)
-            else:
-                global_container_stack.addMetaDataEntry("has_materials", True)
+            global_container_stack.setMetaDataEntry("has_materials", True)
 
             # Set the material container to a sane default
             if material_container == ContainerRegistry.getInstance().getEmptyInstanceContainer():
