@@ -572,13 +572,16 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     printer_state = "offline"
                     if "state" in json_data:
-                        if json_data["state"]["flags"]["error"]:
+                        flags = json_data["state"]["flags"]
+                        if flags["error"] or flags["closedOrError"]:
                             printer_state = "error"
-                        elif json_data["state"]["flags"]["paused"]:
+                        elif flags["paused"] or flags["pausing"]:
                             printer_state = "paused"
-                        elif json_data["state"]["flags"]["printing"]:
+                        elif flags["printing"]:
                             printer_state = "printing"
-                        elif json_data["state"]["flags"]["ready"]:
+                        elif flags["cancelling"]:
+                            printer_state = "aborted"
+                        elif flags["ready"] or flags["operational"]:
                             printer_state = "idle"
                     printer.updateState(printer_state)
 
@@ -624,10 +627,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     if "state" in json_data:
                         if json_data["state"] == "Error":
                             print_job_state = "error"
+                        elif json_data["state"] == "Pausing":
+                            print_job_state = "pausing"
                         elif json_data["state"] == "Paused":
                             print_job_state = "paused"
                         elif json_data["state"] == "Printing":
                             print_job_state = "printing"
+                        elif json_data["state"] == "Cancelling":
+                            print_job_state = "abort"
                         elif json_data["state"] == "Operational":
                             print_job_state = "ready"
                             printer.updateState("idle")
