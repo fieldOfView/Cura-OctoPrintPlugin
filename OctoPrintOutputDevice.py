@@ -514,6 +514,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             # Received no or empty reply
             return
 
+        error_handled = False
+
         if reply.operation() == QNetworkAccessManager.GetOperation:
             if self._api_prefix + "printer" in reply.url().toString():  # Status update from /printer.
                 if not self._printers:
@@ -590,7 +592,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     if printer.activePrintJob:
                         printer.activePrintJob.updateState("offline")
                     self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._key))
-                    pass
+                    error_handled = True
+
                 elif http_status_code == 409:
                     if self._connection_state == ConnectionState.connecting:
                         self.setConnectionState(ConnectionState.connected)
@@ -599,6 +602,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     if printer.activePrintJob:
                         printer.activePrintJob.updateState("offline")
                     self.setConnectionText(i18n_catalog.i18nc("@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._key))
+                    error_handled = True
                 else:
                     printer.updateState("offline")
                     if printer.activePrintJob:
@@ -653,7 +657,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     print_job.updateName(json_data["job"]["file"]["name"])
                 else:
-                    pass  # TODO: Handle errors
+                    pass  # See generic error handler below
 
             elif self._api_prefix + "settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
                 if http_status_code == 200:
@@ -707,7 +711,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 if http_status_code == 201:
                     Logger.log("d", "Resource created on OctoPrint instance: %s", reply.header(QNetworkRequest.LocationHeader).toString())
                 else:
-                    pass  # TODO: Handle errors
+                    pass  # See generic error handler below
 
                 reply.uploadProgress.disconnect(self._onUploadProgress)
                 self._progress_message.hide()
@@ -728,16 +732,25 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 if http_status_code == 204:
                     Logger.log("d", "Octoprint job command accepted")
                 else:
-                    pass  # TODO: Handle errors
+                    pass  # See generic error handler below
 
             elif self._api_prefix + "printer/command" in reply.url().toString():  # Result from /printer/command (gcode statements):
                 if http_status_code == 204:
                     Logger.log("d", "Octoprint gcode command(s) accepted")
                 else:
-                    pass  # TODO: Handle errors
+                    pass  # See generic error handler below
 
         else:
             Logger.log("d", "OctoPrintOutputDevice got an unhandled operation %s", reply.operation())
+
+        if not error_handled and http_status_code >= 400:
+            # Received an error reply
+            error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute).decode("utf-8")
+            if self._error_message:
+                self._error_message.hide()
+            self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint returned an error: {0}.").format(error_string))
+            self._error_message.show()
+            return
 
     def _onUploadProgress(self, bytes_sent, bytes_total):
         if bytes_total > 0:
