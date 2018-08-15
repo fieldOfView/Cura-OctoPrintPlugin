@@ -361,13 +361,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if self.activePrinter.state not in ["idle", ""]:
             Logger.log("d", "Tried starting a print, but current state is %s" % self.activePrinter.state)
-            if self.activePrinter.state == "offline":
-                self._error_message = Message(i18n_catalog.i18nc("@info:status", "The printer is offline. Unable to start a new job."))
-            elif self._auto_print:
-                self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is busy. Unable to start a new job."))
-            else:
+            if not self._auto_print:
                 # allow queueing the job even if OctoPrint is currently busy if autoprinting is disabled
                 self._error_message = None
+            elif self.activePrinter.state == "offline":
+                self._error_message = Message(i18n_catalog.i18nc("@info:status", "The printer is offline. Unable to start a new job."))
+            else:
+                self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is busy. Unable to start a new job."))
 
             if self._error_message:
                 self._error_message.addAction("Queue", i18n_catalog.i18nc("@action:button", "Queue job"), None, i18n_catalog.i18nc("@action:tooltip", "Queue this print job so it can be printed later"))
