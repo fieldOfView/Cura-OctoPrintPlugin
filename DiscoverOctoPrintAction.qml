@@ -205,10 +205,17 @@ Cura.MachineAction
                     {
                         id: apiKey
                         width: Math.floor(parent.width * 0.8 - UM.Theme.getSize("default_margin").width)
-                        text: manager.apiKey
                         onTextChanged:
                         {
                             apiCheckDelay.throttledCheck()
+                        }
+                    }
+                    Connections
+                    {
+                        target: base
+                        onSelectedInstanceChanged:
+                        {
+                            apiKey.text = manager.getApiKey(base.selectedInstance.getKey())
                         }
                     }
                     Timer

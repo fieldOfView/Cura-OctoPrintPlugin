@@ -2,6 +2,7 @@ from UM.i18n import i18nCatalog
 from UM.Logger import Logger
 from UM.Settings.DefinitionContainer import DefinitionContainer
 from UM.Application import Application
+from UM.Preferences import Preferences
 
 from UM.Settings.ContainerRegistry import ContainerRegistry
 from cura.MachineAction import MachineAction
@@ -55,6 +56,17 @@ class DiscoverOctoPrintAction(MachineAction):
         self._instance_api_key_accepted = False
         self._instance_supports_sd = False
         self._instance_supports_camera = False
+
+        # Load keys cache from preferences
+        self._preferences = Preferences.getInstance()
+        self._preferences.addPreference("octoprint/keys_cache", "")
+
+        try:
+            self._keys_cache = json.loads(self._deobfuscateString(self._preferences.getValue("octoprint/keys_cache")))
+        except ValueError:
+            self._keys_cache = {}
+        if not isinstance(self._keys_cache, dict):
+            self._keys_cache = {}
 
         self._additional_components = None
 
@@ -154,26 +166,32 @@ class DiscoverOctoPrintAction(MachineAction):
     @pyqtSlot(str)
     def setApiKey(self, api_key):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
-        if global_container_stack:
-            global_container_stack.setMetaDataEntry("octoprint_api_key", base64.b64encode(api_key.encode("ascii")).decode("ascii"))
+        if not global_container_stack:
+            return
+
+        global_container_stack.setMetaDataEntry("octoprint_api_key", base64.b64encode(api_key.encode("ascii")).decode("ascii"))
+
+        self._keys_cache[self.getStoredKey()] = api_key
+        keys_cache = base64.b64encode(json.dumps(self._keys_cache).encode("ascii")).decode("ascii")
+        self._preferences.setValue("octoprint/keys_cache", keys_cache)
 
         if self._network_plugin:
             # Ensure that the connection states are refreshed.
             self._network_plugin.reCheckConnections()
 
-    ##  Get the stored API key of this machine
+    ##  Get the stored API key of an instance, or the one stored in the machine instance
     #   \return key String containing the key of the machine.
-    @pyqtProperty(str, constant = True)
-    def apiKey(self):
+    @pyqtSlot(str, result=str)
+    def getApiKey(self, instance_id):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if not global_container_stack:
             return ""
 
-        api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
-        try:
-            api_key = base64.b64decode(api_key.encode("ascii")).decode("ascii")
-        except UnicodeDecodeError:
-            pass
+        if instance_id == self.getStoredKey():
+            api_key = self._deobfuscateString(global_container_stack.getMetaDataEntry("octoprint_api_key", ""))
+        else:
+            api_key = self._keys_cache.get(instance_id, "")
+
         return api_key
 
     selectedInstanceSettingsChanged = pyqtSignal()
@@ -301,3 +319,10 @@ class DiscoverOctoPrintAction(MachineAction):
 
                 self._instance_responded = True
                 self.selectedInstanceSettingsChanged.emit()
+
+    ##  Utility handler to base64-decode a string (eg an obfuscated API key), if it has been encoded before
+    def _deobfuscateString(self, source):
+        try:
+            return base64.b64decode(source.encode("ascii")).decode("ascii")
+        except UnicodeDecodeError:
+            return source
