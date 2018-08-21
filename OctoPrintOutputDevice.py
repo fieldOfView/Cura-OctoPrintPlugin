@@ -19,6 +19,7 @@ from PyQt5.QtGui import QImage, QDesktopServices
 
 import json
 import os.path
+import re
 from time import time
 import base64
 
@@ -84,8 +85,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem.qml")
 
+        name = self._id
+        matches = re.search(r"^\"(.*)\"\._octoprint\._tcp.local$", name)
+        if matches:
+            name = matches.group(1)
+
         self.setPriority(2) # Make sure the output device gets selected above local file output
-        self.setName(self._id)
+        self.setName(name)
         self.setShortDescription(i18n_catalog.i18nc("@action:button", "Print with OctoPrint"))
         self.setDescription(i18n_catalog.i18nc("@properties:tooltip", "Print with OctoPrint"))
         self.setIconName("print")
@@ -161,7 +167,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     ##  Name of the instance (as returned from the zeroConf properties)
     @pyqtProperty(str, constant = True)
     def name(self):
-        return self._id
+        return self._name
 
     ##  Version (as returned from the zeroConf properties)
     @pyqtProperty(str, constant=True)
