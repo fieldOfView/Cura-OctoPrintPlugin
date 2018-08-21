@@ -155,23 +155,26 @@ class DiscoverOctoPrintAction(MachineAction):
     def setApiKey(self, api_key):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if global_container_stack:
-            global_container_stack.setMetaDataEntry("octoprint_api_key", api_key)
+            global_container_stack.setMetaDataEntry("octoprint_api_key", base64.b64encode(api_key.encode("ascii")).decode("ascii"))
 
         if self._network_plugin:
             # Ensure that the connection states are refreshed.
             self._network_plugin.reCheckConnections()
 
-    apiKeyChanged = pyqtSignal()
-
     ##  Get the stored API key of this machine
     #   \return key String containing the key of the machine.
-    @pyqtProperty(str, notify = apiKeyChanged)
+    @pyqtProperty(str, constant = True)
     def apiKey(self):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
-        if global_container_stack:
-            return global_container_stack.getMetaDataEntry("octoprint_api_key")
-        else:
+        if not global_container_stack:
             return ""
+
+        api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
+        try:
+            api_key = base64.b64decode(api_key.encode("ascii")).decode("ascii")
+        except UnicodeDecodeError:
+            pass
+        return api_key
 
     selectedInstanceSettingsChanged = pyqtSignal()
 

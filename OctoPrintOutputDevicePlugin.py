@@ -10,6 +10,7 @@ from UM.Preferences import Preferences
 import time
 import json
 import re
+import base64
 
 ##      This plugin handles the connection detection & creation of output device objects for OctoPrint-connected printers.
 #       Zero-Conf is used to detect printers, which are saved in a dict.
@@ -113,7 +114,8 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
         for key in self._instances:
             if key == global_container_stack.getMetaDataEntry("octoprint_id"):
-                self._instances[key].setApiKey(global_container_stack.getMetaDataEntry("octoprint_api_key", ""))
+                api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
+                self._instances[key].setApiKey(self.decodeKey(api_key))
                 self._instances[key].connectionStateChanged.connect(self._onInstanceConnectionStateChanged)
                 self._instances[key].connect()
             else:
@@ -126,7 +128,8 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         self._instances[instance.getKey()] = instance
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if global_container_stack and instance.getKey() == global_container_stack.getMetaDataEntry("octoprint_id"):
-            instance.setApiKey(global_container_stack.getMetaDataEntry("octoprint_api_key", ""))
+            api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
+            instance.setApiKey(self.decodeKey(api_key))
             instance.connectionStateChanged.connect(self._onInstanceConnectionStateChanged)
             instance.connect()
 
@@ -136,6 +139,14 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             if instance.isConnected():
                 instance.connectionStateChanged.disconnect(self._onInstanceConnectionStateChanged)
                 instance.disconnect()
+
+    ##  Utility handler to base64-decode an API key, if it has been encoded before
+    def decodeKey(self, api_key):
+        try:
+            api_key = base64.b64decode(api_key.encode("ascii")).decode("ascii")
+        except UnicodeDecodeError:
+            pass
+        return api_key
 
     ##  Handler for when the connection state of one of the detected instances changes
     def _onInstanceConnectionStateChanged(self, key):
