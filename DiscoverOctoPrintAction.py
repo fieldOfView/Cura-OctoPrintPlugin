@@ -2,7 +2,6 @@ from UM.i18n import i18nCatalog
 from UM.Logger import Logger
 from UM.Settings.DefinitionContainer import DefinitionContainer
 from UM.Application import Application
-from UM.Preferences import Preferences
 
 from UM.Settings.ContainerRegistry import ContainerRegistry
 from cura.MachineAction import MachineAction
@@ -58,7 +57,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._instance_supports_camera = False
 
         # Load keys cache from preferences
-        self._preferences = Preferences.getInstance()
+        self._preferences = Application.getInstance().getPreferences()
         self._preferences.addPreference("octoprint/keys_cache", "")
 
         try:

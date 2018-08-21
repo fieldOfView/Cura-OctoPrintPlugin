@@ -5,7 +5,6 @@ from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
 from UM.Signal import Signal, signalemitter
 from UM.Application import Application
 from UM.Logger import Logger
-from UM.Preferences import Preferences
 
 import time
 import json
@@ -29,7 +28,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         Application.getInstance().globalContainerStackChanged.connect(self.reCheckConnections)
 
         # Load custom instances from preferences
-        self._preferences = Preferences.getInstance()
+        self._preferences = Application.getInstance().getPreferences()
         self._preferences.addPreference("octoprint/manual_instances", "{}")
 
         try:
