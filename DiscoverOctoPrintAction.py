@@ -119,7 +119,7 @@ class DiscoverOctoPrintAction(MachineAction):
             return []
 
     @pyqtSlot(str)
-    def setKey(self, key):
+    def setInstanceId(self, key):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if global_container_stack:
             global_container_stack.setMetaDataEntry("octoprint_id", key)
@@ -129,14 +129,12 @@ class DiscoverOctoPrintAction(MachineAction):
             self._network_plugin.reCheckConnections()
 
     @pyqtSlot(result = str)
-    def getStoredKey(self):
+    def getInstanceId(self):
         global_container_stack = Application.getInstance().getGlobalContainerStack()
-        if global_container_stack:
-            meta_data = global_container_stack.getMetaData()
-            if "octoprint_id" in meta_data:
-                return global_container_stack.getMetaDataEntry("octoprint_id")
+        if not global_container_stack:
+            return ""
 
-        return ""
+        return global_container_stack.getMetaDataEntry("octoprint_id", "")
 
     @pyqtSlot(str, str, str, str)
     def testApiKey(self, base_url, api_key, basic_auth_username = "", basic_auth_password = ""):
@@ -171,7 +169,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
         global_container_stack.setMetaDataEntry("octoprint_api_key", base64.b64encode(api_key.encode("ascii")).decode("ascii"))
 
-        self._keys_cache[self.getStoredKey()] = api_key
+        self._keys_cache[self.getInstanceId()] = api_key
         keys_cache = base64.b64encode(json.dumps(self._keys_cache).encode("ascii")).decode("ascii")
         self._preferences.setValue("octoprint/keys_cache", keys_cache)
 
@@ -187,7 +185,7 @@ class DiscoverOctoPrintAction(MachineAction):
         if not global_container_stack:
             return ""
 
-        if instance_id == self.getStoredKey():
+        if instance_id == self.getInstanceId():
             api_key = self._deobfuscateString(global_container_stack.getMetaDataEntry("octoprint_api_key", ""))
         else:
             api_key = self._keys_cache.get(instance_id, "")

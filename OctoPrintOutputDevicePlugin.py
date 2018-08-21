@@ -125,9 +125,9 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     ##  Because the model needs to be created in the same thread as the QMLEngine, we use a signal.
     def addInstance(self, name, address, port, properties):
         instance = OctoPrintOutputDevice.OctoPrintOutputDevice(name, address, port, properties)
-        self._instances[instance.getKey()] = instance
+        self._instances[instance.getId()] = instance
         global_container_stack = Application.getInstance().getGlobalContainerStack()
-        if global_container_stack and instance.getKey() == global_container_stack.getMetaDataEntry("octoprint_id"):
+        if global_container_stack and instance.getId() == global_container_stack.getMetaDataEntry("octoprint_id"):
             api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
             instance.setApiKey(self._deobfuscateString(api_key))
             instance.connectionStateChanged.connect(self._onInstanceConnectionStateChanged)
