@@ -24,12 +24,13 @@ class DiscoverOctoPrintAction(MachineAction):
 
         self._qml_url = "DiscoverOctoPrintAction.qml"
 
+        self._application = Application.getInstance()
         self._network_plugin = None
 
         #   QNetwork manager needs to be created in advance. If we don't it can happen that it doesn't correctly
         #   hook itself into the event loop, which results in events never being fired / done.
-        self._manager = QNetworkAccessManager()
-        self._manager.finished.connect(self._onRequestFinished)
+        self._network_manager = QNetworkAccessManager()
+        self._network_manager.finished.connect(self._onRequestFinished)
 
         self._settings_reply = None
 
@@ -45,10 +46,10 @@ class DiscoverOctoPrintAction(MachineAction):
             Logger.logException("w", "Could not get version information for the plugin")
 
         self._user_agent = ("%s/%s %s/%s" % (
-            Application.getInstance().getApplicationName(),
-            Application.getInstance().getVersion(),
+            self._application.getApplicationName(),
+            self._application.getVersion(),
             "OctoPrintPlugin",
-            Application.getInstance().getVersion()
+            self._application.getVersion()
         )).encode()
 
         self._instance_responded = False
@@ -57,7 +58,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._instance_supports_camera = False
 
         # Load keys cache from preferences
-        self._preferences = Application.getInstance().getPreferences()
+        self._preferences = self._application.getPreferences()
         self._preferences.addPreference("octoprint/keys_cache", "")
 
         try:
@@ -70,12 +71,12 @@ class DiscoverOctoPrintAction(MachineAction):
         self._additional_components = None
 
         ContainerRegistry.getInstance().containerAdded.connect(self._onContainerAdded)
-        Application.getInstance().engineCreatedSignal.connect(self._createAdditionalComponentsView)
+        self._application.engineCreatedSignal.connect(self._createAdditionalComponentsView)
 
     @pyqtSlot()
     def startDiscovery(self):
         if not self._network_plugin:
-            self._network_plugin = Application.getInstance().getOutputDeviceManager().getOutputDevicePlugin(self._plugin_id)
+            self._network_plugin = self._application.getOutputDeviceManager().getOutputDevicePlugin(self._plugin_id)
             self._network_plugin.addInstanceSignal.connect(self._onInstanceDiscovery)
             self._network_plugin.removeInstanceSignal.connect(self._onInstanceDiscovery)
             self._network_plugin.instanceListChanged.connect(self._onInstanceDiscovery)
@@ -104,7 +105,7 @@ class DiscoverOctoPrintAction(MachineAction):
     def _onContainerAdded(self, container):
         # Add this action as a supported action to all machine definitions
         if isinstance(container, DefinitionContainer) and container.getMetaDataEntry("type") == "machine" and container.getMetaDataEntry("supports_usb_connection"):
-            Application.getInstance().getMachineActionManager().addSupportedAction(container.getId(), self.getKey())
+            self._application.getMachineActionManager().addSupportedAction(container.getId(), self.getKey())
 
     instancesChanged = pyqtSignal()
 
@@ -119,7 +120,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
     @pyqtSlot(str)
     def setInstanceId(self, key):
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
+        global_container_stack = self._application.getGlobalContainerStack()
         if global_container_stack:
             global_container_stack.setMetaDataEntry("octoprint_id", key)
 
@@ -129,7 +130,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
     @pyqtSlot(result = str)
     def getInstanceId(self):
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
+        global_container_stack = self._application.getGlobalContainerStack()
         if not global_container_stack:
             return ""
 
@@ -154,7 +155,7 @@ class DiscoverOctoPrintAction(MachineAction):
             if basic_auth_username and basic_auth_password:
                 data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
                 settings_request.setRawHeader("Authorization".encode(), ("Basic %s" % data).encode())
-            self._settings_reply = self._manager.get(settings_request)
+            self._settings_reply = self._network_manager.get(settings_request)
         else:
             if self._settings_reply:
                 self._settings_reply.abort()
@@ -162,7 +163,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
     @pyqtSlot(str)
     def setApiKey(self, api_key):
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
+        global_container_stack = self._application.getGlobalContainerStack()
         if not global_container_stack:
             return
 
@@ -180,7 +181,7 @@ class DiscoverOctoPrintAction(MachineAction):
     #   \return key String containing the key of the machine.
     @pyqtSlot(str, result=str)
     def getApiKey(self, instance_id):
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
+        global_container_stack = self._application.getGlobalContainerStack()
         if not global_container_stack:
             return ""
 
@@ -220,7 +221,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
     @pyqtSlot(bool)
     def applyGcodeFlavorFix(self, apply_fix):
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
+        global_container_stack = self._application.getGlobalContainerStack()
         if not global_container_stack:
             return
 
@@ -264,7 +265,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
             global_container_stack.material = ContainerRegistry.getInstance().getEmptyInstanceContainer()
 
-        Application.getInstance().globalContainerStackChanged.emit()
+        self._application.globalContainerStackChanged.emit()
 
 
     @pyqtSlot(str)
@@ -275,12 +276,12 @@ class DiscoverOctoPrintAction(MachineAction):
         Logger.log("d", "Creating additional ui components for OctoPrint-connected printers.")
 
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "OctoPrintComponents.qml")
-        self._additional_components = Application.getInstance().createQmlComponent(path, {"manager": self})
+        self._additional_components = self._application.createQmlComponent(path, {"manager": self})
         if not self._additional_components:
             Logger.log("w", "Could not create additional components for OctoPrint-connected printers.")
             return
 
-        Application.getInstance().addAdditionalComponent("monitorButtons", self._additional_components.findChild(QObject, "openOctoPrintButton"))
+        self._application.addAdditionalComponent("monitorButtons", self._additional_components.findChild(QObject, "openOctoPrintButton"))
 
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply):
