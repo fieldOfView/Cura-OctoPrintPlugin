@@ -133,6 +133,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._sd_supported = False
 
+        self._plugin_data = {}
+
         self._connection_state_before_timeout = None
 
         self._last_response_time = None
@@ -711,6 +713,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             else:
                                 self._camera_mirror = False
                             self.cameraOrientationChanged.emit()
+
+                    if "plugins" in json_data:
+                        self._plugin_data = json_data["plugins"]
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if self._api_prefix + "files" in reply.url().toString():  # Result from /files command:
