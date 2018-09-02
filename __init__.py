@@ -1,5 +1,5 @@
-# Copyright (c) 2015 Ultimaker B.V.
-# Cura is released under the terms of the AGPLv3 or higher.
+# Copyright (c) 2018 Aldo Hoeben / fieldOfView
+# OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
 import os, json
 
