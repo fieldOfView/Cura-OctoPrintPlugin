@@ -22,6 +22,7 @@ import os.path
 import re
 from time import time
 import base64
+from typing import Any, Dict, List
 
 i18n_catalog = i18nCatalog("cura")
 
@@ -29,7 +30,7 @@ i18n_catalog = i18nCatalog("cura")
 ##  OctoPrint connected (wifi / lan) printer using the OctoPrint API
 @signalemitter
 class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
-    def __init__(self, instance_id: str, address: str, port: int, properties: dict, parent = None):
+    def __init__(self, instance_id: str, address: str, port: int, properties: dict, parent = None) -> None:
         super().__init__(device_id = instance_id, address = address, properties = properties, parent = parent)
 
         self._address = address
@@ -40,7 +41,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._id = instance_id
         self._properties = properties  # Properties dict as provided by zero conf
 
-        self._gcode = None
+        self._gcode = []
         self._auto_print = True
         self._forced_queue = False
 
@@ -65,7 +66,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             Application.getInstance().getVersion(),
             "OctoPrintPlugin",
             Application.getInstance().getVersion()
-        )).encode()
+        )) # NetworkedPrinterOutputDevice defines this as string, so we encode this later
 
         self._api_prefix = "api/"
         self._api_header = "X-Api-Key".encode()
@@ -115,7 +116,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._error_message = None
         self._connection_message = None
 
-        self._queued_gcode_commands = []
+        self._queued_gcode_commands = [] # type: List[str]
         self._queued_gcode_timer = QTimer()
         self._queued_gcode_timer.setInterval(0)
         self._queued_gcode_timer.setSingleShot(True)
@@ -133,7 +134,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._sd_supported = False
 
-        self._plugin_data = {}
+        self._plugin_data = {} #type: Dict[str, Any]
 
         self._connection_state_before_timeout = None
 
@@ -289,7 +290,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _createApiRequest(self, end_point):
         request = QNetworkRequest(QUrl(self._api_url + end_point))
-        request.setRawHeader(self._user_agent_header, self._user_agent)
+        request.setRawHeader(self._user_agent_header, self._user_agent.encode())
         request.setRawHeader(self._api_header, self._api_key)
         if self._basic_auth_data:
             request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
@@ -460,7 +461,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
             Logger.log("e", "An exception occurred in network connection: %s" % str(e))
 
-        self._gcode = None
+        self._gcode = []
 
     def _cancelSendGcode(self, message_id, action_id):
         if self._post_reply:
@@ -716,6 +717,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     if "plugins" in json_data:
                         self._plugin_data = json_data["plugins"]
+
+                        can_update_firmware = "firmwareupdater" in self._plugin_data
+                        self._output_controller.setCanUpdateFirmware(can_update_firmware)
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if self._api_prefix + "files" in reply.url().toString():  # Result from /files command:
