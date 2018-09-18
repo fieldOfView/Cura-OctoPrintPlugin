@@ -718,9 +718,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     if "plugins" in json_data:
                         self._plugin_data = json_data["plugins"]
 
-                        can_update_firmware = "firmwareupdater" in self._plugin_data
-                        self._output_controller.setCanUpdateFirmware(can_update_firmware)
-
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if self._api_prefix + "files" in reply.url().toString():  # Result from /files command:
                 if http_status_code == 201:
