@@ -1,9 +1,10 @@
 from UM.i18n import i18nCatalog
-from UM.Application import Application
 from UM.Logger import Logger
 from UM.Signal import signalemitter
 from UM.Message import Message
 from UM.Util import parseBool
+
+from cura.CuraApplication import CuraApplication
 
 from cura.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
@@ -23,7 +24,7 @@ import re
 from time import time
 import base64
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 from UM.Scene.SceneNode import SceneNode #For typing.
 from UM.FileHandler.FileHandler import FileHandler #For typing.
 
@@ -65,15 +66,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._user_agent_header = "User-Agent".encode()
         self._user_agent = ("%s/%s %s/%s" % (
-            Application.getInstance().getApplicationName(),
-            Application.getInstance().getVersion(),
+            CuraApplication.getInstance().getApplicationName(),
+            CuraApplication.getInstance().getVersion(),
             "OctoPrintPlugin",
-            Application.getInstance().getVersion()
+            CuraApplication.getInstance().getVersion()
         )) # NetworkedPrinterOutputDevice defines this as string, so we encode this later
 
         self._api_prefix = "api/"
         self._api_header = "X-Api-Key".encode()
-        self._api_key = None
+        self._api_key = b""
 
         self._protocol = "https" if properties.get(b'useHttps') == b"true" else "http"
         self._base_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, self._path)
@@ -103,9 +104,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._post_reply = None
 
-        self._progress_message = None
-        self._error_message = None
-        self._connection_message = None
+        self._progress_message = None # type: Union[None, Message]
+        self._error_message = None # type: Union[None, Message]
+        self._connection_message = None # type: Union[None, Message]
 
         self._queued_gcode_commands = [] # type: List[str]
         self._queued_gcode_timer = QTimer()
@@ -129,14 +130,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._output_controller = GenericOutputController(self)
 
-    def getProperties(self) -> Dict[bytearray, bytearray]:
+    def getProperties(self) -> Dict[bytes, bytes]:
         return self._properties
 
     @pyqtSlot(str, result = str)
     def getProperty(self, key: str) -> str:
-        key = key.encode("utf-8")
-        if key in self._properties:
-            return self._properties.get(key, b"").decode("utf-8")
+        key_b = key.encode("utf-8")
+        if key_b in self._properties:
+            return self._properties.get(key_b, b"").decode("utf-8")
         else:
             return ""
 
@@ -224,8 +225,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def requestWrite(self, nodes: List[SceneNode], file_name: Optional[str] = None, limit_mimetypes: bool = False, file_handler: Optional[FileHandler] = None, **kwargs: str) -> None:
         self.writeStarted.emit(self)
 
-        active_build_plate = Application.getInstance().getMultiBuildPlateModel().activeBuildPlate
-        scene = Application.getInstance().getController().getScene()
+        active_build_plate = CuraApplication.getInstance().getMultiBuildPlateModel().activeBuildPlate
+        scene = CuraApplication.getInstance().getController().getScene()
         gcode_dict = getattr(scene, "gcode_dict", None)
         if not gcode_dict:
             return
@@ -270,7 +271,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._sendJobCommand("cancel")
 
     def startPrint(self) -> None:
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
+        global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
         if not global_container_stack:
             return
 
@@ -310,8 +311,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._startPrint()
 
     def _startPrint(self) -> None:
+        global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
+        if not global_container_stack:
+            return
+
         if self._auto_print and not self._forced_queue:
-            Application.getInstance().getController().setActiveStage("MonitorStage")
+            CuraApplication.getInstance().getController().setActiveStage("MonitorStage")
 
             # cancel any ongoing preheat timer before starting a print
             try:
@@ -335,7 +340,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 QCoreApplication.processEvents()
                 last_process_events = time()
 
-        job_name = Application.getInstance().getPrintInformation().jobName.strip()
+        job_name = CuraApplication.getInstance().getPrintInformation().jobName.strip()
         if job_name is "":
             job_name = "untitled_print"
         file_name = "%s.gcode" % job_name
@@ -361,7 +366,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         post_parts.append(post_part)
 
         destination = "local"
-        if self._sd_supported and parseBool(Application.getInstance().getGlobalContainerStack().getMetaDataEntry("octoprint_store_sd", False)):
+        if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
             destination = "sdcard"
 
         try:
@@ -407,12 +412,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._sendCommandToApi("job", command)
         Logger.log("d", "Sent job command to OctoPrint instance: %s", command)
 
-    def _sendCommandToApi(self, end_point: str, commands: str) -> None:
+    def _sendCommandToApi(self, end_point: str, commands: Union[str, List[str]]) -> None:
         if isinstance(commands, list):
             data = json.dumps({"commands": commands})
         else:
             data = json.dumps({"command": commands})
-        self.post(end_point, data.encode(), self._onRequestFinished)
+        self.post(end_point, data, self._onRequestFinished)
 
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply: QNetworkReply) -> None:
@@ -457,7 +462,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
-                        json_data = {} #type: Dict[str, Any]
+                        json_data = {}
 
                     if "temperature" in json_data:
                         if not self._number_of_extruders_set:
@@ -541,7 +546,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
-                        json_data = {} #type: Dict[str, Any]
+                        json_data = {}
 
                     if printer.activePrintJob is None:
                         print_job = PrintJobOutputModel(output_controller=self._output_controller)
@@ -587,7 +592,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
-                        json_data = {} #type: Dict[str, Any]
+                        json_data = {}
 
                     if "feature" in json_data and "sdSupport" in json_data["feature"]:
                         self._sd_supported = json_data["feature"]["sdSupport"]
@@ -639,7 +644,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     pass  # See generic error handler below
 
                 reply.uploadProgress.disconnect(self._onUploadProgress)
-                self._progress_message.hide()
+                if self._progress_message:
+                    self._progress_message.hide()
 
                 if self._forced_queue or not self._auto_print:
                     location = reply.header(QNetworkRequest.LocationHeader)
