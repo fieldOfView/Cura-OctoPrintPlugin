@@ -3,6 +3,8 @@ from UM.Logger import Logger
 from UM.Signal import signalemitter
 from UM.Message import Message
 from UM.Util import parseBool
+from UM.Mesh.MeshWriter import MeshWriter
+from UM.PluginRegistry import PluginRegistry
 
 from cura.CuraApplication import CuraApplication
 
@@ -23,8 +25,9 @@ import os.path
 import re
 from time import time
 import base64
+from io import StringIO
 
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import cast, Any, Callable, Dict, List, Optional, Union
 MYPY = False
 if MYPY:
     from UM.Scene.SceneNode import SceneNode #For typing.
@@ -47,7 +50,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._id = instance_id
         self._properties = properties  # Properties dict as provided by zero conf
 
-        self._gcode = [] # type: List[str]
+        self._gcode_stream = StringIO()
+
         self._auto_print = True
         self._forced_queue = False
 
@@ -227,12 +231,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False, file_handler: Optional["FileHandler"] = None, **kwargs: str) -> None:
         self.writeStarted.emit(self)
 
-        active_build_plate = CuraApplication.getInstance().getMultiBuildPlateModel().activeBuildPlate
-        scene = CuraApplication.getInstance().getController().getScene()
-        gcode_dict = getattr(scene, "gcode_dict", None)
-        if not gcode_dict:
+        # Get the g-code through the GCodeWriter plugin
+        # This produces the same output as "Save to File", adding the print settings to the bottom of the file
+        gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
+        if not gcode_writer.write(self._gcode_stream, None):
+            Logger.log("e", "GCodeWrite failed: %s" % gcode_writer.getInformation())
             return
-        self._gcode = gcode_dict.get(active_build_plate, None)
 
         self.startPrint()
 
@@ -242,6 +246,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self.setConnectionState(ConnectionState.connecting)
         self._update()  # Manually trigger the first update, as we don't want to wait a few secs before it starts.
+
         Logger.log("d", "Connection with instance %s with url %s started", self._id, self._base_url)
         self._update_timer.start()
 
@@ -332,16 +337,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._progress_message.actionTriggered.connect(self._cancelSendGcode)
         self._progress_message.show()
 
-        ## Mash the data into single string
-        single_string_file_data = ""
-        last_process_events = time()
-        for line in self._gcode:
-            single_string_file_data += line
-            if time() > last_process_events + 0.05:
-                # Ensure that the GUI keeps updated at least 20 times per second.
-                QCoreApplication.processEvents()
-                last_process_events = time()
-
         job_name = CuraApplication.getInstance().getPrintInformation().jobName.strip()
         if job_name is "":
             job_name = "untitled_print"
@@ -364,7 +359,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         post_part = QHttpPart()
         post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
-        post_part.setBody(single_string_file_data.encode())
+        post_part.setBody(self._gcode_stream.getvalue().encode())
         post_parts.append(post_part)
 
         destination = "local"
@@ -384,7 +379,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
             Logger.log("e", "An exception occurred in network connection: %s" % str(e))
 
-        self._gcode = [] # type: List[str]
+        self._gcode_stream = StringIO()
 
     def _cancelSendGcode(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._post_reply:
