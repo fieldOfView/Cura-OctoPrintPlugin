@@ -171,6 +171,7 @@ Cura.MachineAction
                     width: parent.width
                     columns: 2
                     rowSpacing: UM.Theme.getSize("default_lining").height
+                    verticalItemAlignment: Grid.AlignVCenter
                     Label
                     {
                         width: Math.floor(parent.width * 0.2)
