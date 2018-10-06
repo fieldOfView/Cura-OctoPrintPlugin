@@ -25,8 +25,10 @@ from time import time
 import base64
 
 from typing import Any, Callable, Dict, List, Optional, Union
-from UM.Scene.SceneNode import SceneNode #For typing.
-from UM.FileHandler.FileHandler import FileHandler #For typing.
+MYPY = False
+if MYPY:
+    from UM.Scene.SceneNode import SceneNode #For typing.
+    from UM.FileHandler.FileHandler import FileHandler #For typing.
 
 i18n_catalog = i18nCatalog("cura")
 
@@ -222,7 +224,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._error_message.hide()
         self._update_timer.stop()
 
-    def requestWrite(self, nodes: List[SceneNode], file_name: Optional[str] = None, limit_mimetypes: bool = False, file_handler: Optional[FileHandler] = None, **kwargs: str) -> None:
+    def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False, file_handler: Optional["FileHandler"] = None, **kwargs: str) -> None:
         self.writeStarted.emit(self)
 
         active_build_plate = CuraApplication.getInstance().getMultiBuildPlateModel().activeBuildPlate
