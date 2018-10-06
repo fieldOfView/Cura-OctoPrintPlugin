@@ -1,9 +1,10 @@
 from UM.i18n import i18nCatalog
-from UM.Application import Application
 from UM.Logger import Logger
 from UM.Signal import signalemitter
 from UM.Message import Message
 from UM.Util import parseBool
+
+from cura.CuraApplication import CuraApplication
 
 from cura.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
@@ -22,7 +23,10 @@ import os.path
 import re
 from time import time
 import base64
-from typing import Any, Dict, List
+
+from typing import Any, Callable, Dict, List, Optional, Union
+from UM.Scene.SceneNode import SceneNode #For typing.
+from UM.FileHandler.FileHandler import FileHandler #For typing.
 
 i18n_catalog = i18nCatalog("cura")
 
@@ -41,7 +45,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._id = instance_id
         self._properties = properties  # Properties dict as provided by zero conf
 
-        self._gcode = []
+        self._gcode = [] # type: List[str]
         self._auto_print = True
         self._forced_queue = False
 
@@ -62,15 +66,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._user_agent_header = "User-Agent".encode()
         self._user_agent = ("%s/%s %s/%s" % (
-            Application.getInstance().getApplicationName(),
-            Application.getInstance().getVersion(),
+            CuraApplication.getInstance().getApplicationName(),
+            CuraApplication.getInstance().getVersion(),
             "OctoPrintPlugin",
-            Application.getInstance().getVersion()
+            CuraApplication.getInstance().getVersion()
         )) # NetworkedPrinterOutputDevice defines this as string, so we encode this later
 
         self._api_prefix = "api/"
         self._api_header = "X-Api-Key".encode()
-        self._api_key = None
+        self._api_key = b""
 
         self._protocol = "https" if properties.get(b'useHttps') == b"true" else "http"
         self._base_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, self._path)
@@ -98,23 +102,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self.setIconName("print")
         self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._id))
 
-        #   QNetwork manager needs to be created in advance. If we don't it can happen that it doesn't correctly
-        #   hook itself into the event loop, which results in events never being fired / done.
-        self._manager = QNetworkAccessManager()
-        self._manager.finished.connect(self._onRequestFinished)
-
-        ##  Ensure that the qt networking stuff isn't garbage collected (unless we want it to)
-        self._settings_reply = None
-        self._printer_reply = None
-        self._job_reply = None
-        self._command_reply = None
-
         self._post_reply = None
-        self._post_multi_part = None
 
-        self._progress_message = None
-        self._error_message = None
-        self._connection_message = None
+        self._progress_message = None # type: Union[None, Message]
+        self._error_message = None # type: Union[None, Message]
+        self._connection_message = None # type: Union[None, Message]
 
         self._queued_gcode_commands = [] # type: List[str]
         self._queued_gcode_timer = QTimer()
@@ -127,7 +119,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
-        self._camera_mirror = ""
+        self._camera_mirror = False
         self._camera_rotation = 0
         self._camera_url = ""
         self._camera_shares_proxy = False
@@ -136,167 +128,93 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._plugin_data = {} #type: Dict[str, Any]
 
-        self._connection_state_before_timeout = None
-
-        self._last_response_time = None
-        self._last_request_time = None
-        self._response_timeout_time = 5
-        self._recreate_network_manager_time = 30 # If we have no connection, re-create network manager every 30 sec.
-        self._recreate_network_manager_count = 1
-
         self._output_controller = GenericOutputController(self)
 
-    def getProperties(self):
+    def getProperties(self) -> Dict[bytes, bytes]:
         return self._properties
 
     @pyqtSlot(str, result = str)
-    def getProperty(self, key):
-        key = key.encode("utf-8")
-        if key in self._properties:
-            return self._properties.get(key, b"").decode("utf-8")
+    def getProperty(self, key: str) -> str:
+        key_b = key.encode("utf-8")
+        if key_b in self._properties:
+            return self._properties.get(key_b, b"").decode("utf-8")
         else:
             return ""
 
     ##  Get the unique key of this machine
     #   \return key String containing the key of the machine.
     @pyqtSlot(result = str)
-    def getId(self):
+    def getId(self) -> str:
         return self._id
 
     ##  Set the API key of this OctoPrint instance
-    def setApiKey(self, api_key):
+    def setApiKey(self, api_key: str) -> None:
         self._api_key = api_key.encode()
 
     ##  Name of the instance (as returned from the zeroConf properties)
     @pyqtProperty(str, constant = True)
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     ##  Version (as returned from the zeroConf properties)
     @pyqtProperty(str, constant=True)
-    def octoprintVersion(self):
+    def octoprintVersion(self) -> str:
         return self._properties.get(b"version", b"").decode("utf-8")
 
     ## IPadress of this instance
     @pyqtProperty(str, constant=True)
-    def ipAddress(self):
+    def ipAddress(self) -> str:
         return self._address
 
     ## IPadress of this instance
     #  Overridden from NetworkedPrinterOutputDevice because OctoPrint does not
     #  send the ip address with zeroconf
     @pyqtProperty(str, constant=True)
-    def address(self):
+    def address(self) -> str:
         return self._address
 
     ## port of this instance
     @pyqtProperty(int, constant=True)
-    def port(self):
+    def port(self) -> int:
         return self._port
 
     ## path of this instance
     @pyqtProperty(str, constant=True)
-    def path(self):
+    def path(self) -> str:
         return self._path
 
     ## absolute url of this instance
     @pyqtProperty(str, constant=True)
-    def baseURL(self):
+    def baseURL(self) -> str:
         return self._base_url
 
     cameraOrientationChanged = pyqtSignal()
 
     @pyqtProperty("QVariantMap", notify = cameraOrientationChanged)
-    def cameraOrientation(self):
+    def cameraOrientation(self) -> Dict[str, Any]:
         return {
             "mirror": self._camera_mirror,
             "rotation": self._camera_rotation,
         }
 
-    def _update(self):
-        if self._last_response_time:
-            time_since_last_response = time() - self._last_response_time
-        else:
-            time_since_last_response = 0
-        if self._last_request_time:
-            time_since_last_request = time() - self._last_request_time
-        else:
-            time_since_last_request = float("inf") # An irrelevantly large number of seconds
-
-        # Connection is in timeout, check if we need to re-start the connection.
-        # Sometimes the qNetwork manager incorrectly reports the network status on Mac & Windows.
-        # Re-creating the QNetworkManager seems to fix this issue.
-        if self._last_response_time and self._connection_state_before_timeout:
-            if time_since_last_response > self._recreate_network_manager_time * self._recreate_network_manager_count:
-                self._recreate_network_manager_count += 1
-                # It can happen that we had a very long timeout (multiple times the recreate time).
-                # In that case we should jump through the point that the next update won't be right away.
-                while time_since_last_response - self._recreate_network_manager_time * self._recreate_network_manager_count > self._recreate_network_manager_time:
-                    self._recreate_network_manager_count += 1
-                Logger.log("d", "Timeout lasted over 30 seconds (%.1fs), re-checking connection.", time_since_last_response)
-                self._createNetworkManager()
-                return
-
-        # Check if we have an connection in the first place.
-        if not self._manager.networkAccessible():
-            if not self._connection_state_before_timeout:
-                Logger.log("d", "The network connection seems to be disabled. Going into timeout mode")
-                self._connection_state_before_timeout = self._connection_state
-                self.setConnectionState(ConnectionState.error)
-                self._connection_message = Message(i18n_catalog.i18nc("@info:status",
-                                                                      "The connection with the network was lost."))
-                self._connection_message.show()
-                # Check if we were uploading something. Abort if this is the case.
-                # Some operating systems handle this themselves, others give weird issues.
-                try:
-                    if self._post_reply:
-                        Logger.log("d", "Stopping post upload because the connection was lost.")
-                        try:
-                            self._post_reply.uploadProgress.disconnect(self._onUploadProgress)
-                        except TypeError:
-                            pass  # The disconnection can fail on mac in some cases. Ignore that.
-
-                        self._post_reply.abort()
-                        self._progress_message.hide()
-                except RuntimeError:
-                    self._post_reply = None  # It can happen that the wrapped c++ object is already deleted.
-            return
-        else:
-            if not self._connection_state_before_timeout:
-                self._recreate_network_manager_count = 1
-
-        # Check that we aren't in a timeout state
-        if self._last_response_time and self._last_request_time and not self._connection_state_before_timeout:
-            if time_since_last_response > self._response_timeout_time and time_since_last_request <= self._response_timeout_time:
-                # Go into timeout state.
-                Logger.log("d", "We did not receive a response for %s seconds, so it seems OctoPrint is no longer accesible.", time() - self._last_response_time)
-                self._connection_state_before_timeout = self._connection_state
-                self._connection_message = Message(i18n_catalog.i18nc("@info:status", "The connection with OctoPrint was lost. Check your network-connections."))
-                self._connection_message.show()
-                self.setConnectionState(ConnectionState.error)
-
+    def _update(self) -> None:
         ## Request 'general' printer data
-        self._printer_reply = self._manager.get(self._createApiRequest("printer"))
+        self.get("printer", self._onRequestFinished)
 
         ## Request print_job data
-        self._job_reply = self._manager.get(self._createApiRequest("job"))
+        self.get("job", self._onRequestFinished)
 
-    def _createNetworkManager(self):
-        if self._manager:
-            self._manager.finished.disconnect(self._onRequestFinished)
-
-        self._manager = QNetworkAccessManager()
-        self._manager.finished.connect(self._onRequestFinished)
-
-    def _createApiRequest(self, end_point):
-        request = QNetworkRequest(QUrl(self._api_url + end_point))
+    def _createEmptyRequest(self, target: str, content_type: Optional[str] = "application/json") -> QNetworkRequest:
+        request = QNetworkRequest(QUrl(self._api_url + target))
         request.setRawHeader(self._user_agent_header, self._user_agent.encode())
         request.setRawHeader(self._api_header, self._api_key)
+        if content_type is not None:
+            request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
         if self._basic_auth_data:
             request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
         return request
 
-    def close(self):
+    def close(self) -> None:
         self.setConnectionState(ConnectionState.closed)
         if self._progress_message:
             self._progress_message.hide()
@@ -304,11 +222,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._error_message.hide()
         self._update_timer.stop()
 
-    def requestWrite(self, node, file_name = None, filter_by_machine = False, file_handler = None, **kwargs):
+    def requestWrite(self, nodes: List[SceneNode], file_name: Optional[str] = None, limit_mimetypes: bool = False, file_handler: Optional[FileHandler] = None, **kwargs: str) -> None:
         self.writeStarted.emit(self)
 
-        active_build_plate = Application.getInstance().getMultiBuildPlateModel().activeBuildPlate
-        scene = Application.getInstance().getController().getScene()
+        active_build_plate = CuraApplication.getInstance().getMultiBuildPlateModel().activeBuildPlate
+        scene = CuraApplication.getInstance().getController().getScene()
         gcode_dict = getattr(scene, "gcode_dict", None)
         if not gcode_dict:
             return
@@ -317,7 +235,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self.startPrint()
 
     ##  Start requesting data from the instance
-    def connect(self):
+    def connect(self) -> None:
         self._createNetworkManager()
 
         self.setConnectionState(ConnectionState.connecting)
@@ -330,17 +248,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._id))
 
         ## Request 'settings' dump
-        self._settings_reply = self._manager.get(self._createApiRequest("settings"))
+        self.get("settings", self._onRequestFinished)
 
     ##  Stop requesting data from the instance
-    def disconnect(self):
+    def disconnect(self) -> None:
         Logger.log("d", "Connection with instance %s with url %s stopped", self._id, self._base_url)
         self.close()
 
-    def pausePrint(self):
+    def pausePrint(self) -> None:
         self._sendJobCommand("pause")
 
-    def resumePrint(self):
+    def resumePrint(self) -> None:
         if not self._printers[0].activePrintJob:
             return
 
@@ -349,11 +267,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         else:
             self._sendJobCommand("start")
 
-    def cancelPrint(self):
+    def cancelPrint(self) -> None:
         self._sendJobCommand("cancel")
 
-    def startPrint(self):
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
+    def startPrint(self) -> None:
+        global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
         if not global_container_stack:
             return
 
@@ -386,15 +304,19 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._startPrint()
 
-    def _queuePrint(self, message_id, action_id):
+    def _queuePrint(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._error_message:
             self._error_message.hide()
         self._forced_queue = True
         self._startPrint()
 
-    def _startPrint(self):
+    def _startPrint(self) -> None:
+        global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
+        if not global_container_stack:
+            return
+
         if self._auto_print and not self._forced_queue:
-            Application.getInstance().getController().setActiveStage("MonitorStage")
+            CuraApplication.getInstance().getController().setActiveStage("MonitorStage")
 
             # cancel any ongoing preheat timer before starting a print
             try:
@@ -418,40 +340,39 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 QCoreApplication.processEvents()
                 last_process_events = time()
 
-        job_name = Application.getInstance().getPrintInformation().jobName.strip()
+        job_name = CuraApplication.getInstance().getPrintInformation().jobName.strip()
         if job_name is "":
             job_name = "untitled_print"
         file_name = "%s.gcode" % job_name
 
         ##  Create multi_part request
-        self._post_multi_part = QHttpMultiPart(QHttpMultiPart.FormDataType)
+        post_parts = [] # type: List[QHttpPart]
 
         ##  Create parts (to be placed inside multipart)
         post_part = QHttpPart()
         post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"select\"")
         post_part.setBody(b"true")
-        self._post_multi_part.append(post_part)
+        post_parts.append(post_part)
 
         if self._auto_print and not self._forced_queue:
             post_part = QHttpPart()
             post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"print\"")
             post_part.setBody(b"true")
-            self._post_multi_part.append(post_part)
+            post_parts.append(post_part)
 
         post_part = QHttpPart()
         post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
         post_part.setBody(single_string_file_data.encode())
-        self._post_multi_part.append(post_part)
+        post_parts.append(post_part)
 
         destination = "local"
-        if self._sd_supported and parseBool(Application.getInstance().getGlobalContainerStack().getMetaDataEntry("octoprint_store_sd", False)):
+        if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
             destination = "sdcard"
 
         try:
             ##  Post request + data
-            post_request = self._createApiRequest("files/" + destination)
-            self._post_reply = self._manager.post(post_request, self._post_multi_part)
-            self._post_reply.uploadProgress.connect(self._onUploadProgress)
+            post_request = self._createEmptyRequest("files/" + destination)
+            self._post_reply = self.postFormWithParts("files/" + destination, post_parts, on_finished=self._onRequestFinished, on_progress=self._onUploadProgress)
 
         except IOError:
             self._progress_message.hide()
@@ -461,9 +382,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
             Logger.log("e", "An exception occurred in network connection: %s" % str(e))
 
-        self._gcode = []
+        self._gcode = [] # type: List[str]
 
-    def _cancelSendGcode(self, message_id, action_id):
+    def _cancelSendGcode(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._post_reply:
             Logger.log("d", "Stopping upload because the user pressed cancel.")
             try:
@@ -476,33 +397,30 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if self._progress_message:
             self._progress_message.hide()
 
-    def sendCommand(self, command):
+    def sendCommand(self, command: str) -> None:
         self._queued_gcode_commands.append(command)
         self._queued_gcode_timer.start()
 
     # Send gcode commands that are queued in quick succession as a single batch
-    def _sendQueuedGcode(self):
+    def _sendQueuedGcode(self) -> None:
         if self._queued_gcode_commands:
             self._sendCommandToApi("printer/command", self._queued_gcode_commands)
             Logger.log("d", "Sent gcode command to OctoPrint instance: %s", self._queued_gcode_commands)
-            self._queued_gcode_commands = []
+            self._queued_gcode_commands = [] # type: List[str]
 
-    def _sendJobCommand(self, command):
+    def _sendJobCommand(self, command: str) -> None:
         self._sendCommandToApi("job", command)
         Logger.log("d", "Sent job command to OctoPrint instance: %s", command)
 
-    def _sendCommandToApi(self, end_point, commands):
-        command_request = self._createApiRequest(end_point)
-        command_request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
-
+    def _sendCommandToApi(self, end_point: str, commands: Union[str, List[str]]) -> None:
         if isinstance(commands, list):
             data = json.dumps({"commands": commands})
         else:
             data = json.dumps({"command": commands})
-        self._command_reply = self._manager.post(command_request, data.encode())
+        self.post(end_point, data, self._onRequestFinished)
 
     ##  Handler for all requests that have finished.
-    def _onRequestFinished(self, reply):
+    def _onRequestFinished(self, reply: QNetworkReply) -> None:
         if reply.error() == QNetworkReply.TimeoutError:
             Logger.log("w", "Received a timeout on a request to the instance")
             self._connection_state_before_timeout = self._connection_state
@@ -718,9 +636,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     if "plugins" in json_data:
                         self._plugin_data = json_data["plugins"]
 
-                        can_update_firmware = "firmwareupdater" in self._plugin_data
-                        self._output_controller.setCanUpdateFirmware(can_update_firmware)
-
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if self._api_prefix + "files" in reply.url().toString():  # Result from /files command:
                 if http_status_code == 201:
@@ -729,7 +644,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     pass  # See generic error handler below
 
                 reply.uploadProgress.disconnect(self._onUploadProgress)
-                self._progress_message.hide()
+                if self._progress_message:
+                    self._progress_message.hide()
 
                 if self._forced_queue or not self._auto_print:
                     location = reply.header(QNetworkRequest.LocationHeader)
@@ -740,7 +656,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint"))
                     message.addAction("open_browser", i18n_catalog.i18nc("@action:button", "OctoPrint..."), "globe",
                                         i18n_catalog.i18nc("@info:tooltip", "Open the OctoPrint web interface"))
-                    message.actionTriggered.connect(self._onMessageActionTriggered)
+                    message.actionTriggered.connect(self._openOctoPrint)
                     message.show()
 
             elif self._api_prefix + "job" in reply.url().toString():  # Result from /job command (eg start/pause):
@@ -760,14 +676,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if not error_handled and http_status_code >= 400:
             # Received an error reply
-            error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute).decode("utf-8")
+            error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
             if self._error_message:
                 self._error_message.hide()
             self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint returned an error: {0}.").format(error_string))
             self._error_message.show()
             return
 
-    def _onUploadProgress(self, bytes_sent, bytes_total):
+    def _onUploadProgress(self, bytes_sent: int, bytes_total: int) -> None:
+        if not self._progress_message:
+            return
+
         if bytes_total > 0:
             # Treat upload progress as response. Uploading can take more than 10 seconds, so if we don't, we can get
             # timeout responses if this happens.
@@ -784,7 +703,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         else:
             self._progress_message.setProgress(0)
 
-    def _createPrinterList(self):
+    def _createPrinterList(self) -> None:
         printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
         if self._camera_url != "":
             printer.setCamera(NetworkCamera(self._camera_url))
@@ -792,6 +711,5 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._printers = [printer]
         self.printersChanged.emit()
 
-    def _onMessageActionTriggered(self, message, action):
-        if action == "open_browser":
-            QDesktopServices.openUrl(QUrl(self._base_url))
+    def _openOctoPrint(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
+        QDesktopServices.openUrl(QUrl(self._base_url))
