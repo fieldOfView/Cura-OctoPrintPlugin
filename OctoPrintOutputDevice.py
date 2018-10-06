@@ -75,7 +75,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             CuraApplication.getInstance().getApplicationName(),
             CuraApplication.getInstance().getVersion(),
             "OctoPrintPlugin",
-            CuraApplication.getInstance().getVersion()
+            plugin_version
         )) # NetworkedPrinterOutputDevice defines this as string, so we encode this later
 
         self._api_prefix = "api/"
