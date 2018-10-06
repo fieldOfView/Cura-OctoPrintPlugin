@@ -6,6 +6,8 @@ from UM.Signal import Signal, signalemitter
 from UM.Application import Application
 from UM.Logger import Logger
 
+from PyQt5.QtCore import QTimer
+
 import time
 import json
 import re
@@ -40,6 +42,12 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
         self._name_regex = re.compile("OctoPrint instance (\".*\"\.|on )(.*)\.")
 
+        self._keep_alive_timer = QTimer()
+        self._keep_alive_timer.setInterval(2000)
+        self._keep_alive_timer.setSingleShot(False)
+        self._keep_alive_timer.timeout.connect(self._keepDiscoveryAlive)
+
+
     addInstanceSignal = Signal()
     removeInstanceSignal = Signal()
     instanceListChanged = Signal()
@@ -47,6 +55,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     ##  Start looking for devices on network.
     def start(self):
         self.startDiscovery()
+        self._keep_alive_timer.start()
 
     def startDiscovery(self):
         if self._browser:
@@ -75,6 +84,11 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             } # These additional properties use bytearrays to mimick the output of zeroconf
             self.addInstance(name, properties["address"], properties["port"], additional_properties)
 
+    def _keepDiscoveryAlive(self):
+        if not self._browser or not self._browser.is_alive():
+            Logger.log("w", "Zeroconf discovery has died, restarting discovery of OctoPrint instances.")
+            self.startDiscovery()
+
     def addManualInstance(self, name, address, port, path, useHttps = False, userName = "", password = ""):
         self._manual_instances[name] = {"address": address, "port": port, "path": path, "useHttps": useHttps, "userName": userName, "password": password}
         self._preferences.setValue("octoprint/manual_instances", json.dumps(self._manual_instances))
@@ -102,6 +116,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         self._browser = None
         if self._zero_conf:
             self._zero_conf.close()
+        self._keep_alive_timer.start()
 
     def getInstances(self):
         return self._instances
