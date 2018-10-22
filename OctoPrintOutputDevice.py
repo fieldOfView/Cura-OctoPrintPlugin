@@ -304,7 +304,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is busy. Unable to start a new job."))
 
             if self._error_message:
-                self._error_message.addAction("Queue", i18n_catalog.i18nc("@action:button", "Queue job"), None, i18n_catalog.i18nc("@action:tooltip", "Queue this print job so it can be printed later"))
+                self._error_message.addAction("Queue", i18n_catalog.i18nc("@action:button", "Queue job"), "", i18n_catalog.i18nc("@action:tooltip", "Queue this print job so it can be printed later"))
                 self._error_message.actionTriggered.connect(self._queuePrint)
                 self._error_message.show()
                 return
@@ -333,7 +333,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 pass
 
         self._progress_message = Message(i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"), 0, False, -1)
-        self._progress_message.addAction("Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), None, "")
+        self._progress_message.addAction("Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "", "")
         self._progress_message.actionTriggered.connect(self._cancelSendGcode)
         self._progress_message.show()
 
@@ -690,8 +690,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._last_response_time = time()
 
             progress = bytes_sent / bytes_total * 100
+            previous_progress = self._progress_message.getProgress()
             if progress < 100:
-                if progress > self._progress_message.getProgress():
+                if previous_progress is not None and progress > previous_progress:
                     self._progress_message.setProgress(progress)
             else:
                 self._progress_message.hide()
