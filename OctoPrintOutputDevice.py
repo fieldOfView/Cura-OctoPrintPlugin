@@ -125,6 +125,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
+        self._show_camera = False
         self._camera_mirror = False
         self._camera_rotation = 0
         self._camera_url = ""
@@ -202,6 +203,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             "mirror": self._camera_mirror,
             "rotation": self._camera_rotation,
         }
+
+    def setShowCamera(self, show_camera: bool) -> None:
+        if show_camera != self._show_camera:
+            self._show_camera = show_camera
+            self.showCameraChanged.emit()
+
+    showCameraChanged = pyqtSignal()
+
+    @pyqtProperty(bool, notify = showCameraChanged)
+    def showCamera(self) -> bool:
+        return self._show_camera
 
     def _update(self) -> None:
         ## Request 'general' printer data

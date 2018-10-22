@@ -5,6 +5,7 @@ from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
 from UM.Signal import Signal, signalemitter
 from UM.Application import Application
 from UM.Logger import Logger
+from UM.Util import parseBool
 
 from PyQt5.QtCore import QTimer
 
@@ -130,6 +131,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             if key == global_container_stack.getMetaDataEntry("octoprint_id"):
                 api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
                 self._instances[key].setApiKey(self._deobfuscateString(api_key))
+                self._instances[key].setShowCamera(parseBool(global_container_stack.getMetaDataEntry("octoprint_show_camera", "false")))
                 self._instances[key].connectionStateChanged.connect(self._onInstanceConnectionStateChanged)
                 self._instances[key].connect()
             else:
