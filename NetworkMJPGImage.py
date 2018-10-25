@@ -1,5 +1,5 @@
 # Copyright (c) 2018 Aldo Hoeben / fieldOfView
-# NetworkMJPGImage is released under the terms of the AGPLv3 or higher.
+# NetworkMJPGImage is released under the terms of the LGPLv3 or higher.
 
 from PyQt5.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect
 from PyQt5.QtGui import QImage
