@@ -1,10 +1,11 @@
 import QtQuick 2.2
+import OctoPrintPlugin 1.0 as OctoPrintPlugin
 
 Component
 {
     Item
     {
-        Image
+        OctoPrintPlugin.NetworkMJPGImage
         {
             id: cameraImage
             visible: OutputDevice != null ? OutputDevice.showCamera : false
@@ -12,77 +13,64 @@ Component
             property bool rotatedImage: (OutputDevice.cameraOrientation.rotation / 90) % 2
             property bool proportionalHeight:
             {
-                if (sourceSize.height == 0 || maximumHeight == 0)
+                if (imageHeight == 0 || maximumHeight == 0)
                 {
                     return true;
                 }
                 if (!rotatedImage)
                 {
-                    return (sourceSize.width / sourceSize.height) > (maximumWidth / maximumHeight);
+                    return (imageWidth / imageHeight) > (maximumWidth / maximumHeight);
                 }
                 else
                 {
-                    return (sourceSize.width / sourceSize.height) > (maximumHeight / maximumWidth);
+                    return (imageWidth / imageHeight) > (maximumHeight / maximumWidth);
                 }
             }
             property real _width:
             {
                 if (!rotatedImage)
                 {
-                    return Math.min(maximumWidth, sourceSize.width * screenScaleFactor * maximumZoom);
+                    return Math.min(maximumWidth, imageWidth * screenScaleFactor * maximumZoom);
                 }
                 else
                 {
-                    return Math.min(maximumHeight, sourceSize.width * screenScaleFactor * maximumZoom);
+                    return Math.min(maximumHeight, imageWidth * screenScaleFactor * maximumZoom);
                 }
             }
             property real _height:
             {
                 if (!rotatedImage)
                 {
-                    return Math.min(maximumHeight, sourceSize.height * screenScaleFactor * maximumZoom);
+                    return Math.min(maximumHeight, imageHeight * screenScaleFactor * maximumZoom);
                 }
                 else
                 {
-                    return Math.min(maximumWidth, sourceSize.height * screenScaleFactor * maximumZoom);
+                    return Math.min(maximumWidth, imageHeight * screenScaleFactor * maximumZoom);
                 }
             }
-            width: proportionalHeight ? _width : sourceSize.width * _height / sourceSize.height
-            height: !proportionalHeight ? _height : sourceSize.height * _width / sourceSize.width
+            width: proportionalHeight ? _width : imageWidth * _height / imageHeight
+            height: !proportionalHeight ? _height : imageHeight * _width / imageWidth
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
 
             Component.onCompleted:
             {
-                if (visible && OutputDevice.activePrinter != null && OutputDevice.activePrinter.camera != null)
-                {
-                        OutputDevice.activePrinter.camera.start();
-                }
+                start();
             }
             onVisibleChanged:
             {
-                if (OutputDevice.activePrinter != null && OutputDevice.activePrinter.camera != null)
+                if (visible)
                 {
-                    if (visible)
-                    {
-                        OutputDevice.activePrinter.camera.start();
-                    } else
-                    {
-                        OutputDevice.activePrinter.camera.stop();
-                    }
+                    start();
+                } else
+                {
+                    stop();
                 }
             }
-            source:
-            {
-                if(OutputDevice.activePrinter != null && OutputDevice.activePrinter.camera != null && OutputDevice.activePrinter.camera.latestImage)
-                {
-                    return OutputDevice.activePrinter.camera.latestImage;
-                }
-                return "";
-            }
+            source: OutputDevice.cameraUrl
 
             rotation: OutputDevice.cameraOrientation.rotation
-            mirror: OutputDevice.cameraOrientation.mirror
+            //mirror: OutputDevice.cameraOrientation.mirror
         }
     }
 }

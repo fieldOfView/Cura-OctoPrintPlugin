@@ -5,15 +5,20 @@ import os, json
 
 from . import OctoPrintOutputDevicePlugin
 from . import DiscoverOctoPrintAction
+from . import NetworkMJPGImage
 
 from UM.Version import Version
 from UM.Application import Application
 from UM.Logger import Logger
 
+from PyQt5.QtQml import qmlRegisterType
+
 def getMetaData():
     return {}
 
 def register(app):
+    qmlRegisterType(NetworkMJPGImage.NetworkMJPGImage, "OctoPrintPlugin", 1, 0, "NetworkMJPGImage")
+
     if __matchVersion():
         return {
 	        "output_device": OctoPrintOutputDevicePlugin.OctoPrintOutputDevicePlugin(),

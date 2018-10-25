@@ -12,7 +12,6 @@ from cura.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
 from cura.PrinterOutput.PrintJobOutputModel import PrintJobOutputModel
-from cura.PrinterOutput.NetworkCamera import NetworkCamera
 
 from cura.PrinterOutput.GenericOutputController import GenericOutputController
 
@@ -203,6 +202,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             "mirror": self._camera_mirror,
             "rotation": self._camera_rotation,
         }
+
+    cameraUrlChanged = pyqtSignal()
+
+    @pyqtProperty("QUrl", notify = cameraUrlChanged)
+    def cameraUrl(self) -> QUrl:
+        return QUrl(self._camera_url)
 
     def setShowCamera(self, show_camera: bool) -> None:
         if show_camera != self._show_camera:
@@ -625,8 +630,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             self._camera_url = ""
 
                         Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
-                        if self._camera_url != "" and len(self._printers) > 0:
-                            self._printers[0].setCamera(NetworkCamera(self._camera_url))
+                        self.cameraUrlChanged.emit()
 
                         if "rotate90" in json_data["webcam"]:
                             self._camera_rotation = -90 if json_data["webcam"]["rotate90"] else 0
@@ -715,8 +719,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _createPrinterList(self) -> None:
         printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
-        if self._camera_url != "":
-            printer.setCamera(NetworkCamera(self._camera_url))
         printer.updateName(self.name)
         self._printers = [printer]
         self.printersChanged.emit()
