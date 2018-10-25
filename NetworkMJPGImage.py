@@ -28,12 +28,20 @@ class NetworkMJPGImage(QQuickPaintedItem):
         self._source_url = QUrl()
         self._started = False
 
+        self._mirror = False
+
+        self.setAntialiasing(True)
+
     ##  Ensure that close gets called when object is destroyed
     def __del__(self) -> None:
         self.stop()
 
 
     def paint(self, painter: "QPainter") -> None:
+        if self._mirror:
+            painter.drawImage(self.contentsBoundingRect(), self._image.mirrored())
+            return
+
         painter.drawImage(self.contentsBoundingRect(), self._image)
 
 
@@ -49,6 +57,18 @@ class NetworkMJPGImage(QQuickPaintedItem):
     sourceURLChanged = pyqtSignal()
     source = pyqtProperty(QUrl, fget = getSourceURL, fset = setSourceURL, notify = sourceURLChanged)
 
+    def setMirror(self, mirror: bool) -> None:
+        if mirror == self._mirror:
+            return
+        self._mirror = mirror
+        self.mirrorChanged.emit()
+        self.update()
+
+    def getMirror(self) -> bool:
+        return self._mirror
+
+    mirrorChanged = pyqtSignal()
+    mirror = pyqtProperty(bool, fget = getMirror, fset = setMirror, notify = mirrorChanged)
 
     imageSizeChanged = pyqtSignal()
 

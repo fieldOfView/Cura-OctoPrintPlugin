@@ -9,6 +9,7 @@ Component
         {
             id: cameraImage
             visible: OutputDevice != null ? OutputDevice.showCamera : false
+
             property real maximumZoom: 2
             property bool rotatedImage: (OutputDevice.cameraOrientation.rotation / 90) % 2
             property bool proportionalHeight:
@@ -70,7 +71,7 @@ Component
             source: OutputDevice.cameraUrl
 
             rotation: OutputDevice.cameraOrientation.rotation
-            //mirror: OutputDevice.cameraOrientation.mirror
+            mirror: OutputDevice.cameraOrientation.mirror
         }
     }
 }

@@ -639,9 +639,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                                 self._camera_rotation += 180
                             elif json_data["webcam"]["flipH"]:
                                 self._camera_mirror = True
+                                self._camera_rotation += 180
                             elif json_data["webcam"]["flipV"]:
                                 self._camera_mirror = True
-                                self._camera_rotation += 180
                             else:
                                 self._camera_mirror = False
                             self.cameraOrientationChanged.emit()
