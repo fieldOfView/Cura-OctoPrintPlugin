@@ -120,7 +120,6 @@ Cura.MachineAction
                     onCurrentIndexChanged:
                     {
                         base.selectedInstance = listview.model[currentIndex];
-                        manager.requestApiKey(base.selectedInstance.getId(), base.selectedInstance.baseURL, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
                         apiCheckDelay.throttledCheck();
                     }
                     Component.onCompleted: manager.startDiscovery()
@@ -203,14 +202,31 @@ Cura.MachineAction
                         wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "API Key")
                     }
-                    TextField
+                    Row
                     {
-                        id: apiKey
-                        width: Math.floor(parent.width * 0.8 - UM.Theme.getSize("default_margin").width)
-                        onTextChanged:
+                        spacing: UM.Theme.getSize("default_lining").width
+                        TextField
                         {
-                            apiCheckDelay.throttledCheck()
+                            id: apiKey
+                            width: Math.floor(parent.parent.width * (requestApiKey.visible ? 0.5 : 0.8) - UM.Theme.getSize("default_margin").width)
+                            onTextChanged:
+                            {
+                                apiCheckDelay.throttledCheck()
+                            }
                         }
+
+                        Button
+                        {
+                            id: requestApiKey
+                            visible: true
+                            text: catalog.i18nc("@action", "Request...")
+                            onClicked:
+                            {
+                                manager.requestApiKey(base.selectedInstance.getId(), base.selectedInstance.baseURL, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
+                                manager.openWebPage(base.selectedInstance.baseURL)
+                            }
+                        }
+
                     }
                     Connections
                     {
