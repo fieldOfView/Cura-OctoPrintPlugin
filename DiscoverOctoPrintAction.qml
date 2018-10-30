@@ -120,6 +120,7 @@ Cura.MachineAction
                     onCurrentIndexChanged:
                     {
                         base.selectedInstance = listview.model[currentIndex];
+                        manager.requestApiKey(base.selectedInstance.getId(), base.selectedInstance.baseURL, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
                         apiCheckDelay.throttledCheck();
                     }
                     Component.onCompleted: manager.startDiscovery()
@@ -215,6 +216,14 @@ Cura.MachineAction
                     {
                         target: base
                         onSelectedInstanceChanged:
+                        {
+                            apiKey.text = manager.getApiKey(base.selectedInstance.getId())
+                        }
+                    }
+                    Connections
+                    {
+                        target: manager
+                        onAppKeyReceived:
                         {
                             apiKey.text = manager.getApiKey(base.selectedInstance.getId())
                         }

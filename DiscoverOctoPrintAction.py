@@ -7,7 +7,7 @@ from UM.Settings.ContainerRegistry import ContainerRegistry
 from cura.MachineAction import MachineAction
 from cura.Settings.CuraStackBuilder import CuraStackBuilder
 
-from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject
+from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
 from PyQt5.QtQml import QQmlComponent, QQmlContext
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager
@@ -33,6 +33,15 @@ class DiscoverOctoPrintAction(MachineAction):
         self._network_manager.finished.connect(self._onRequestFinished)
 
         self._settings_reply = None
+
+        self._appkey_reply = None
+        self._appkey_request = None
+        self._appkey_instance_id = ""
+
+        self._appkey_poll_timer = QTimer()
+        self._appkey_poll_timer.setInterval(500)
+        self._appkey_poll_timer.setSingleShot(True)
+        self._appkey_poll_timer.timeout.connect(self._pollApiKey)
 
         # Try to get version information from plugin.json
         plugin_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin.json")
@@ -108,6 +117,7 @@ class DiscoverOctoPrintAction(MachineAction):
             self._application.getMachineActionManager().addSupportedAction(container.getId(), self.getKey())
 
     instancesChanged = pyqtSignal()
+    appKeyReceived = pyqtSignal()
 
     @pyqtProperty("QVariantList", notify = instancesChanged)
     def discoveredInstances(self):
@@ -135,6 +145,27 @@ class DiscoverOctoPrintAction(MachineAction):
             return ""
 
         return global_container_stack.getMetaDataEntry("octoprint_id", "")
+
+    @pyqtSlot(str, str, str, str)
+    def requestApiKey(self, instance_id, base_url, basic_auth_username = "", basic_auth_password = ""):
+        ## Request appkey
+        self._appkey_instance_id = instance_id
+        url = QUrl(base_url + "plugin/appkeys/request")
+        self._appkey_request = QNetworkRequest(url)
+        appkey_headers = {}
+        self._appkey_request.setRawHeader(b"User-Agent", self._user_agent)
+        if basic_auth_username and basic_auth_password:
+            data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
+            settings_request.setRawHeader("Authorization".encode(), ("Basic %s" % data).encode())
+        self._appkey_poll_headers = self._appkey_request.rawHeaderList()
+        self._appkey_request.setRawHeader(b"Content-Type", b"application/json")
+        data = json.dumps({"app": "Cura"})
+        self._appkey_reply = self._network_manager.post(self._appkey_request, data.encode())
+
+    def _pollApiKey(self):
+        if not self._appkey_request:
+            return
+        self._appkey_reply = self._network_manager.get(self._appkey_request)
 
     @pyqtSlot(str, str, str, str)
     def testApiKey(self, base_url, api_key, basic_auth_username = "", basic_auth_password = ""):
@@ -291,7 +322,44 @@ class DiscoverOctoPrintAction(MachineAction):
             # Received no or empty reply
             return
 
+        if reply.operation() == QNetworkAccessManager.PostOperation:
+            if "/plugin/appkeys/request" in reply.url().toString():  # Initial AppKey request
+                if http_status_code == 201 or http_status_code == 202:
+                    Logger.log("w", "Start polling for AppKeys decision")
+                    self._appkey_request.setUrl(reply.header(QNetworkRequest.LocationHeader))
+                    self._appkey_request.setRawHeader(b"Content-Type", b"")
+                    self._appkey_poll_timer.start()
+                elif http_status_code == 404:
+                    Logger.log("w", "This instance of OctoPrint does not support AppKeys")
+                    self._appkey_request = None
+                else:
+                    response = bytes(reply.readAll()).decode()
+                    Logger.log("w", "Unknown response when requesting an AppKey: %d. OctoPrint said %s" % (http_status_code, response))
+                    self._appkey_request = None
+
         if reply.operation() == QNetworkAccessManager.GetOperation:
+            if "/plugin/appkeys/request" in reply.url().toString():  # Initial AppKey request
+                if http_status_code == 202:
+                    self._appkey_poll_timer.start()
+                elif http_status_code == 200:
+                    Logger.log("d", "AppKey granted")
+                    self._appkey_request = None
+                    try:
+                        json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    except json.decoder.JSONDecodeError:
+                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        return
+
+                    self._keys_cache[self._appkey_instance_id] = json_data["api_key"]
+                    self.appKeyReceived.emit()
+                elif http_status_code == 404:
+                    Logger.log("d", "AppKey denied")
+                    self._appkey_request = None
+                else:
+                    response = bytes(reply.readAll()).decode()
+                    Logger.log("w", "Unknown response when waiting for an AppKey: %d. OctoPrint said %s" % (http_status_code, response))
+                    self._appkey_request = None
+
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
                 if http_status_code == 200:
                     Logger.log("d", "API key accepted by OctoPrint.")
