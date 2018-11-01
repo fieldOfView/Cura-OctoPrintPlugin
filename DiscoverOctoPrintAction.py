@@ -152,7 +152,6 @@ class DiscoverOctoPrintAction(MachineAction):
         self._appkey_instance_id = instance_id
         url = QUrl(base_url + "plugin/appkeys/request")
         self._appkey_request = QNetworkRequest(url)
-        appkey_headers = {}
         self._appkey_request.setRawHeader(b"User-Agent", self._user_agent)
         if basic_auth_username and basic_auth_password:
             data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
