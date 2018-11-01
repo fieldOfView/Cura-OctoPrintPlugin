@@ -9,6 +9,7 @@ install(FILES
     OctoPrintComponents.qml
     OctoPrintOutputDevice.py
     OctoPrintOutputDevicePlugin.py
+    NetworkMJPGImage.py
     MonitorItem.qml
     LICENSE
     README.md
