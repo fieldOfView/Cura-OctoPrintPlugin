@@ -228,7 +228,7 @@ Cura.MachineAction
                         Button
                         {
                             id: requestApiKey
-                            visible: true
+                            visible: manager.instanceSupportsAppKeys
                             text: catalog.i18nc("@action", "Request...")
                             onClicked:
                             {
@@ -276,7 +276,7 @@ Cura.MachineAction
                         }
                         onCheck:
                         {
-                            manager.testApiKey(base.selectedInstance.baseURL, apiKey.text, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
+                            manager.probeInstance(base.selectedInstance.baseURL, apiKey.text, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
                             checkOnTrigger = false;
                             restart();
                         }
