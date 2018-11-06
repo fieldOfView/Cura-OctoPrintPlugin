@@ -11,6 +11,16 @@ Cura.MachineAction
     id: base
     anchors.fill: parent;
     property var selectedInstance: null
+
+    onVisibleChanged:
+    {
+        if(!visible)
+        {
+            manager.cancelApiKeyRequest();
+        }
+    }
+
+
     Column
     {
         anchors.fill: parent;

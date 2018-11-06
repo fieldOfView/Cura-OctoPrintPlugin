@@ -161,6 +161,16 @@ class DiscoverOctoPrintAction(MachineAction):
         data = json.dumps({"app": "Cura"})
         self._appkey_reply = self._network_manager.post(self._appkey_request, data.encode())
 
+    @pyqtSlot()
+    def cancelApiKeyRequest(self):
+        if self._appkey_reply:
+            self._appkey_reply.abort()
+            self._appkey_reply = None
+
+        self._appkey_request = None
+
+        self._appkey_poll_timer.stop()
+
     def _pollApiKey(self):
         if not self._appkey_request:
             return
