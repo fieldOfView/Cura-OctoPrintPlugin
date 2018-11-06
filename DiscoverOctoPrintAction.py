@@ -152,13 +152,7 @@ class DiscoverOctoPrintAction(MachineAction):
     def requestApiKey(self, instance_id, base_url, basic_auth_username = "", basic_auth_password = ""):
         ## Request appkey
         self._appkey_instance_id = instance_id
-        url = QUrl(base_url + "plugin/appkeys/request")
-        self._appkey_request = QNetworkRequest(url)
-        self._appkey_request.setRawHeader(b"User-Agent", self._user_agent)
-        if basic_auth_username and basic_auth_password:
-            data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
-            settings_request.setRawHeader("Authorization".encode(), ("Basic %s" % data).encode())
-        self._appkey_poll_headers = self._appkey_request.rawHeaderList()
+        self._appkey_request = self._createRequest(QUrl(base_url + "plugin/appkeys/request"), basic_auth_username, basic_auth_password)
         self._appkey_request.setRawHeader(b"Content-Type", b"application/json")
         data = json.dumps({"app": "Cura"})
         self._appkey_reply = self._network_manager.post(self._appkey_request, data.encode())
@@ -183,12 +177,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._appkeys_supported = False
         self.appKeysSupportedChanged.emit()
 
-        url = QUrl(base_url + "plugin/appkeys/probe")
-        appkey_probe_request = QNetworkRequest(url)
-        appkey_probe_request.setRawHeader("User-Agent".encode(), self._user_agent)
-        if basic_auth_username and basic_auth_password:
-            data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
-            appkey_probe_request.setRawHeader("Authorization".encode(), ("Basic %s" % data).encode())
+        appkey_probe_request = self._createRequest(QUrl(base_url + "plugin/appkeys/probe"), basic_auth_username, basic_auth_password)
         self._appkey_request = self._network_manager.get(appkey_probe_request)
 
         self._instance_responded = False
@@ -201,13 +190,8 @@ class DiscoverOctoPrintAction(MachineAction):
             Logger.log("d", "Trying to access OctoPrint instance at %s with the provided API key." % base_url)
 
             ## Request 'settings' dump
-            url = QUrl(base_url + "api/settings")
-            settings_request = QNetworkRequest(url)
+            settings_request = self._createRequest(QUrl(base_url + "api/settings"), basic_auth_username, basic_auth_password)
             settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
-            settings_request.setRawHeader("User-Agent".encode(), self._user_agent)
-            if basic_auth_username and basic_auth_password:
-                data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
-                settings_request.setRawHeader("Authorization".encode(), ("Basic %s" % data).encode())
             self._settings_reply = self._network_manager.get(settings_request)
         else:
             if self._settings_reply:
@@ -417,6 +401,14 @@ class DiscoverOctoPrintAction(MachineAction):
 
                 self._instance_responded = True
                 self.selectedInstanceSettingsChanged.emit()
+
+    def _createRequest(self, url, basic_auth_username = "", basic_auth_password = ""):
+        request = QNetworkRequest(url)
+        request.setRawHeader("User-Agent".encode(), self._user_agent)
+        if basic_auth_username and basic_auth_password:
+            data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
+            request.setRawHeader("Authorization".encode(), ("Basic %s" % data).encode())
+        return request
 
     ##  Utility handler to base64-decode a string (eg an obfuscated API key), if it has been encoded before
     def _deobfuscateString(self, source):
