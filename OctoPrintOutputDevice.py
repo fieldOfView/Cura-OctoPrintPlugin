@@ -119,8 +119,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._queued_gcode_timer.setSingleShot(True)
         self._queued_gcode_timer.timeout.connect(self._sendQueuedGcode)
 
+        # TODO; Add preference for update intervals
+        self._update_fast_interval = 2000
+        self._update_slow_interval = 10000
         self._update_timer = QTimer()
-        self._update_timer.setInterval(2000)  # TODO; Add preference for update interval
+        self._update_timer.setInterval(self._update_fast_interval)
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
@@ -477,8 +480,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                 # An OctoPrint instance has a single printer.
                 printer = self._printers[0]
+                update_pace = self._update_slow_interval
 
                 if http_status_code == 200:
+                    update_pace = self._update_fast_interval
+
                     if not self.acceptsCommands:
                         self._setAcceptsCommands(True)
                         self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._id))
@@ -557,11 +563,22 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         printer.activePrintJob.updateState("offline")
                     self.setConnectionText(i18n_catalog.i18nc("@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._id))
                     error_handled = True
+
+                elif http_status_code == 502 or http_status_code == 503:
+                    printer.updateState("offline")
+                    if printer.activePrintJob:
+                        printer.activePrintJob.updateState("offline")
+                    self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} is not running").format(self._id))
+                    error_handled = True
+
                 else:
                     printer.updateState("offline")
                     if printer.activePrintJob:
                         printer.activePrintJob.updateState("offline")
                     Logger.log("w", "Received an unexpected returncode: %d", http_status_code)
+
+                if update_pace != self._update_timer.interval():
+                    self._update_timer.setInterval(update_pace)
 
             elif self._api_prefix + "job" in reply.url().toString():  # Status update from /job:
                 if not self._printers:
