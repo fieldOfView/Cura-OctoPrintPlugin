@@ -183,14 +183,16 @@ class DiscoverOctoPrintAction(MachineAction):
             return
         self._appkey_reply = self._network_manager.get(self._appkey_request)
 
-    @pyqtSlot(str, str, str, str)
-    def probeInstance(self, base_url: str, api_key: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
+    @pyqtSlot(str, str, str)
+    def probeAppKeySupport(self, base_url: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
         self._appkeys_supported = False
         self.appKeysSupportedChanged.emit()
 
         appkey_probe_request = self._createRequest(QUrl(base_url + "plugin/appkeys/probe"), basic_auth_username, basic_auth_password)
         self._appkey_request = self._network_manager.get(appkey_probe_request)
 
+    @pyqtSlot(str, str, str, str)
+    def testApiKey(self, base_url: str, api_key: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
         self._instance_responded = False
         self._instance_api_key_accepted = False
         self._instance_supports_sd = False

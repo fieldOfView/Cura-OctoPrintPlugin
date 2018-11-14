@@ -229,6 +229,7 @@ Cura.MachineAction
                         {
                             id: requestApiKey
                             visible: manager.instanceSupportsAppKeys
+                            enabled: !manager.instanceApiKeyAccepted
                             text: catalog.i18nc("@action", "Request...")
                             onClicked:
                             {
@@ -243,7 +244,12 @@ Cura.MachineAction
                         target: base
                         onSelectedInstanceChanged:
                         {
-                            apiKey.text = manager.getApiKey(base.selectedInstance.getId())
+                            if(base.selectedInstance)
+                            {
+                                manager.probeAppKeySupport(base.selectedInstance.baseURL, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"));
+                                apiCheckDelay.lastKey = "";
+                                apiKey.text = manager.getApiKey(base.selectedInstance.getId());
+                            }
                         }
                     }
                     Connections
@@ -251,6 +257,7 @@ Cura.MachineAction
                         target: manager
                         onAppKeyReceived:
                         {
+                            apiCheckDelay.lastKey = "";
                             apiKey.text = manager.getApiKey(base.selectedInstance.getId())
                         }
                     }
@@ -259,26 +266,23 @@ Cura.MachineAction
                         id: apiCheckDelay
                         interval: 500
 
-                        signal throttledCheck
-                        signal check
                         property bool checkOnTrigger: false
+                        property string lastKey: ""
 
-                        onThrottledCheck:
+                        function throttledCheck()
                         {
-                            if(running)
-                            {
-                                checkOnTrigger = true;
-                            }
-                            else
-                            {
-                                check();
-                            }
-                        }
-                        onCheck:
-                        {
-                            manager.probeInstance(base.selectedInstance.baseURL, apiKey.text, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
-                            checkOnTrigger = false;
+                            checkOnTrigger = true;
                             restart();
+                        }
+                        function check()
+                        {
+                            if(apiKey.text != lastKey)
+                            {
+                                lastKey = apiKey.text;
+                                manager.testApiKey(base.selectedInstance.baseURL, apiKey.text, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
+                                checkOnTrigger = false;
+                                restart();
+                            }
                         }
                         onTriggered:
                         {
