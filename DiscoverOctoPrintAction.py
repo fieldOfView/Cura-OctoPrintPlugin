@@ -84,7 +84,7 @@ class DiscoverOctoPrintAction(MachineAction):
         if not isinstance(self._keys_cache, dict):
             self._keys_cache = {} # type: Dict[str, Any]
 
-        self._additional_components = None # type:Optional["QObject"]
+        self._additional_components = None # type:Optional[QObject]
 
         ContainerRegistry.getInstance().containerAdded.connect(self._onContainerAdded)
         self._application.engineCreatedSignal.connect(self._createAdditionalComponentsView)

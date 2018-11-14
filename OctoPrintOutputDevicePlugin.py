@@ -60,7 +60,6 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     ##  Start looking for devices on network.
     def start(self) -> None:
         self.startDiscovery()
-        self._keep_alive_timer.start()
 
     def startDiscovery(self) -> None:
         if self._browser:
@@ -73,10 +72,15 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             self._zero_conf = Zeroconf()
         except Exception:
             self._zero_conf = None
+            self._keep_alive_timer.stop()
             Logger.logException("e", "Failed to create Zeroconf instance. Auto-discovery will not work.")
 
         if self._zero_conf:
             self._browser = ServiceBrowser(self._zero_conf, u'_octoprint._tcp.local.', [self._onServiceChanged])
+            if self._browser and self._browser.is_alive():
+                self._keep_alive_timer.start()
+            else:
+                Logger.log("w", "Failed to create Zeroconf browser. Auto-discovery will not work.")
 
         # Add manual instances from preference
         for name, properties in self._manual_instances.items():
