@@ -26,9 +26,8 @@ from time import time
 import base64
 from io import StringIO
 
-from typing import cast, Any, Callable, Dict, List, Optional, Union
-MYPY = False
-if MYPY:
+from typing import cast, Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
+if TYPE_CHECKING:
     from UM.Scene.SceneNode import SceneNode #For typing.
     from UM.FileHandler.FileHandler import FileHandler #For typing.
 

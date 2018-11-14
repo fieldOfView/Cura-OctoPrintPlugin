@@ -1,7 +1,7 @@
 from UM.i18n import i18nCatalog
 from UM.Logger import Logger
 from UM.Settings.DefinitionContainer import DefinitionContainer
-from UM.Application import Application
+from cura.CuraApplication import CuraApplication
 
 from UM.Settings.ContainerRegistry import ContainerRegistry
 from cura.MachineAction import MachineAction
@@ -10,33 +10,38 @@ from cura.Settings.CuraStackBuilder import CuraStackBuilder
 from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
 from PyQt5.QtQml import QQmlComponent, QQmlContext
 from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager
+from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager, QNetworkReply
 
 import os.path
 import json
 import base64
 
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from UM.Settings.ContainerInterface import ContainerInterface
+    from .OctoPrintOutputDevicePlugin import OctoPrintOutputDevicePlugin
+
 catalog = i18nCatalog("cura")
 
 class DiscoverOctoPrintAction(MachineAction):
-    def __init__(self, parent = None):
+    def __init__(self, parent: QObject = None) -> None:
         super().__init__("DiscoverOctoPrintAction", catalog.i18nc("@action", "Connect OctoPrint"))
 
         self._qml_url = "DiscoverOctoPrintAction.qml"
 
-        self._application = Application.getInstance()
-        self._network_plugin = None
+        self._application = CuraApplication.getInstance()
+        self._network_plugin = None # type: Optional[OctoPrintOutputDevicePlugin]
 
         #   QNetwork manager needs to be created in advance. If we don't it can happen that it doesn't correctly
         #   hook itself into the event loop, which results in events never being fired / done.
         self._network_manager = QNetworkAccessManager()
         self._network_manager.finished.connect(self._onRequestFinished)
 
-        self._settings_reply = None
+        self._settings_reply = None # type: Optional[QNetworkReply]
 
         self._appkeys_supported = False
-        self._appkey_reply = None
-        self._appkey_request = None
+        self._appkey_reply = None # type: Optional[QNetworkReply]
+        self._appkey_request = None # type: Optional[QNetworkRequest]
         self._appkey_instance_id = ""
 
         self._appkey_poll_timer = QTimer()
@@ -75,19 +80,21 @@ class DiscoverOctoPrintAction(MachineAction):
         try:
             self._keys_cache = json.loads(self._deobfuscateString(self._preferences.getValue("octoprint/keys_cache")))
         except ValueError:
-            self._keys_cache = {}
+            self._keys_cache = {} # type: Dict[str, Any]
         if not isinstance(self._keys_cache, dict):
-            self._keys_cache = {}
+            self._keys_cache = {} # type: Dict[str, Any]
 
-        self._additional_components = None
+        self._additional_components = None # type:Optional["QObject"]
 
         ContainerRegistry.getInstance().containerAdded.connect(self._onContainerAdded)
         self._application.engineCreatedSignal.connect(self._createAdditionalComponentsView)
 
     @pyqtSlot()
-    def startDiscovery(self):
+    def startDiscovery(self) -> None:
         if not self._network_plugin:
             self._network_plugin = self._application.getOutputDeviceManager().getOutputDevicePlugin(self._plugin_id)
+            if not self._network_plugin:
+                return
             self._network_plugin.addInstanceSignal.connect(self._onInstanceDiscovery)
             self._network_plugin.removeInstanceSignal.connect(self._onInstanceDiscovery)
             self._network_plugin.instanceListChanged.connect(self._onInstanceDiscovery)
@@ -96,24 +103,27 @@ class DiscoverOctoPrintAction(MachineAction):
             # Restart bonjour discovery
             self._network_plugin.startDiscovery()
 
-    def _onInstanceDiscovery(self, *args):
+    def _onInstanceDiscovery(self, *args) -> None:
         self.instancesChanged.emit()
 
     @pyqtSlot(str)
-    def removeManualInstance(self, name):
+    def removeManualInstance(self, name: str) -> None:
         if not self._network_plugin:
             return
 
         self._network_plugin.removeManualInstance(name)
 
     @pyqtSlot(str, str, int, str, bool, str, str)
-    def setManualInstance(self, name, address, port, path, useHttps, userName, password):
+    def setManualInstance(self, name: str, address: str, port: int, path: str, useHttps: bool, userName: str = "", password: str = "") -> None:
+        if not self._network_plugin:
+            return
+
         # This manual printer could replace a current manual printer
         self._network_plugin.removeManualInstance(name)
 
         self._network_plugin.addManualInstance(name, address, port, path, useHttps, userName, password)
 
-    def _onContainerAdded(self, container):
+    def _onContainerAdded(self, container: "ContainerInterface") -> None:
         # Add this action as a supported action to all machine definitions
         if isinstance(container, DefinitionContainer) and container.getMetaDataEntry("type") == "machine" and container.getMetaDataEntry("supports_usb_connection"):
             self._application.getMachineActionManager().addSupportedAction(container.getId(), self.getKey())
@@ -123,7 +133,7 @@ class DiscoverOctoPrintAction(MachineAction):
     appKeyReceived = pyqtSignal()
 
     @pyqtProperty("QVariantList", notify = instancesChanged)
-    def discoveredInstances(self):
+    def discoveredInstances(self) -> List[Any]:
         if self._network_plugin:
             instances = list(self._network_plugin.getInstances().values())
             instances.sort(key = lambda k: k.name)
@@ -132,7 +142,7 @@ class DiscoverOctoPrintAction(MachineAction):
             return []
 
     @pyqtSlot(str)
-    def setInstanceId(self, key):
+    def setInstanceId(self, key: str) -> None:
         global_container_stack = self._application.getGlobalContainerStack()
         if global_container_stack:
             global_container_stack.setMetaDataEntry("octoprint_id", key)
@@ -142,7 +152,7 @@ class DiscoverOctoPrintAction(MachineAction):
             self._network_plugin.reCheckConnections()
 
     @pyqtSlot(result = str)
-    def getInstanceId(self):
+    def getInstanceId(self) -> str:
         global_container_stack = self._application.getGlobalContainerStack()
         if not global_container_stack:
             return ""
@@ -150,7 +160,7 @@ class DiscoverOctoPrintAction(MachineAction):
         return global_container_stack.getMetaDataEntry("octoprint_id", "")
 
     @pyqtSlot(str, str, str, str)
-    def requestApiKey(self, instance_id, base_url, basic_auth_username = "", basic_auth_password = ""):
+    def requestApiKey(self, instance_id: str, base_url: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
         ## Request appkey
         self._appkey_instance_id = instance_id
         self._appkey_request = self._createRequest(QUrl(base_url + "plugin/appkeys/request"), basic_auth_username, basic_auth_password)
@@ -159,22 +169,22 @@ class DiscoverOctoPrintAction(MachineAction):
         self._appkey_reply = self._network_manager.post(self._appkey_request, data.encode())
 
     @pyqtSlot()
-    def cancelApiKeyRequest(self):
+    def cancelApiKeyRequest(self) -> None:
         if self._appkey_reply:
             self._appkey_reply.abort()
             self._appkey_reply = None
 
-        self._appkey_request = None
+        self._appkey_request = None # type: Optional[QNetworkRequest]
 
         self._appkey_poll_timer.stop()
 
-    def _pollApiKey(self):
+    def _pollApiKey(self) -> None:
         if not self._appkey_request:
             return
         self._appkey_reply = self._network_manager.get(self._appkey_request)
 
     @pyqtSlot(str, str, str, str)
-    def probeInstance(self, base_url, api_key, basic_auth_username = "", basic_auth_password = ""):
+    def probeInstance(self, base_url: str, api_key: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
         self._appkeys_supported = False
         self.appKeysSupportedChanged.emit()
 
@@ -200,7 +210,7 @@ class DiscoverOctoPrintAction(MachineAction):
                 self._settings_reply = None
 
     @pyqtSlot(str)
-    def setApiKey(self, api_key):
+    def setApiKey(self, api_key: str) -> None:
         global_container_stack = self._application.getGlobalContainerStack()
         if not global_container_stack:
             return
@@ -218,7 +228,7 @@ class DiscoverOctoPrintAction(MachineAction):
     ##  Get the stored API key of an instance, or the one stored in the machine instance
     #   \return key String containing the key of the machine.
     @pyqtSlot(str, result=str)
-    def getApiKey(self, instance_id):
+    def getApiKey(self, instance_id: str) -> str:
         global_container_stack = self._application.getGlobalContainerStack()
         if not global_container_stack:
             return ""
@@ -233,40 +243,40 @@ class DiscoverOctoPrintAction(MachineAction):
     selectedInstanceSettingsChanged = pyqtSignal()
 
     @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
-    def instanceResponded(self):
+    def instanceResponded(self) -> bool:
         return self._instance_responded
 
     @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
-    def instanceInError(self):
+    def instanceInError(self) -> bool:
         return self._instance_in_error
 
     @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
-    def instanceApiKeyAccepted(self):
+    def instanceApiKeyAccepted(self) -> bool:
         return self._instance_api_key_accepted
 
     @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
-    def instanceSupportsSd(self):
+    def instanceSupportsSd(self) -> bool:
         return self._instance_supports_sd
 
     @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
-    def instanceSupportsCamera(self):
+    def instanceSupportsCamera(self) -> bool:
         return self._instance_supports_camera
 
     @pyqtProperty(bool, notify = appKeysSupportedChanged)
-    def instanceSupportsAppKeys(self):
+    def instanceSupportsAppKeys(self) -> bool:
         return self._appkeys_supported
 
     @pyqtSlot(str, str, str)
-    def setContainerMetaDataEntry(self, container_id, key, value):
+    def setContainerMetaDataEntry(self, container_id: str, key: str, value: str) -> None:
         containers = ContainerRegistry.getInstance().findContainers(id = container_id)
         if not containers:
-            UM.Logger.log("w", "Could not set metadata of container %s because it was not found.", container_id)
-            return False
+            Logger.log("w", "Could not set metadata of container %s because it was not found.", container_id)
+            return
 
         containers[0].setMetaDataEntry(key, value)
 
     @pyqtSlot(bool)
-    def applyGcodeFlavorFix(self, apply_fix):
+    def applyGcodeFlavorFix(self, apply_fix: bool) -> None:
         global_container_stack = self._application.getGlobalContainerStack()
         if not global_container_stack:
             return
@@ -286,7 +296,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
         # Update the has_materials metadata flag after switching gcode flavor
         definition = global_container_stack.getBottom()
-        if definition.getProperty("machine_gcode_flavor", "value") != "UltiGCode" or definition.getMetaDataEntry("has_materials", False):
+        if not definition or definition.getProperty("machine_gcode_flavor", "value") != "UltiGCode" or definition.getMetaDataEntry("has_materials", False):
             # In other words: only continue for the UM2 (extended), but not for the UM2+
             return
 
@@ -315,10 +325,10 @@ class DiscoverOctoPrintAction(MachineAction):
 
 
     @pyqtSlot(str)
-    def openWebPage(self, url):
+    def openWebPage(self, url: str) -> None:
         QDesktopServices.openUrl(QUrl(url))
 
-    def _createAdditionalComponentsView(self):
+    def _createAdditionalComponentsView(self) -> None:
         Logger.log("d", "Creating additional ui components for OctoPrint-connected printers.")
 
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "OctoPrintComponents.qml")
@@ -330,7 +340,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._application.addAdditionalComponent("monitorButtons", self._additional_components.findChild(QObject, "openOctoPrintButton"))
 
     ##  Handler for all requests that have finished.
-    def _onRequestFinished(self, reply):
+    def _onRequestFinished(self, reply: QNetworkReply) -> None:
 
         http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
         if not http_status_code:
@@ -341,16 +351,18 @@ class DiscoverOctoPrintAction(MachineAction):
             if "/plugin/appkeys/request" in reply.url().toString():  # Initial AppKey request
                 if http_status_code == 201 or http_status_code == 202:
                     Logger.log("w", "Start polling for AppKeys decision")
+                    if not self._appkey_request:
+                        return
                     self._appkey_request.setUrl(reply.header(QNetworkRequest.LocationHeader))
                     self._appkey_request.setRawHeader(b"Content-Type", b"")
                     self._appkey_poll_timer.start()
                 elif http_status_code == 404:
                     Logger.log("w", "This instance of OctoPrint does not support AppKeys")
-                    self._appkey_request = None
+                    self._appkey_request = None # type: Optional[QNetworkRequest]
                 else:
                     response = bytes(reply.readAll()).decode()
                     Logger.log("w", "Unknown response when requesting an AppKey: %d. OctoPrint said %s" % (http_status_code, response))
-                    self._appkey_request = None
+                    self._appkey_request = None # type: Optional[QNetworkRequest]
 
         if reply.operation() == QNetworkAccessManager.GetOperation:
             if "/plugin/appkeys/probe" in reply.url().toString():  # Probe for AppKey support
@@ -364,7 +376,7 @@ class DiscoverOctoPrintAction(MachineAction):
                     self._appkey_poll_timer.start()
                 elif http_status_code == 200:
                     Logger.log("d", "AppKey granted")
-                    self._appkey_request = None
+                    self._appkey_request = None # type: Optional[QNetworkRequest]
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
@@ -375,11 +387,11 @@ class DiscoverOctoPrintAction(MachineAction):
                     self.appKeyReceived.emit()
                 elif http_status_code == 404:
                     Logger.log("d", "AppKey denied")
-                    self._appkey_request = None
+                    self._appkey_request = None # type: Optional[QNetworkRequest]
                 else:
                     response = bytes(reply.readAll()).decode()
                     Logger.log("w", "Unknown response when waiting for an AppKey: %d. OctoPrint said %s" % (http_status_code, response))
-                    self._appkey_request = None
+                    self._appkey_request = None # type: Optional[QNetworkRequest]
 
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
                 self._instance_in_error = False
@@ -414,7 +426,7 @@ class DiscoverOctoPrintAction(MachineAction):
                 self._instance_responded = True
                 self.selectedInstanceSettingsChanged.emit()
 
-    def _createRequest(self, url, basic_auth_username = "", basic_auth_password = ""):
+    def _createRequest(self, url: str, basic_auth_username: str = "", basic_auth_password: str = "") -> QNetworkRequest:
         request = QNetworkRequest(url)
         request.setRawHeader("User-Agent".encode(), self._user_agent)
         if basic_auth_username and basic_auth_password:
@@ -423,7 +435,7 @@ class DiscoverOctoPrintAction(MachineAction):
         return request
 
     ##  Utility handler to base64-decode a string (eg an obfuscated API key), if it has been encoded before
-    def _deobfuscateString(self, source):
+    def _deobfuscateString(self, source: str) -> str:
         try:
             return base64.b64decode(source.encode("ascii")).decode("ascii")
         except UnicodeDecodeError:

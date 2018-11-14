@@ -14,16 +14,20 @@ import json
 import re
 import base64
 
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
+
 ##      This plugin handles the connection detection & creation of output device objects for OctoPrint-connected printers.
 #       Zero-Conf is used to detect printers, which are saved in a dict.
 #       If we discover an instance that has the same key as the active machine instance a connection is made.
 @signalemitter
 class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self._zero_conf = None
-        self._browser = None
-        self._instances = {}
+        self._zero_conf = None # type: Optional[Zeroconf]
+        self._browser = None # type: Optional[ServiceBrowser]
+        self._instances = {} # type: Dict[str, OctoPrintOutputDevice.OctoPrintOutputDevice]
 
         # Because the model needs to be created in the same thread as the QMLEngine, we use a signal.
         self.addInstanceSignal.connect(self.addInstance)
@@ -37,9 +41,9 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         try:
             self._manual_instances = json.loads(self._preferences.getValue("octoprint/manual_instances"))
         except ValueError:
-            self._manual_instances = {}
+            self._manual_instances = {} # type: Dict[str, Any]
         if not isinstance(self._manual_instances, dict):
-            self._manual_instances = {}
+            self._manual_instances = {} # type: Dict[str, Any]
 
         self._name_regex = re.compile("OctoPrint instance (\".*\"\.|on )(.*)\.")
 
@@ -54,15 +58,15 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     instanceListChanged = Signal()
 
     ##  Start looking for devices on network.
-    def start(self):
+    def start(self) -> None:
         self.startDiscovery()
         self._keep_alive_timer.start()
 
-    def startDiscovery(self):
+    def startDiscovery(self) -> None:
         if self._browser:
             self._browser.cancel()
-            self._browser = None
-            self._printers = {}
+            self._browser = None # type: Optional[ServiceBrowser]
+            self._printers = [] # type: List[PrinterOutputModel]
         self.instanceListChanged.emit()
 
         try:
@@ -85,12 +89,12 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             } # These additional properties use bytearrays to mimick the output of zeroconf
             self.addInstance(name, properties["address"], properties["port"], additional_properties)
 
-    def _keepDiscoveryAlive(self):
+    def _keepDiscoveryAlive(self) -> None:
         if not self._browser or not self._browser.is_alive():
             Logger.log("w", "Zeroconf discovery has died, restarting discovery of OctoPrint instances.")
             self.startDiscovery()
 
-    def addManualInstance(self, name, address, port, path, useHttps = False, userName = "", password = ""):
+    def addManualInstance(self, name: str, address: str, port: int, path: str, useHttps: bool = False, userName: str = "", password: str = "") -> None:
         self._manual_instances[name] = {"address": address, "port": port, "path": path, "useHttps": useHttps, "userName": userName, "password": password}
         self._preferences.setValue("octoprint/manual_instances", json.dumps(self._manual_instances))
 
@@ -102,7 +106,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         self.addInstance(name, address, port, properties)
         self.instanceListChanged.emit()
 
-    def removeManualInstance(self, name):
+    def removeManualInstance(self, name: str) -> None:
         if name in self._instances:
             self.removeInstance(name)
             self.instanceListChanged.emit()
@@ -112,17 +116,18 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             self._preferences.setValue("octoprint/manual_instances", json.dumps(self._manual_instances))
 
     ##  Stop looking for devices on network.
-    def stop(self):
-        self._browser.cancel()
-        self._browser = None
+    def stop(self) -> None:
+        if self._browser:
+            self._browser.cancel()
+        self._browser = None # type: Optional[ServiceBrowser]
         if self._zero_conf:
             self._zero_conf.close()
         self._keep_alive_timer.start()
 
-    def getInstances(self):
+    def getInstances(self) -> Dict[str, Any]:
         return self._instances
 
-    def reCheckConnections(self):
+    def reCheckConnections(self) -> None:
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if not global_container_stack:
             return
@@ -139,7 +144,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
                     self._instances[key].close()
 
     ##  Because the model needs to be created in the same thread as the QMLEngine, we use a signal.
-    def addInstance(self, name, address, port, properties):
+    def addInstance(self, name: str, address: str, port: int, properties: Dict[bytes, bytes]) -> None:
         instance = OctoPrintOutputDevice.OctoPrintOutputDevice(name, address, port, properties)
         self._instances[instance.getId()] = instance
         global_container_stack = Application.getInstance().getGlobalContainerStack()
@@ -149,7 +154,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             instance.connectionStateChanged.connect(self._onInstanceConnectionStateChanged)
             instance.connect()
 
-    def removeInstance(self, name):
+    def removeInstance(self, name: str) -> None:
         instance = self._instances.pop(name, None)
         if instance:
             if instance.isConnected():
@@ -157,14 +162,14 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
                 instance.disconnect()
 
     ##  Utility handler to base64-decode a string (eg an obfuscated API key), if it has been encoded before
-    def _deobfuscateString(self, source):
+    def _deobfuscateString(self, source: str) -> str:
         try:
             return base64.b64decode(source.encode("ascii")).decode("ascii")
         except UnicodeDecodeError:
             return source
 
     ##  Handler for when the connection state of one of the detected instances changes
-    def _onInstanceConnectionStateChanged(self, key):
+    def _onInstanceConnectionStateChanged(self, key: str) -> None:
         if key not in self._instances:
             return
 
@@ -174,7 +179,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             self.getOutputDeviceManager().removeOutputDevice(key)
 
     ##  Handler for zeroConf detection
-    def _onServiceChanged(self, zeroconf, service_type, name, state_change):
+    def _onServiceChanged(self, zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
         if state_change == ServiceStateChange.Added:
             key = name
             result = self._name_regex.match(name)
@@ -187,7 +192,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             Logger.log("d", "Bonjour service added: %s" % name)
 
             # First try getting info from zeroconf cache
-            info = ServiceInfo(service_type, key, properties = {})
+            info = ServiceInfo(service_type, key)
             for record in zeroconf.cache.entries_with_name(key.lower()):
                 info.update_record(zeroconf, time.time(), record)
 
