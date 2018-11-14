@@ -302,6 +302,10 @@ Cura.MachineAction
                         }
                         else
                         {
+                            if(manager.instanceInError)
+                            {
+                                return catalog.i18nc("@label", "OctoPrint is not available.")
+                            }
                             if(manager.instanceResponded)
                             {
                                 if(manager.instanceApiKeyAccepted)

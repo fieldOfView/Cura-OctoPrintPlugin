@@ -63,6 +63,7 @@ class DiscoverOctoPrintAction(MachineAction):
         )).encode()
 
         self._instance_responded = False
+        self._instance_in_error = False
         self._instance_api_key_accepted = False
         self._instance_supports_sd = False
         self._instance_supports_camera = False
@@ -236,6 +237,10 @@ class DiscoverOctoPrintAction(MachineAction):
         return self._instance_responded
 
     @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
+    def instanceInError(self):
+        return self._instance_in_error
+
+    @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
     def instanceApiKeyAccepted(self):
         return self._instance_api_key_accepted
 
@@ -377,6 +382,8 @@ class DiscoverOctoPrintAction(MachineAction):
                     self._appkey_request = None
 
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
+                self._instance_in_error = False
+
                 if http_status_code == 200:
                     Logger.log("d", "API key accepted by OctoPrint.")
                     self._instance_api_key_accepted = True
@@ -398,6 +405,11 @@ class DiscoverOctoPrintAction(MachineAction):
                 elif http_status_code == 401:
                     Logger.log("d", "Invalid API key for OctoPrint.")
                     self._instance_api_key_accepted = False
+
+                elif http_status_code == 502 or http_status_code == 503:
+                    Logger.log("d", "OctoPrint is not running.")
+                    self._instance_api_key_accepted = False
+                    self._instance_in_error = True
 
                 self._instance_responded = True
                 self.selectedInstanceSettingsChanged.emit()
