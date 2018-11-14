@@ -56,7 +56,10 @@ Component
 
             Component.onCompleted:
             {
-                start();
+                if (visible)
+                {
+                    start();
+                }
             }
             onVisibleChanged:
             {
