@@ -247,19 +247,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._error_message.hide()
         self._update_timer.stop()
 
-    def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False, file_handler: Optional["FileHandler"] = None, **kwargs: str) -> None:
-        self.writeStarted.emit(self)
-
-        # Get the g-code through the GCodeWriter plugin
-        # This produces the same output as "Save to File", adding the print settings to the bottom of the file
-        gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
-        self._gcode_stream = StringIO()
-        if not gcode_writer.write(self._gcode_stream, None):
-            Logger.log("e", "GCodeWrite failed: %s" % gcode_writer.getInformation())
-            return
-
-        self.startPrint()
-
     ##  Start requesting data from the instance
     def connect(self) -> None:
         self._createNetworkManager()
@@ -297,9 +284,20 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def cancelPrint(self) -> None:
         self._sendJobCommand("cancel")
 
-    def startPrint(self) -> None:
+    def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False, file_handler: Optional["FileHandler"] = None, **kwargs: str) -> None:
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
         if not global_container_stack:
+            return
+
+        # Make sure post-processing plugin are run on the gcode
+        self.writeStarted.emit(self)
+
+        # Get the g-code through the GCodeWriter plugin
+        # This produces the same output as "Save to File", adding the print settings to the bottom of the file
+        gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
+        self._gcode_stream = StringIO()
+        if not gcode_writer.write(self._gcode_stream, None):
+            Logger.log("e", "GCodeWrite failed: %s" % gcode_writer.getInformation())
             return
 
         if self._error_message:
@@ -316,7 +314,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if self.activePrinter.state not in ["idle", ""]:
             Logger.log("d", "Tried starting a print, but current state is %s" % self.activePrinter.state)
             if not self._auto_print:
-                # allow queueing the job even if OctoPrint is currently busy if autoprinting is disabled
+                # Allow queueing the job even if OctoPrint is currently busy if autoprinting is disabled
                 self._error_message = None
             elif self.activePrinter.state == "offline":
                 self._error_message = Message(i18n_catalog.i18nc("@info:status", "The printer is offline. Unable to start a new job."))
