@@ -253,6 +253,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         # Get the g-code through the GCodeWriter plugin
         # This produces the same output as "Save to File", adding the print settings to the bottom of the file
         gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
+        self._gcode_stream = StringIO()
         if not gcode_writer.write(self._gcode_stream, None):
             Logger.log("e", "GCodeWrite failed: %s" % gcode_writer.getInformation())
             return
