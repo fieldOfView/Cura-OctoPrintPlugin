@@ -755,10 +755,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if not error_handled and http_status_code >= 400:
             # Received an error reply
-            error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+            error_string = bytes(reply.readAll()).decode("utf-8")
+            if not error_string:
+                error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
             if self._error_message:
                 self._error_message.hide()
-            self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint returned an error: {0}.").format(error_string))
+            self._error_message = Message(error_string, title=i18n_catalog.i18nc("@label", "OctoPrint error"))
             self._error_message.show()
             return
 
