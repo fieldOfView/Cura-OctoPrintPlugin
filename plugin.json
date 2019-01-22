@@ -1,10 +1,11 @@
 {
     "name": "OctoPrint connection",
     "author": "fieldOfView",
-    "version": "3.5.3",
+    "version": "3.5.4",
     "minimum_cura_version": "3.5",
-    "maximum_cura_version": "3.6",
+    "maximum_cura_version": "4.0",
     "description": "Enables networked printing and monitoring with OctoPrint",
     "api": 5,
+    "supported_sdk_versions": ["5.0.0", "6.0.0"],
     "i18n-catalog": "cura"
 }

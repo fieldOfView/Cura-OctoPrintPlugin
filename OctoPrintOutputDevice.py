@@ -25,6 +25,7 @@ import re
 from time import time
 import base64
 from io import StringIO
+from enum import IntEnum
 
 from typing import cast, Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -33,12 +34,28 @@ if TYPE_CHECKING:
 
 i18n_catalog = i18nCatalog("cura")
 
+##  The current processing state of the backend.
+#   This shadows PrinterOutputDevice.ConnectionState because its spelling changed
+#   between Cura 4.0 beta 1 and beta 2
+class UnifiedConnectionState(IntEnum):
+    try:
+        Closed = ConnectionState.Closed
+        Connecting = ConnectionState.Connecting
+        Connected = ConnectionState.Connected
+        Busy = ConnectionState.Busy
+        Error = ConnectionState.Error
+    except AttributeError:
+        Closed = ConnectionState.closed
+        Connecting = ConnectionState.connecting
+        Connected = ConnectionState.connected
+        Busy = ConnectionState.busy
+        Error = ConnectionState.error
 
 ##  OctoPrint connected (wifi / lan) printer using the OctoPrint API
 @signalemitter
 class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
-    def __init__(self, instance_id: str, address: str, port: int, properties: dict, parent = None) -> None:
-        super().__init__(device_id = instance_id, address = address, properties = properties, parent = parent)
+    def __init__(self, instance_id: str, address: str, port: int, properties: dict, **kwargs) -> None:
+        super().__init__(device_id = instance_id, address = address, properties = properties, **kwargs)
 
         self._address = address
         self._port = port
@@ -240,7 +257,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         return request
 
     def close(self) -> None:
-        self.setConnectionState(ConnectionState.closed)
+        self.setConnectionState(UnifiedConnectionState.Closed)
         if self._progress_message:
             self._progress_message.hide()
         if self._error_message:
@@ -251,7 +268,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def connect(self) -> None:
         self._createNetworkManager()
 
-        self.setConnectionState(ConnectionState.connecting)
+        self.setConnectionState(UnifiedConnectionState.Connecting)
         self._update()  # Manually trigger the first update, as we don't want to wait a few secs before it starts.
 
         Logger.log("d", "Connection with instance %s with url %s started", self._id, self._base_url)
@@ -452,7 +469,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if reply.error() == QNetworkReply.TimeoutError:
             Logger.log("w", "Received a timeout on a request to the instance")
             self._connection_state_before_timeout = self._connection_state
-            self.setConnectionState(ConnectionState.error)
+            self.setConnectionState(UnifiedConnectionState.Error)
             return
 
         if self._connection_state_before_timeout and reply.error() == QNetworkReply.NoError:  #  There was a timeout, but we got a correct answer again.
@@ -487,8 +504,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         self._setAcceptsCommands(True)
                         self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._id))
 
-                    if self._connection_state == ConnectionState.connecting:
-                        self.setConnectionState(ConnectionState.connected)
+                    if self._connection_state == UnifiedConnectionState.Connecting:
+                        self.setConnectionState(UnifiedConnectionState.Connected)
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
@@ -553,8 +570,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     error_handled = True
 
                 elif http_status_code == 409:
-                    if self._connection_state == ConnectionState.connecting:
-                        self.setConnectionState(ConnectionState.connected)
+                    if self._connection_state == UnifiedConnectionState.Connecting:
+                        self.setConnectionState(UnifiedConnectionState.Connected)
 
                     printer.updateState("offline")
                     if printer.activePrintJob:
