@@ -109,7 +109,19 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
             self._basic_auth_data = ("basic %s" % data).encode()
 
-        self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem.qml")
+        try:
+            major_api_version = CuraApplication.getInstance().getAPIVersion().getMajor()
+        except AttributeError:
+            # UM.Application.getAPIVersion was added for API > 6 (Cura 4)
+            # Since this plugin version is only compatible with Cura 3.5 and newer, it is safe to assume API 5
+            major_api_version = 5
+
+        if major_api_version <= 5:
+            # In Cura 3.x, the monitor item only shows the camera stream
+            self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem3x.qml")
+        else:
+            # In Cura 4.x, the monitor item shows the camera stream as well as the monitor sidebar
+            self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem4x.qml")
 
         name = self._id
         matches = re.search(r"^\"(.*)\"\._octoprint\._tcp.local$", name)
