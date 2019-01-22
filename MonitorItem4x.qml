@@ -1,3 +1,6 @@
+// Copyright (c) 2019 Aldo Hoeben / fieldOfView
+// OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
+
 import QtQuick 2.2
 import UM 1.2 as UM
 import Cura 1.0 as Cura

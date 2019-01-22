@@ -1,3 +1,6 @@
+# Copyright (c) 2019 Aldo Hoeben / fieldOfView
+# OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
+
 from UM.OutputDevice.OutputDevicePlugin import OutputDevicePlugin
 from . import OctoPrintOutputDevice
 
