@@ -57,17 +57,17 @@ class DiscoverOctoPrintAction(MachineAction):
         try:
             with open(plugin_file_path) as plugin_file:
                 plugin_info = json.load(plugin_file)
-                plugin_version = plugin_info["version"]
+                self._plugin_version = plugin_info["version"]
         except:
             # The actual version info is not critical to have so we can continue
-            plugin_version = "Unknown"
+            self._plugin_version = "0.0"
             Logger.logException("w", "Could not get version information for the plugin")
 
         self._user_agent = ("%s/%s %s/%s" % (
             self._application.getApplicationName(),
             self._application.getVersion(),
             "OctoPrintPlugin",
-            self._application.getVersion()
+            self._plugin_version
         )).encode()
 
         self._instance_responded = False
@@ -91,6 +91,10 @@ class DiscoverOctoPrintAction(MachineAction):
 
         ContainerRegistry.getInstance().containerAdded.connect(self._onContainerAdded)
         self._application.engineCreatedSignal.connect(self._createAdditionalComponentsView)
+
+    @pyqtProperty(str, constant=True)
+    def pluginVersion(self) -> str:
+        return self._plugin_version
 
     @pyqtSlot()
     def startDiscovery(self) -> None:

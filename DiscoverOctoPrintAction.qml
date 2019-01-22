@@ -30,16 +30,33 @@ Cura.MachineAction
         id: discoverOctoPrintAction
 
         spacing: UM.Theme.getSize("default_margin").height
+        width: parent.width
 
         SystemPalette { id: palette }
         UM.I18nCatalog { id: catalog; name:"cura" }
-        Label
+
+        Item
         {
-            id: pageTitle
             width: parent.width
-            text: catalog.i18nc("@title", "Connect to OctoPrint")
-            wrapMode: Text.WordWrap
-            font.pointSize: 18
+            height: pageTitle.height
+
+            Label
+            {
+                id: pageTitle
+                text: catalog.i18nc("@title", "Connect to OctoPrint")
+                wrapMode: Text.WordWrap
+                font.pointSize: 18
+            }
+
+            Label
+            {
+                id: pluginVersion
+                anchors.bottom: pageTitle.bottom
+                anchors.right: parent.right
+                text: manager.pluginVersion
+                wrapMode: Text.WordWrap
+                font.pointSize: 8
+            }
         }
 
         Label
