@@ -88,10 +88,12 @@ Cura.MachineAction
                 enabled: base.selectedInstance != null && base.selectedInstance.getProperty("manual") == "true"
                 onClicked:
                 {
-                    manualPrinterDialog.showDialog(base.selectedInstance.name, base.selectedInstance.ipAddress,
-                                                   base.selectedInstance.port, base.selectedInstance.path,
-                                                   base.selectedInstance.getProperty("useHttps") == "true",
-                                                   base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"));
+                    manualPrinterDialog.showDialog(
+                        base.selectedInstance.name, base.selectedInstance.ipAddress,
+                        base.selectedInstance.port, base.selectedInstance.path,
+                        base.selectedInstance.getProperty("useHttps") == "true",
+                        base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password")
+                    );
                 }
             }
 
@@ -239,10 +241,7 @@ Cura.MachineAction
                         {
                             id: apiKey
                             width: Math.floor(parent.parent.width * (requestApiKey.visible ? 0.5 : 0.8) - UM.Theme.getSize("default_margin").width)
-                            onTextChanged:
-                            {
-                                apiCheckDelay.throttledCheck()
-                            }
+                            onTextChanged: apiCheckDelay.throttledCheck()
                         }
 
                         Button
@@ -253,8 +252,13 @@ Cura.MachineAction
                             text: catalog.i18nc("@action", "Request...")
                             onClicked:
                             {
-                                manager.requestApiKey(base.selectedInstance.getId(), base.selectedInstance.baseURL, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
-                                manager.openWebPage(base.selectedInstance.baseURL)
+                                manager.requestApiKey(
+                                    base.selectedInstance.getId(),
+                                    base.selectedInstance.baseURL,
+                                    base.selectedInstance.getProperty("userName"),
+                                    base.selectedInstance.getProperty("password")
+                                );
+                                manager.openWebPage(base.selectedInstance.baseURL);
                             }
                         }
 
@@ -266,8 +270,12 @@ Cura.MachineAction
                         {
                             if(base.selectedInstance)
                             {
-                                manager.probeAppKeySupport(base.selectedInstance.baseURL, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"));
-                                apiCheckDelay.lastKey = "";
+                                manager.probeAppKeySupport(
+                                    base.selectedInstance.baseURL,
+                                    base.selectedInstance.getProperty("userName"),
+                                    base.selectedInstance.getProperty("password")
+                                );
+                                apiCheckDelay.lastKey = "\0";
                                 apiKey.text = manager.getApiKey(base.selectedInstance.getId());
                             }
                         }
@@ -277,7 +285,7 @@ Cura.MachineAction
                         target: manager
                         onAppKeyReceived:
                         {
-                            apiCheckDelay.lastKey = "";
+                            apiCheckDelay.lastKey = "\0";
                             apiKey.text = manager.getApiKey(base.selectedInstance.getId())
                         }
                     }
@@ -287,7 +295,7 @@ Cura.MachineAction
                         interval: 500
 
                         property bool checkOnTrigger: false
-                        property string lastKey: ""
+                        property string lastKey: "\0"
 
                         function throttledCheck()
                         {
@@ -299,7 +307,12 @@ Cura.MachineAction
                             if(apiKey.text != lastKey)
                             {
                                 lastKey = apiKey.text;
-                                manager.testApiKey(base.selectedInstance.baseURL, apiKey.text, base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"))
+                                manager.testApiKey(
+                                    base.selectedInstance.baseURL,
+                                    apiKey.text,
+                                    base.selectedInstance.getProperty("userName"),
+                                    base.selectedInstance.getProperty("password")
+                                );
                                 checkOnTrigger = false;
                                 restart();
                             }
@@ -500,13 +513,21 @@ Cura.MachineAction
             }
             if(portText == "")
             {
-                portText = "80" // default http port
+                portText = "80"; // default http port
             }
             if(pathText.substr(0,1) != "/")
             {
-                pathText = "/" + pathText // ensure absolute path
+                pathText = "/" + pathText; // ensure absolute path
             }
-            manager.setManualInstance(nameText, addressText, parseInt(portText), pathText, httpsCheckbox.checked, userNameText, passwordText)
+            manager.setManualInstance(
+                nameText,
+                addressText,
+                parseInt(portText),
+                pathText,
+                httpsCheckbox.checked,
+                userNameText,
+                passwordText
+            );
         }
 
         Column {
