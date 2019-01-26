@@ -52,7 +52,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
         self._keep_alive_timer = QTimer()
         self._keep_alive_timer.setInterval(2000)
-        self._keep_alive_timer.setSingleShot(False)
+        self._keep_alive_timer.setSingleShot(True)
         self._keep_alive_timer.timeout.connect(self._keepDiscoveryAlive)
 
 
@@ -84,6 +84,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
                 self._keep_alive_timer.start()
             else:
                 Logger.log("w", "Failed to create Zeroconf browser. Auto-discovery will not work.")
+                self._keep_alive_timer.stop()
 
         # Add manual instances from preference
         for name, properties in self._manual_instances.items():
@@ -100,6 +101,8 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         if not self._browser or not self._browser.is_alive():
             Logger.log("w", "Zeroconf discovery has died, restarting discovery of OctoPrint instances.")
             self.startDiscovery()
+        else:
+            self._keep_alive_timer.start()
 
     def addManualInstance(self, name: str, address: str, port: int, path: str, useHttps: bool = False, userName: str = "", password: str = "") -> None:
         self._manual_instances[name] = {"address": address, "port": port, "path": path, "useHttps": useHttps, "userName": userName, "password": password}
@@ -124,12 +127,14 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
     ##  Stop looking for devices on network.
     def stop(self) -> None:
+        self._keep_alive_timer.stop()
+
         if self._browser:
             self._browser.cancel()
         self._browser = None # type: Optional[ServiceBrowser]
+
         if self._zero_conf:
             self._zero_conf.close()
-        self._keep_alive_timer.start()
 
     def getInstances(self) -> Dict[str, Any]:
         return self._instances
