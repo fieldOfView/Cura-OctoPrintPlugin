@@ -37,3 +37,9 @@ The Ultimaker 2(+) family uses a flavor of GCode named UltiGCode. Unfortunately 
 using UltiGCode flavor does not work when printing over the USB connection. That is why
 using OctoPrint does not work with UltiGCode flavor. You can use "Machine Settings" on
 the "Printers" pane of the preferences to change your GCode flavor to "Marlin".
+
+zeroconf
+----
+This plugin contains a copy of the python zeroconf module by jstasiak which is licensed under the LGPL-2.1:
+https://github.com/jstasiak/python-zeroconf
+This copy is included because the version that is included with Cura itself is old and contains bugs.

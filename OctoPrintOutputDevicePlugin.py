@@ -4,7 +4,7 @@
 from UM.OutputDevice.OutputDevicePlugin import OutputDevicePlugin
 from . import OctoPrintOutputDevice
 
-from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
+from .zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
 from UM.Signal import Signal, signalemitter
 from UM.Application import Application
 from UM.Logger import Logger
