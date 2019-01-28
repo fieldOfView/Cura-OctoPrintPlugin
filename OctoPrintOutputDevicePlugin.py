@@ -41,6 +41,8 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         self._preferences = Application.getInstance().getPreferences()
         self._preferences.addPreference("octoprint/manual_instances", "{}")
 
+        self._preferences.addPreference("octoprint/use_zeroconf", True)
+
         try:
             self._manual_instances = json.loads(self._preferences.getValue("octoprint/manual_instances"))
         except ValueError:
@@ -69,7 +71,26 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             self._browser.cancel()
             self._browser = None # type: Optional[ServiceBrowser]
             self._printers = [] # type: List[PrinterOutputModel]
+        instance_keys = list(self._instances.keys())
+        for key in instance_keys:
+            self.removeInstance(key)
+
+        # Add manual instances from preference
+        for name, properties in self._manual_instances.items():
+            additional_properties = {
+                b"path": properties["path"].encode("utf-8"),
+                b"useHttps": b"true" if properties.get("useHttps", False) else b"false",
+                b'userName': properties.get("userName", "").encode("utf-8"),
+                b'password': properties.get("password", "").encode("utf-8"),
+                b"manual": b"true"
+            } # These additional properties use bytearrays to mimick the output of zeroconf
+            self.addInstance(name, properties["address"], properties["port"], additional_properties)
+
         self.instanceListChanged.emit()
+
+        # Don't start zeroconf discovery if it is disabled
+        if not self._preferences.getValue("octoprint/use_zeroconf"):
+            return
 
         try:
             self._zero_conf = Zeroconf()
@@ -85,17 +106,6 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             else:
                 Logger.log("w", "Failed to create Zeroconf browser. Auto-discovery will not work.")
                 self._keep_alive_timer.stop()
-
-        # Add manual instances from preference
-        for name, properties in self._manual_instances.items():
-            additional_properties = {
-                b"path": properties["path"].encode("utf-8"),
-                b"useHttps": b"true" if properties.get("useHttps", False) else b"false",
-                b'userName': properties.get("userName", "").encode("utf-8"),
-                b'password': properties.get("password", "").encode("utf-8"),
-                b"manual": b"true"
-            } # These additional properties use bytearrays to mimick the output of zeroconf
-            self.addInstance(name, properties["address"], properties["port"], additional_properties)
 
     def _keepDiscoveryAlive(self) -> None:
         if not self._browser or not self._browser.is_alive():

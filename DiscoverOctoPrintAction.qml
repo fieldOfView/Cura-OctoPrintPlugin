@@ -23,6 +23,20 @@ Cura.MachineAction
         }
     }
 
+    function boolCheck(value) //Hack to ensure a good match between python and qml.
+    {
+        if(value == "True")
+        {
+            return true
+        }else if(value == "False" || value == undefined)
+        {
+            return false
+        }
+        else
+        {
+            return value
+        }
+    }
 
     Column
     {
@@ -64,7 +78,7 @@ Cura.MachineAction
             id: pageDescription
             width: parent.width
             wrapMode: Text.WordWrap
-            text: catalog.i18nc("@label", "Select your OctoPrint instance from the list below:")
+            text: catalog.i18nc("@label", "Select your OctoPrint instance from the list below.")
         }
 
         Row
@@ -109,6 +123,7 @@ Cura.MachineAction
             {
                 id: rediscoverButton
                 text: catalog.i18nc("@action:button", "Refresh")
+                enabled: useZeroconf.checked
                 onClicked: manager.startDiscovery()
             }
         }
@@ -117,73 +132,106 @@ Cura.MachineAction
         {
             width: parent.width
             spacing: UM.Theme.getSize("default_margin").width
-            ScrollView
+
+            Item
             {
-                id: objectListContainer
-                frameVisible: true
                 width: Math.floor(parent.width * 0.5)
                 height: base.height - parent.y
 
-                Rectangle
+                ScrollView
                 {
-                    parent: viewport
-                    anchors.fill: parent
-                    color: palette.light
-                }
-
-                ListView
-                {
-                    id: listview
-                    model: manager.discoveredInstances
-                    onModelChanged:
-                    {
-                        var selectedId = manager.getInstanceId();
-                        for(var i = 0; i < model.length; i++) {
-                            if(model[i].getId() == selectedId)
-                            {
-                                currentIndex = i;
-                                return
-                            }
-                        }
-                        currentIndex = -1;
-                    }
+                    id: objectListContainer
+                    frameVisible: true
                     width: parent.width
-                    currentIndex: activeIndex
-                    onCurrentIndexChanged:
-                    {
-                        base.selectedInstance = listview.model[currentIndex];
-                        apiCheckDelay.throttledCheck();
-                    }
-                    Component.onCompleted: manager.startDiscovery()
-                    delegate: Rectangle
-                    {
-                        height: childrenRect.height
-                        color: ListView.isCurrentItem ? palette.highlight : index % 2 ? palette.base : palette.alternateBase
-                        width: parent.width
-                        Label
-                        {
-                            anchors.left: parent.left
-                            anchors.leftMargin: UM.Theme.getSize("default_margin").width
-                            anchors.right: parent.right
-                            text: listview.model[index].name
-                            color: parent.ListView.isCurrentItem ? palette.highlightedText : palette.text
-                            elide: Text.ElideRight
-                        }
+                    anchors.top: parent.top
+                    anchors.bottom: objectListFooter.top
+                    anchors.bottomMargin: UM.Theme.getSize("default_margin").height
 
-                        MouseArea
+                    Rectangle
+                    {
+                        parent: viewport
+                        anchors.fill: parent
+                        color: palette.light
+                    }
+
+                    ListView
+                    {
+                        id: listview
+                        model: manager.discoveredInstances
+                        onModelChanged:
                         {
-                            anchors.fill: parent;
-                            onClicked:
-                            {
-                                if(!parent.ListView.isCurrentItem)
+                            var selectedId = manager.getInstanceId();
+                            for(var i = 0; i < model.length; i++) {
+                                if(model[i].getId() == selectedId)
                                 {
-                                    parent.ListView.view.currentIndex = index;
+                                    currentIndex = i;
+                                    return
+                                }
+                            }
+                            currentIndex = -1;
+                        }
+                        width: parent.width
+                        currentIndex: activeIndex
+                        onCurrentIndexChanged:
+                        {
+                            base.selectedInstance = listview.model[currentIndex];
+                            apiCheckDelay.throttledCheck();
+                        }
+                        Component.onCompleted: manager.startDiscovery()
+                        delegate: Rectangle
+                        {
+                            height: childrenRect.height
+                            color: ListView.isCurrentItem ? palette.highlight : index % 2 ? palette.base : palette.alternateBase
+                            width: parent.width
+                            Label
+                            {
+                                anchors.left: parent.left
+                                anchors.leftMargin: UM.Theme.getSize("default_margin").width
+                                anchors.right: parent.right
+                                text: listview.model[index].name
+                                color: parent.ListView.isCurrentItem ? palette.highlightedText : palette.text
+                                elide: Text.ElideRight
+                            }
+
+                            MouseArea
+                            {
+                                anchors.fill: parent;
+                                onClicked:
+                                {
+                                    if(!parent.ListView.isCurrentItem)
+                                    {
+                                        parent.ListView.view.currentIndex = index;
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                Item
+                {
+                    id: objectListFooter
+
+                    width: parent.width
+                    anchors.bottom: parent.bottom
+
+                    CheckBox
+                    {
+                        id: useZeroconf
+                        text: catalog.i18nc("@label", "Automatically discover local OctoPrint instances")
+                        checked: boolCheck(UM.Preferences.getValue("octoprint/use_zeroconf"))
+                        onClicked:
+                        {
+                            if(checked != boolCheck(UM.Preferences.getValue("octoprint/use_zeroconf")))
+                            {
+                                UM.Preferences.setValue("octoprint/use_zeroconf", checked);
+                                manager.startDiscovery();
+                            }
+                        }
+                    }
+                }
             }
+
             Column
             {
                 width: Math.floor(parent.width * 0.5)
