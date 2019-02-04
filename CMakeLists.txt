@@ -10,7 +10,9 @@ install(FILES
     OctoPrintOutputDevice.py
     OctoPrintOutputDevicePlugin.py
     NetworkMJPGImage.py
-    MonitorItem.qml
+    zeroconf.py
+    MonitorItem3x.qml
+    MonitorItem4x.qml
     LICENSE
     README.md
     DESTINATION lib/cura/plugins/OctoPrintPlugin
