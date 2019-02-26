@@ -634,7 +634,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     else:
                         print_job = printer.activePrintJob
 
-                    print_job_state = "offline"
+                    print_job_state = "ready"
                     if "state" in json_data:
                         if json_data["state"] == "Error":
                             print_job_state = "error"
