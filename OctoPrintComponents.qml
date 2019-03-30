@@ -19,7 +19,7 @@ Item
         height: UM.Theme.getSize("save_button_save_to_button").height
         tooltip: catalog.i18nc("@info:tooltip", "Open the OctoPrint web interface")
         text: catalog.i18nc("@action:button", "OctoPrint...")
-        style: UM.Theme.styles.sidebar_action_button
+        style: UM.Theme.styles.print_setup_action_button
         onClicked: manager.openWebPage(Cura.MachineManager.printerOutputDevices[0].baseURL)
         visible: octoPrintConnected
     }
