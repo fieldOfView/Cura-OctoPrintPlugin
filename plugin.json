@@ -3,7 +3,7 @@
     "author": "fieldOfView",
     "version": "mater",
     "minimum_cura_version": "3.5",
-    "maximum_cura_version": "4.0",
+    "maximum_cura_version": "4.1",
     "description": "Enables networked printing and monitoring with OctoPrint",
     "api": 5,
     "supported_sdk_versions": ["5.0.0", "6.0.0"],

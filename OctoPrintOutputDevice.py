@@ -11,11 +11,18 @@ from UM.PluginRegistry import PluginRegistry
 
 from cura.CuraApplication import CuraApplication
 
-from cura.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
-from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
-from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
-from cura.PrinterOutput.PrintJobOutputModel import PrintJobOutputModel
+try:
+    # Cura 4.1
+    from cura.PrinterOutput.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
+    from cura.PrinterOutput.Models.PrinterOutputModel import PrinterOutputModel
+    from cura.PrinterOutput.Models.PrintJobOutputModel import PrintJobOutputModel
+except ImportError:
+    # Cura 3.5 - Cura 4.0
+    from cura.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
+    from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
+    from cura.PrinterOutput.PrintJobOutputModel import PrintJobOutputModel
 
+from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 from cura.PrinterOutput.GenericOutputController import GenericOutputController
 
 from PyQt5.QtNetwork import QHttpMultiPart, QHttpPart, QNetworkRequest, QNetworkAccessManager, QNetworkReply
