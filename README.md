@@ -40,6 +40,6 @@ the "Printers" pane of the preferences to change your GCode flavor to "Marlin".
 
 zeroconf
 ----
-This plugin contains a copy of the python zeroconf module by jstasiak which is licensed under the LGPL-2.1:
+This plugin contains a fork of the python zeroconf module by jstasiak which is licensed under the LGPL-2.1:
 https://github.com/jstasiak/python-zeroconf
-This copy is included because the version that is included with Cura itself is old and contains bugs.
+This fork is included with the plugin because the version that is included with Cura itself is old and contains bugs.

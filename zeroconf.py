@@ -30,7 +30,6 @@ import re
 import select
 import socket
 import struct
-import sys
 import threading
 import time
 from functools import reduce
@@ -41,7 +40,7 @@ from six.moves import xrange
 
 __author__ = 'Paul Scott-Murphy, William McBrine'
 __maintainer__ = 'Jakub Stasiak <jakub@stasiak.at>'
-__version__ = '0.17.7'
+__version__ = '0.17.6'
 __license__ = 'LGPL'
 
 
@@ -83,13 +82,13 @@ _DNS_PORT = 53
 _DNS_TTL = 60 * 60  # one hour default TTL
 
 _MAX_MSG_TYPICAL = 1460  # unused
-_MAX_MSG_ABSOLUTE = 8966
+_MAX_MSG_ABSOLUTE = 8972
 
 _FLAGS_QR_MASK = 0x8000  # query response mask
 _FLAGS_QR_QUERY = 0x0000  # query
 _FLAGS_QR_RESPONSE = 0x8000  # response
 
-_FLAGS_AA = 0x0400  # Authoritative answer
+_FLAGS_AA = 0x0400  # Authorative answer
 _FLAGS_TC = 0x0200  # Truncated
 _FLAGS_RD = 0x0100  # Recursion desired
 _FLAGS_RA = 0x8000  # Recursion available
@@ -160,22 +159,6 @@ _HAS_A_TO_Z = re.compile(r'[A-Za-z]')
 _HAS_ONLY_A_TO_Z_NUM_HYPHEN = re.compile(r'^[A-Za-z0-9\-]+$')
 _HAS_ASCII_CONTROL_CHARS = re.compile(r'[\x00-\x1f\x7f]')
 
-
-@enum.unique
-class InterfaceChoice(enum.Enum):
-    Default = 1
-    All = 2
-
-
-@enum.unique
-class ServiceStateChange(enum.Enum):
-    Added = 1
-    Removed = 2
-
-
-HOST_ONLY_NETWORK_MASK = '255.255.255.255'
-
-
 # utility functions
 
 
@@ -226,8 +209,7 @@ def service_type_name(type_):
     """
     if not (type_.endswith('._tcp.local.') or type_.endswith('._udp.local.')):
         raise BadTypeInNameException(
-            "Type '%s' must end with '._tcp.local.' or '._udp.local.'" %
-            type_)
+            "Type must end with '._tcp.local.' or '._udp.local.'")
 
     remaining = type_[:-len('._tcp.local.')].split('.')
     name = remaining.pop()
@@ -239,33 +221,29 @@ def service_type_name(type_):
             "Type '%s' must not start with '.'" % type_)
 
     if name[0] != '_':
-        raise BadTypeInNameException(
-            "Service name (%s) must start with '_'" % name)
+        raise BadTypeInNameException("Service name must start with '_'")
 
     # remove leading underscore
     name = name[1:]
 
     if len(name) > 15:
-        raise BadTypeInNameException(
-            "Service name (%s) must be <= 15 bytes" % name)
+        raise BadTypeInNameException("Service name must be <= 15 bytes")
 
     if '--' in name:
-        raise BadTypeInNameException(
-            "Service name (%s) must not contain '--'" % name)
+        raise BadTypeInNameException("Service name must not contain '--'")
 
     if '-' in (name[0], name[-1]):
         raise BadTypeInNameException(
-            "Service name (%s) may not start or end with '-'" % name)
+            "Service name may not start or end with '-'")
 
     if not _HAS_A_TO_Z.search(name):
         raise BadTypeInNameException(
-            "Service name (%s) must contain at least one letter (eg: 'A-Z')" %
-            name)
+            "Service name must contain at least one letter (eg: 'A-Z')")
 
     if not _HAS_ONLY_A_TO_Z_NUM_HYPHEN.search(name):
         raise BadTypeInNameException(
-            "Service name (%s) must contain only these characters: "
-            "A-Z, a-z, 0-9, hyphen ('-')" % name)
+            "Service name must contain only these characters: "
+            "A-Z, a-z, 0-9, hyphen ('-')")
 
     if remaining and remaining[-1] == '_sub':
         remaining.pop()
@@ -296,55 +274,26 @@ class Error(Exception):
     pass
 
 
-class IncomingDecodeError(Error):
+class NonLocalNameException(Exception):
     pass
 
 
-class NonUniqueNameException(Error):
+class NonUniqueNameException(Exception):
     pass
 
 
-class NamePartTooLongException(Error):
+class NamePartTooLongException(Exception):
     pass
 
 
-class AbstractMethodException(Error):
+class AbstractMethodException(Exception):
     pass
 
 
-class BadTypeInNameException(Error):
+class BadTypeInNameException(Exception):
     pass
 
 # implementation classes
-
-
-class QuietLogger(object):
-    _seen_logs = {}
-
-    @classmethod
-    def log_exception_warning(cls, logger_data=None):
-        exc_info = sys.exc_info()
-        exc_str = str(exc_info[1])
-        if exc_str not in cls._seen_logs:
-            # log at warning level the first time this is seen
-            cls._seen_logs[exc_str] = exc_info
-            logger = log.warning
-        else:
-            logger = log.debug
-        if logger_data is not None:
-            logger(*logger_data)
-        logger('Exception occurred:', exc_info=exc_info)
-
-    @classmethod
-    def log_warning_once(cls, *args):
-        msg_str = args[0]
-        if msg_str not in cls._seen_logs:
-            cls._seen_logs[msg_str] = 0
-            logger = log.warning
-        else:
-            logger = log.debug
-        cls._seen_logs[msg_str] += 1
-        logger(*args)
 
 
 class DNSEntry(object):
@@ -423,8 +372,8 @@ class DNSRecord(DNSEntry):
         self.created = current_time_millis()
 
     def __eq__(self, other):
-        """Abstract method"""
-        raise AbstractMethodException
+        """Tests equality as per DNSRecord"""
+        return isinstance(other, DNSRecord) and DNSEntry.__eq__(self, other)
 
     def suppressed_by(self, msg):
         """Returns true if any answer in a message can suffice for the
@@ -492,9 +441,10 @@ class DNSAddress(DNSRecord):
     def __repr__(self):
         """String representation"""
         try:
-            return str(socket.inet_ntoa(self.address))
-        except Exception:  # TODO stop catching all Exceptions
-            return str(self.address)
+            return socket.inet_ntoa(self.address)
+        except Exception as e:  # TODO stop catching all Exceptions
+            log.exception('Unknown error, possibly benign: %r', e)
+            return self.address
 
 
 class DNSHinfo(DNSRecord):
@@ -605,7 +555,7 @@ class DNSService(DNSRecord):
         return self.to_string("%s:%s" % (self.server, self.port))
 
 
-class DNSIncoming(QuietLogger):
+class DNSIncoming(object):
 
     """Object representation of an incoming DNS packet"""
 
@@ -621,17 +571,10 @@ class DNSIncoming(QuietLogger):
         self.num_answers = 0
         self.num_authorities = 0
         self.num_additionals = 0
-        self.valid = False
 
-        try:
-            self.read_header()
-            self.read_questions()
-            self.read_others()
-            self.valid = True
-
-        except (IndexError, struct.error, IncomingDecodeError):
-            self.log_exception_warning((
-                'Choked at offset %d while unpacking %r', self.offset, data))
+        self.read_header()
+        self.read_questions()
+        self.read_others()
 
     def unpack(self, format_):
         length = struct.calcsize(format_)
@@ -654,9 +597,9 @@ class DNSIncoming(QuietLogger):
             question = DNSQuestion(name, type_, class_)
             self.questions.append(question)
 
-    # def read_int(self):
-    #     """Reads an integer from the packet"""
-    #     return self.unpack(b'!I')[0]
+    def read_int(self):
+        """Reads an integer from the packet"""
+        return self.unpack(b'!I')[0]
 
     def read_character_string(self):
         """Reads a character string from the packet"""
@@ -746,11 +689,12 @@ class DNSIncoming(QuietLogger):
                     next_ = off + 1
                 off = ((length & 0x3F) << 8) | indexbytes(self.data, off)
                 if off >= first:
-                    raise IncomingDecodeError(
-                        "Bad domain name (circular) at %s" % (off,))
+                    # TODO raise more specific exception
+                    raise Exception("Bad domain name (circular) at %s" % (off,))
                 first = off
             else:
-                raise IncomingDecodeError("Bad domain name at %s" % (off,))
+                # TODO raise more specific exception
+                raise Exception("Bad domain name at %s" % (off,))
 
         if next_ >= 0:
             self.offset = next_
@@ -772,26 +716,11 @@ class DNSOutgoing(object):
         self.names = {}
         self.data = []
         self.size = 12
-        self.state = self.State.init
 
         self.questions = []
         self.answers = []
         self.authorities = []
         self.additionals = []
-
-    def __repr__(self):
-        return '<DNSOutgoing:{%s}>' % ', '.join([
-            'multicast=%s' % self.multicast,
-            'flags=%s' % self.flags,
-            'questions=%s' % self.questions,
-            'answers=%s' % self.answers,
-            'authorities=%s' % self.authorities,
-            'additionals=%s' % self.additionals,
-        ])
-
-    class State(enum.Enum):
-        init = 0
-        finished = 1
 
     def add_question(self, record):
         """Adds a question"""
@@ -803,7 +732,7 @@ class DNSOutgoing(object):
             self.add_answer_at_time(record, 0)
 
     def add_answer_at_time(self, record, now):
-        """Adds an answer if it does not expire by a certain time"""
+        """Adds an answer if if does not expire by a certain time"""
         if record is not None:
             if now == 0 or not record.is_expired(now):
                 self.answers.append((record, now))
@@ -813,41 +742,7 @@ class DNSOutgoing(object):
         self.authorities.append(record)
 
     def add_additional_answer(self, record):
-        """ Adds an additional answer
-
-        From: RFC 6763, DNS-Based Service Discovery, February 2013
-
-        12.  DNS Additional Record Generation
-
-           DNS has an efficiency feature whereby a DNS server may place
-           additional records in the additional section of the DNS message.
-           These additional records are records that the client did not
-           explicitly request, but the server has reasonable grounds to expect
-           that the client might request them shortly, so including them can
-           save the client from having to issue additional queries.
-
-           This section recommends which additional records SHOULD be generated
-           to improve network efficiency, for both Unicast and Multicast DNS-SD
-           responses.
-
-        12.1.  PTR Records
-
-           When including a DNS-SD Service Instance Enumeration or Selective
-           Instance Enumeration (subtype) PTR record in a response packet, the
-           server/responder SHOULD include the following additional records:
-
-           o  The SRV record(s) named in the PTR rdata.
-           o  The TXT record(s) named in the PTR rdata.
-           o  All address records (type "A" and "AAAA") named in the SRV rdata.
-
-        12.2.  SRV Records
-
-           When including an SRV record in a response packet, the
-           server/responder SHOULD include the following additional records:
-
-           o  All address records (type "A" and "AAAA") named in the SRV rdata.
-
-        """
+        """Adds an additional answer"""
         self.additionals.append(record)
 
     def pack(self, format_, value):
@@ -895,49 +790,28 @@ class DNSOutgoing(object):
         self.write_string(value)
 
     def write_name(self, name):
-        """
-        Write names to packet
+        """Writes a domain name to the packet"""
 
-        18.14. Name Compression
+        if name in self.names:
+            # Find existing instance of this name in packet
+            #
+            index = self.names[name]
 
-        When generating Multicast DNS messages, implementations SHOULD use
-        name compression wherever possible to compress the names of resource
-        records, by replacing some or all of the resource record name with a
-        compact two-byte reference to an appearance of that data somewhere
-        earlier in the message [RFC1035].
-        """
-
-        # split name into each label
-        parts = name.split('.')
-        if not parts[-1]:
-            parts.pop()
-
-        # construct each suffix
-        name_suffices = ['.'.join(parts[i:]) for i in range(len(parts))]
-
-        # look for an existing name or suffix
-        for count, sub_name in enumerate(name_suffices):
-            if sub_name in self.names:
-                break
-        else:
-            count += 1
-
-        # note the new names we are saving into the packet
-        for suffix in name_suffices[:count]:
-            self.names[suffix] = self.size + len(name) - len(suffix) - 1
-
-        # write the new names out.
-        for part in parts[:count]:
-            self.write_utf(part)
-
-        # if we wrote part of the name, create a pointer to the rest
-        if count != len(name_suffices):
-            # Found substring in packet, create pointer
-            index = self.names[name_suffices[count]]
+            # An index was found, so write a pointer to it
+            #
             self.write_byte((index >> 8) | 0xC0)
             self.write_byte(index & 0xFF)
         else:
-            # this is the end of a name
+            # No record of this name already, so write it
+            # out as normal, recording the location of the name
+            # for future pointers to it.
+            #
+            self.names[name] = self.size
+            parts = name.split('.')
+            if parts[-1] == '':
+                parts = parts[:-1]
+            for part in parts:
+                self.write_utf(part)
             self.write_byte(0)
 
     def write_question(self, question):
@@ -949,10 +823,6 @@ class DNSOutgoing(object):
     def write_record(self, record, now):
         """Writes a record (answer, authoritative answer, additional) to
         the packet"""
-        if self.state == self.State.finished:
-            return 1
-
-        start_data_length, start_size = len(self.data), self.size
         self.write_name(record.name)
         self.write_short(record.type)
         if record.unique and self.multicast:
@@ -964,47 +834,34 @@ class DNSOutgoing(object):
         else:
             self.write_int(record.get_remaining_ttl(now))
         index = len(self.data)
-
         # Adjust size for the short we will write before this record
+        #
         self.size += 2
         record.write(self)
         self.size -= 2
 
-        length = sum((len(d) for d in self.data[index:]))
-        # Here is the short we adjusted for
-        self.insert_short(index, length)
-
-        # if we go over, then rollback and quit
-        if self.size > _MAX_MSG_ABSOLUTE:
-            while len(self.data) > start_data_length:
-                self.data.pop()
-            self.size = start_size
-            self.state = self.State.finished
-            return 1
-        return 0
+        length = len(b''.join(self.data[index:]))
+        self.insert_short(index, length)  # Here is the short we adjusted for
 
     def packet(self):
         """Returns a string containing the packet's bytes
 
         No further parts should be added to the packet once this
         is done."""
-
-        overrun_answers, overrun_authorities, overrun_additionals = 0, 0, 0
-
-        if self.state != self.State.finished:
+        if not self.finished:
+            self.finished = True
             for question in self.questions:
                 self.write_question(question)
             for answer, time_ in self.answers:
-                overrun_answers += self.write_record(answer, time_)
+                self.write_record(answer, time_)
             for authority in self.authorities:
-                overrun_authorities += self.write_record(authority, 0)
+                self.write_record(authority, 0)
             for additional in self.additionals:
-                overrun_additionals += self.write_record(additional, 0)
-            self.state = self.State.finished
+                self.write_record(additional, 0)
 
-            self.insert_short(0, len(self.additionals) - overrun_additionals)
-            self.insert_short(0, len(self.authorities) - overrun_authorities)
-            self.insert_short(0, len(self.answers) - overrun_answers)
+            self.insert_short(0, len(self.additionals))
+            self.insert_short(0, len(self.authorities))
+            self.insert_short(0, len(self.answers))
             self.insert_short(0, len(self.questions))
             self.insert_short(0, self.flags)
             if self.multicast:
@@ -1053,17 +910,9 @@ class DNSCache(object):
     def entries_with_name(self, name):
         """Returns a list of entries whose key matches the name."""
         try:
-            return self.cache[name.lower()]
+            return self.cache[name]
         except KeyError:
             return []
-
-    def current_entry_with_name_and_alias(self, name, alias):
-        now = current_time_millis()
-        for record in self.entries_with_name(name):
-            if (record.type == _TYPE_PTR and
-                    not record.is_expired(now) and
-                    record.alias == alias):
-                return record
 
     def entries(self):
         """Returns a list of all entries"""
@@ -1132,7 +981,7 @@ class Engine(threading.Thread):
             self.condition.notify()
 
 
-class Listener(QuietLogger):
+class Listener(object):
 
     """A Listener is used by this module to listen on the multicast
     group to which DNS messages are sent, allowing the implementation
@@ -1146,30 +995,22 @@ class Listener(QuietLogger):
         self.data = None
 
     def handle_read(self, socket_):
-        try:
-            data, (addr, port) = socket_.recvfrom(_MAX_MSG_ABSOLUTE)
-        except Exception:
-            self.log_exception_warning()
-            return
-
-        log.debug('Received from %r:%r: %r ', addr, port, data)
+        data, (addr, port) = socket_.recvfrom(_MAX_MSG_ABSOLUTE)
+        log.debug('Received %r from %r:%r', data, addr, port)
 
         self.data = data
         msg = DNSIncoming(data)
-        if not msg.valid:
-            pass
-
-        elif msg.is_query():
+        if msg.is_query():
             # Always multicast responses
+            #
             if port == _MDNS_PORT:
                 self.zc.handle_query(msg, _MDNS_ADDR, _MDNS_PORT)
-
             # If it's not a multicast query, reply via unicast
             # and multicast
+            #
             elif port == _DNS_PORT:
                 self.zc.handle_query(msg, addr, port)
                 self.zc.handle_query(msg, _MDNS_ADDR, _MDNS_PORT)
-
         else:
             self.zc.handle_response(msg)
 
@@ -1327,13 +1168,13 @@ class ServiceBrowser(threading.Thread):
             if self.zc.done or self.done:
                 return
             now = current_time_millis()
+
             if self.next_time <= now:
                 out = DNSOutgoing(_FLAGS_QR_QUERY)
                 out.add_question(DNSQuestion(self.type, _TYPE_PTR, _CLASS_IN))
                 for record in self.services.values():
                     if not record.is_expired(now):
                         out.add_answer_at_time(record, now)
-
                 self.zc.send(out)
                 self.next_time = now + self.delay
                 self.delay = min(20 * 1000, self.delay * 2)
@@ -1531,7 +1372,9 @@ class ServiceInfo(object):
 
     def __eq__(self, other):
         """Tests equality of service name"""
-        return isinstance(other, ServiceInfo) and other.name == self.name
+        if isinstance(other, ServiceInfo):
+            return other.name == self.name
+        return False
 
     def __ne__(self, other):
         """Non-equality test"""
@@ -1565,7 +1408,7 @@ class ZeroconfServiceTypes(object):
         pass
 
     @classmethod
-    def find(cls, zc=None, timeout=5, interfaces=InterfaceChoice.All):
+    def find(cls, zc=None, timeout=5):
         """
         Return all of the advertised services on any local networks.
 
@@ -1574,7 +1417,7 @@ class ZeroconfServiceTypes(object):
         :param timeout: seconds to wait for any responses
         :return: tuple of service type strings
         """
-        local_zc = zc or Zeroconf(interfaces=interfaces)
+        local_zc = zc or Zeroconf()
         listener = cls()
         browser = ServiceBrowser(
             local_zc, '_services._dns-sd._udp.local.', listener=listener)
@@ -1589,6 +1432,21 @@ class ZeroconfServiceTypes(object):
             browser.cancel()
 
         return tuple(sorted(listener.found_services))
+
+
+@enum.unique
+class InterfaceChoice(enum.Enum):
+    Default = 1
+    All = 2
+
+
+@enum.unique
+class ServiceStateChange(enum.Enum):
+    Added = 1
+    Removed = 2
+
+
+HOST_ONLY_NETWORK_MASK = '255.255.255.255'
 
 
 def get_all_addresses(address_family):
@@ -1647,7 +1505,7 @@ def get_errno(e):
     return e.args[0]
 
 
-class Zeroconf(QuietLogger):
+class Zeroconf(object):
 
     """Implementation of Zeroconf Multicast DNS Service Discovery
 
@@ -1736,6 +1594,7 @@ class Zeroconf(QuietLogger):
         info = ServiceInfo(type_, name)
         if info.request(self, timeout):
             return info
+        return None
 
     def add_service_listener(self, type_, listener):
         """Adds a listener for a particular service type.  This object
@@ -1755,12 +1614,12 @@ class Zeroconf(QuietLogger):
         for listener in [k for k in self.browsers]:
             self.remove_service_listener(listener)
 
-    def register_service(self, info, ttl=_DNS_TTL, allow_name_change=False):
+    def register_service(self, info, ttl=_DNS_TTL):
         """Registers service information to the network with a default TTL
         of 60 seconds.  Zeroconf will then respond to requests for
         information for that service.  The name of the service may be
         changed if needed to make it unique on the network."""
-        self.check_service(info, allow_name_change)
+        self.check_service(info)
         self.services[info.name.lower()] = info
         if info.type in self.servicetypes:
             self.servicetypes[info.type] += 1
@@ -1855,7 +1714,7 @@ class Zeroconf(QuietLogger):
                 i += 1
                 next_time += _UNREGISTER_TIME
 
-    def check_service(self, info, allow_name_change):
+    def check_service(self, info):
         """Checks the network for a unique service name, modifying the
         ServiceInfo passed in if it is not unique."""
 
@@ -1872,25 +1731,21 @@ class Zeroconf(QuietLogger):
         next_time = now
         i = 0
         while i < 3:
-            # check for a name conflict
-            while self.cache.current_entry_with_name_and_alias(
-                    info.type, info.name):
-                if not allow_name_change:
+            for record in self.cache.entries_with_name(info.type):
+                if (record.type == _TYPE_PTR and
+                        not record.is_expired(now) and
+                        record.alias == info.name):
+                    if info.name.find('.') < 0:
+                        info.name = '%s.[%s:%s].%s' % (
+                            info.name, info.address, info.port, info.type)
+
+                        self.check_service(info)
+                        return
                     raise NonUniqueNameException
-
-                # change the name and look for a conflict
-                info.name = '%s-%s.%s' % (
-                    instance_name, next_instance_number, info.type)
-                next_instance_number += 1
-                service_type_name(info.name)
-                next_time = now
-                i = 0
-
             if now < next_time:
                 self.wait(next_time - now)
                 now = current_time_millis()
                 continue
-
             out = DNSOutgoing(_FLAGS_QR_QUERY | _FLAGS_AA)
             self.debug = out
             out.add_question(DNSQuestion(info.type, _TYPE_PTR, _CLASS_IN))
@@ -1954,7 +1809,7 @@ class Zeroconf(QuietLogger):
         # Support unicast client responses
         #
         if port != _MDNS_PORT:
-            out = DNSOutgoing(_FLAGS_QR_RESPONSE | _FLAGS_AA, multicast=False)
+            out = DNSOutgoing(_FLAGS_QR_RESPONSE | _FLAGS_AA, False)
             for question in msg.questions:
                 out.add_question(question)
 
@@ -2005,8 +1860,8 @@ class Zeroconf(QuietLogger):
                         out.add_additional_answer(DNSAddress(
                             service.server, _TYPE_A, _CLASS_IN | _CLASS_UNIQUE,
                             _DNS_TTL, service.address))
-                except Exception:  # TODO stop catching all Exceptions
-                    self.log_exception_warning()
+                except Exception as e:  # TODO stop catching all Exceptions
+                    log.exception('Unknown error, possibly benign: %r', e)
 
         if out is not None and out.answers:
             out.id = msg.id
@@ -2015,24 +1870,15 @@ class Zeroconf(QuietLogger):
     def send(self, out, addr=_MDNS_ADDR, port=_MDNS_PORT):
         """Sends an outgoing packet."""
         packet = out.packet()
-        if len(packet) > _MAX_MSG_ABSOLUTE:
-            self.log_warning_once("Dropping %r over-sized packet (%d bytes) %r",
-                                  out, len(packet), packet)
-            return
-        log.debug('Sending %r (%d bytes) as %r...', out, len(packet), packet)
+        log.debug('Sending %r as %r...', out, packet)
         for s in self._respond_sockets:
             if self._GLOBAL_DONE:
                 return
-            try:
-                bytes_sent = s.sendto(packet, 0, (addr, port))
-            except Exception:   # TODO stop catching all Exceptions
-                # on send errors, log the exception and keep going
-                self.log_exception_warning()
-            else:
-                if bytes_sent != len(packet):
-                    self.log_warning_once(
-                        '!!! sent %d out of %d bytes to %r' % (
-                            bytes_sent, len(packet)), s)
+            bytes_sent = s.sendto(packet, 0, (addr, port))
+            if bytes_sent != len(packet):
+                raise Error(
+                    'Should not happen, sent %d out of %d bytes' % (
+                        bytes_sent, len(packet)))
 
     def close(self):
         """Ends the background threads, and prevent this instance from
