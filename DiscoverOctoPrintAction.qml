@@ -681,6 +681,8 @@ Cura.MachineAction
                 CheckBox
                 {
                     id: httpsCheckbox
+                    width: height
+                    height: userNameField.height
                 }
 
                 Label
