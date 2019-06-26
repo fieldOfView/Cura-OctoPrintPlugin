@@ -173,6 +173,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         if global_container_stack and instance.getId() == global_container_stack.getMetaDataEntry("octoprint_id"):
             api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
             instance.setApiKey(self._deobfuscateString(api_key))
+            instance.setShowCamera(parseBool(global_container_stack.getMetaDataEntry("octoprint_show_camera", "false")))
             instance.connectionStateChanged.connect(self._onInstanceConnectionStateChanged)
             instance.connect()
 
