@@ -559,8 +559,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             extruder = printer.extruders[index]
                             if ("tool%d" % index) in json_data["temperature"]:
                                 hotend_temperatures = json_data["temperature"]["tool%d" % index]
-                                extruder.updateTargetHotendTemperature(hotend_temperatures["target"])
-                                extruder.updateHotendTemperature(hotend_temperatures["actual"])
+                                target_temperature = hotend_temperatures["target"] if hotend_temperatures["target"] is not None else -1
+                                actual_temperature = hotend_temperatures["actual"] if hotend_temperatures["actual"] is not None else -1
+                                extruder.updateTargetHotendTemperature(target_temperature)
+                                extruder.updateHotendTemperature(actual_temperature)
                             else:
                                 extruder.updateTargetHotendTemperature(0)
                                 extruder.updateHotendTemperature(0)
