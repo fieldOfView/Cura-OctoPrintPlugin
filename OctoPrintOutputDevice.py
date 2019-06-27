@@ -165,7 +165,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
-        self._show_camera = False
+        self._show_camera = True
         self._camera_mirror = False
         self._camera_rotation = 0
         self._camera_url = ""
