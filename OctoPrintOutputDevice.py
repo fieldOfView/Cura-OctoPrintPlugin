@@ -336,8 +336,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def turnOnPrinter(self):
         self._sendCommandToApi("plugin/psucontrol", "turnPSUOn")
         Logger.log("d", "Turn Printer On command")
+        self._error_message = Message(i18n_catalog.i18nc("@info:status", "The printer is offline and will be switched on. 20 seconds waiting "))
         # TODO; Add preference for timer interval
-        self._printer_on_timer.setInterval(15000)
+        self._printer_on_timer.setInterval(20000)
         self._printer_on_timer.start()
 
     def turnOffPrinter(self):
@@ -377,7 +378,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
  
         if self.activePrinter.state == "offline" and self._octoprint_psu_control:
             self.turnOnPrinter()
-        if self.activePrinter.state not in ["idle", ""]:
+            return
+        elif self.activePrinter.state not in ["idle", ""]:
             Logger.log("d", "Tried starting a print, but current state is %s" % self.activePrinter.state)
             if not self._auto_print:
                 # Allow queueing the job even if OctoPrint is currently busy if autoprinting is disabled
@@ -394,7 +396,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 return
 
         self._startPrint()
-
+   
+    
+    
+    
+    
     def _queuePrint(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._error_message:
             self._error_message.hide()
