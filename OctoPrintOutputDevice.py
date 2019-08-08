@@ -336,7 +336,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def turnOnPrinter(self):
         self._sendCommandToApi("plugin/psucontrol", "turnPSUOn")
         Logger.log("d", "Turn Printer On command")
-        self._error_message = Message(i18n_catalog.i18nc("@info:status", "The printer is offline and will be switched on. 20 seconds waiting "))
         # TODO; Add preference for timer interval
         self._printer_on_timer.setInterval(20000)
         self._printer_on_timer.start()
