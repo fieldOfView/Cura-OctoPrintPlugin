@@ -372,7 +372,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
         self._forced_queue = False
-
         self._octoprint_psu_control = parseBool(global_container_stack.getMetaDataEntry("octoprint_psu_control", False))
  
         if self.activePrinter.state == "offline" and self._octoprint_psu_control:
@@ -393,12 +392,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 self._error_message.actionTriggered.connect(self._queuePrint)
                 self._error_message.show()
                 return
-
         self._startPrint()
-   
-    
-    
-    
     
     def _queuePrint(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._error_message:

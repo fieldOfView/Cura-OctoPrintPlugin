@@ -432,7 +432,7 @@ Cura.MachineAction
                         }
                     }
                     CheckBox
-                                        {
+                    {
                         id: autoPSUControlCheckBox
                         text: catalog.i18nc("@label", "Automatically turn on Printer with PSUControl")
                         enabled: manager.instanceApiKeyAccepted
@@ -442,8 +442,7 @@ Cura.MachineAction
                             manager.setContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_psu_control", String(checked))
                         }
                     }
-                    
-                     CheckBox
+                    CheckBox
                     {
                         id: showCameraCheckBox
                         text: catalog.i18nc("@label", "Show webcam image")
