@@ -165,7 +165,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
-        self._show_camera = True
+        self._printer_on_timer = QTimer()
+        self._printer_on_timer.setSingleShot(True)
+        self._printer_on_timer.timeout.connect(self._startPrint)
+
+        self._show_camera = False
         self._camera_mirror = False
         self._camera_rotation = 0
         self._camera_url = ""
@@ -322,6 +326,25 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def cancelPrint(self) -> None:
         self._sendJobCommand("cancel")
+        
+    
+    def checkPsucontrol(self):
+        Logger.log("d", "Check for psucontrol plugin ")
+        self._psuState_reply = self._sendCommandToApi("plugin/psucontrol", "getPSUState")
+
+
+    def turnOnPrinter(self):
+        self._sendCommandToApi("plugin/psucontrol", "turnPSUOn")
+        Logger.log("d", "Turn Printer On command")
+        # TODO; Add preference for timer interval
+        self._printer_on_timer.setInterval(15000)
+        self._printer_on_timer.start()
+
+    def turnOffPrinter(self):
+        self._sendCommandToApi("plugin/psucontrol", "turnPSUOff")
+        Logger.log("d", "Turn Printer Off command")
+
+
 
     def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False, file_handler: Optional["FileHandler"] = None, **kwargs: str) -> None:
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
@@ -350,6 +373,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
         self._forced_queue = False
 
+        self._octoprint_psu_control = parseBool(global_container_stack.getMetaDataEntry("octoprint_psu_control", False))
+ 
+        if self.activePrinter.state == "offline" and self._octoprint_psu_control:
+            self.turnOnPrinter()
         if self.activePrinter.state not in ["idle", ""]:
             Logger.log("d", "Tried starting a print, but current state is %s" % self.activePrinter.state)
             if not self._auto_print:
