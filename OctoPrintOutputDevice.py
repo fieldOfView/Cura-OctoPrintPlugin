@@ -177,6 +177,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._sd_supported = False
 
+        self._psucontrol_installed = False
         self._plugin_data = {} #type: Dict[str, Any]
 
         self._output_controller = GenericOutputController(self)
@@ -374,7 +375,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._forced_queue = False
         self._octoprint_psu_control = parseBool(global_container_stack.getMetaDataEntry("octoprint_psu_control", False))
  
-        if self.activePrinter.state == "offline" and self._octoprint_psu_control:
+        if self.activePrinter.state == "offline" and self._octoprint_psu_control and self._psucontrol_installed:
             self.turnOnPrinter()
             return
         elif self.activePrinter.state not in ["idle", ""]:
@@ -746,7 +747,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             else:
                                 self._camera_mirror = False
                             self.cameraOrientationChanged.emit()
-
+                    if "plugins" in json_data and "psucontrol" in json_data["plugins"]:
+                        self._psucontrol_installed = True
                     if "plugins" in json_data:
                         self._plugin_data = json_data["plugins"]
 
