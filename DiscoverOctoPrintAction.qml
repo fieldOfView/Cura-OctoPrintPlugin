@@ -435,7 +435,7 @@ Cura.MachineAction
                     {
                         id: autoPSUControlCheckBox
                         text: catalog.i18nc("@label", "Automatically turn on Printer with PSUControl")
-                        enabled: manager.instanceApiKeyAccepted
+                        enabled: manager.instanceInstalledPsucontrol
                         checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_psu_control") == "true"
                         onClicked:
                         {
