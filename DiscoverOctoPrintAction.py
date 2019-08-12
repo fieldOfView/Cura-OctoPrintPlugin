@@ -430,7 +430,7 @@ class DiscoverOctoPrintAction(MachineAction):
                             self._instance_supports_camera = True
 
                     if "plugins" in json_data:
-                        self._instance_installed_plugins = list(json_data["plugins"].keys()).
+                        self._instance_installed_plugins = list(json_data["plugins"].keys())
 
                 elif http_status_code == 401:
                     Logger.log("d", "Invalid API key for OctoPrint.")
