@@ -128,10 +128,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if major_api_version <= 5:
             # In Cura 3.x, the monitor item only shows the camera stream
-            self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem3x.qml")
+            self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "MonitorItem3x.qml")
         else:
             # In Cura 4.x, the monitor item shows the camera stream as well as the monitor sidebar
-            self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "MonitorItem4x.qml")
+            self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "MonitorItem4x.qml")
 
         name = self._id
         matches = re.search(r"^\"(.*)\"\._octoprint\._tcp.local$", name)

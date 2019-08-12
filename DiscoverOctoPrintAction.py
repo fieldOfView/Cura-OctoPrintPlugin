@@ -30,7 +30,7 @@ class DiscoverOctoPrintAction(MachineAction):
     def __init__(self, parent: QObject = None) -> None:
         super().__init__("DiscoverOctoPrintAction", catalog.i18nc("@action", "Connect OctoPrint"))
 
-        self._qml_url = "DiscoverOctoPrintAction.qml"
+        self._qml_url = os.path.join("qml", "DiscoverOctoPrintAction.qml")
 
         self._application = CuraApplication.getInstance()
         self._network_plugin = None # type: Optional[OctoPrintOutputDevicePlugin]
@@ -346,7 +346,7 @@ class DiscoverOctoPrintAction(MachineAction):
     def _createAdditionalComponentsView(self) -> None:
         Logger.log("d", "Creating additional ui components for OctoPrint-connected printers.")
 
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "OctoPrintComponents.qml")
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "OctoPrintComponents.qml")
         self._additional_components = self._application.createQmlComponent(path, {"manager": self})
         if not self._additional_components:
             Logger.log("w", "Could not create additional components for OctoPrint-connected printers.")
