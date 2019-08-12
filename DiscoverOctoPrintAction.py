@@ -42,7 +42,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
         self._settings_reply = None # type: Optional[QNetworkReply]
 
-        self._appkeys_supported = False
+        self._instance_supports_appkeys = False
         self._appkey_reply = None # type: Optional[QNetworkReply]
         self._appkey_request = None # type: Optional[QNetworkRequest]
         self._appkey_instance_id = ""
@@ -193,7 +193,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
     @pyqtSlot(str, str, str)
     def probeAppKeySupport(self, base_url: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
-        self._appkeys_supported = False
+        self._instance_supports_appkeys = False
         self.appKeysSupportedChanged.emit()
 
         appkey_probe_request = self._createRequest(QUrl(base_url + "plugin/appkeys/probe"), basic_auth_username, basic_auth_password)
@@ -279,7 +279,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
     @pyqtProperty(bool, notify = appKeysSupportedChanged)
     def instanceSupportsAppKeys(self) -> bool:
-        return self._appkeys_supported
+        return self._instance_supports_appkeys
 
     @pyqtSlot(str, str, str)
     def setContainerMetaDataEntry(self, container_id: str, key: str, value: str) -> None:
@@ -382,9 +382,9 @@ class DiscoverOctoPrintAction(MachineAction):
         if reply.operation() == QNetworkAccessManager.GetOperation:
             if "/plugin/appkeys/probe" in reply.url().toString():  # Probe for AppKey support
                 if http_status_code == 204:
-                    self._appkeys_supported = True
+                    self._instance_supports_appkeys = True
                 else:
-                    self._appkeys_supported = False
+                    self._instance_supports_appkeys = False
                 self.appKeysSupportedChanged.emit()
             if "/plugin/appkeys/request" in reply.url().toString():  # Periodic AppKey request poll
                 if http_status_code == 202:
