@@ -75,7 +75,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._instance_api_key_accepted = False
         self._instance_supports_sd = False
         self._instance_supports_camera = False
-        self._instance_installed_psucontrol = False
+        self._instance_installed_plugins = [] # type: List[str]
 
         # Load keys cache from preferences
         self._preferences = self._application.getPreferences()
@@ -205,7 +205,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._instance_api_key_accepted = False
         self._instance_supports_sd = False
         self._instance_supports_camera = False
-        self._instance_installed_psucontrol = False
+        self._instance_installed_plugins = [] # type: List[str]
         self.selectedInstanceSettingsChanged.emit()
 
         if api_key != "":
@@ -273,9 +273,9 @@ class DiscoverOctoPrintAction(MachineAction):
     def instanceSupportsCamera(self) -> bool:
         return self._instance_supports_camera
 
-    @pyqtProperty(bool, notify = selectedInstanceSettingsChanged)
-    def instanceInstalledPsucontrol(self) -> bool:
-        return self._instance_installed_psucontrol
+    @pyqtProperty("QStringList", notify = selectedInstanceSettingsChanged)
+    def instanceInstalledPlugins(self) -> List[str]:
+        return self._instance_installed_plugins
 
     @pyqtProperty(bool, notify = appKeysSupportedChanged)
     def instanceSupportsAppKeys(self) -> bool:
@@ -428,9 +428,9 @@ class DiscoverOctoPrintAction(MachineAction):
                         stream_url = json_data["webcam"]["streamUrl"]
                         if stream_url: #not empty string or None
                             self._instance_supports_camera = True
-                    
-                    if "plugins" in json_data and "psucontrol" in json_data["plugins"]:
-                        self._instance_installed_psucontrol = True
+
+                    if "plugins" in json_data:
+                        self._instance_installed_plugins = list(json_data["plugins"].keys()).
 
                 elif http_status_code == 401:
                     Logger.log("d", "Invalid API key for OctoPrint.")
