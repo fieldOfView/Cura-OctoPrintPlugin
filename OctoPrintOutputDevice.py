@@ -8,6 +8,7 @@ from UM.Message import Message
 from UM.Util import parseBool
 from UM.Mesh.MeshWriter import MeshWriter
 from UM.PluginRegistry import PluginRegistry
+from UM.PluginError import PluginNotFoundError
 
 from cura.CuraApplication import CuraApplication
 
@@ -34,7 +35,7 @@ import os.path
 import re
 from time import time
 import base64
-from io import StringIO
+from io import StringIO, BytesIO
 from enum import IntEnum
 
 from typing import cast, Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
@@ -75,7 +76,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._id = instance_id
         self._properties = properties  # Properties dict as provided by zero conf
 
-        self._gcode_stream = StringIO()
+        self._gcode_stream = None # type: Optional[Union[StringIO, BytesIO]]
 
         self._auto_print = True
         self._forced_queue = False
@@ -176,7 +177,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._camera_url = ""
         self._camera_shares_proxy = False
 
-        self._sd_supported = False
+        self._sd_supported = False # supports storing gcode on sd card in printer
+        self._ufp_supported = False # supports .ufp files in addition to raw .gcode files
 
         self._plugin_data = {} #type: Dict[str, Any]
 
@@ -338,8 +340,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         # Get the g-code through the GCodeWriter plugin
         # This produces the same output as "Save to File", adding the print settings to the bottom of the file
-        gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
-        self._gcode_stream = StringIO()
+        if not self._ufp_supported:
+            gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
+            self._gcode_stream = StringIO()
+        else:
+            gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("UFPWriter"))
+            self._gcode_stream = BytesIO()
+
         if not gcode_writer.write(self._gcode_stream, None):
             Logger.log("e", "GCodeWrite failed: %s" % gcode_writer.getInformation())
             return
@@ -410,7 +417,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         job_name = CuraApplication.getInstance().getPrintInformation().jobName.strip()
         if job_name is "":
             job_name = "untitled_print"
-        file_name = "%s.gcode" % job_name
+        extension = "gcode" if not self._ufp_supported else "ufp"
+        file_name = "%s.%s" % (job_name, extension)
 
         ##  Create multi_part request
         post_parts = [] # type: List[QHttpPart]
@@ -427,9 +435,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             post_part.setBody(b"true")
             post_parts.append(post_part)
 
+        gcode_body = self._gcode_stream.getvalue()
+        try:
+            # encode StringIO result to bytes
+            gcode_body = gcode_body.encode()
+        except AttributeError:
+            # encode BytesIO is already byte-encoded
+            pass
+
         post_part = QHttpPart()
         post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
-        post_part.setBody(self._gcode_stream.getvalue().encode())
+        post_part.setBody(gcode_body)
         post_parts.append(post_part)
 
         destination = "local"
@@ -449,7 +465,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
             Logger.log("e", "An exception occurred in network connection: %s" % str(e))
 
-        self._gcode_stream = StringIO()
+        self._gcode_stream = None # type: Optional[Union[StringIO, BytesIO]]
 
     def _cancelSendGcode(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._post_reply:
@@ -736,6 +752,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     if "plugins" in json_data:
                         self._plugin_data = json_data["plugins"]
+
+                        if "UltimakerFormatPackage" in self._plugin_data:
+                            try:
+                                ufp_writer_plugin = PluginRegistry.getInstance().getPluginObject("UFPWriter")
+                                self._ufp_supported = True
+                                Logger.log("d", "Instance supports UFP files")
+                            except PluginNotFoundError:
+                                Logger.log("w", "Instance supports UFP files, but UFPWriter is not available")
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if self._api_prefix + "files" in reply.url().toString():  # Result from /files command:
