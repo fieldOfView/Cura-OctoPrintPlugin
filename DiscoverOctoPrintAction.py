@@ -139,6 +139,7 @@ class DiscoverOctoPrintAction(MachineAction):
     instancesChanged = pyqtSignal()
     appKeysSupportedChanged = pyqtSignal()
     appKeyReceived = pyqtSignal()
+    instanceIdChanged = pyqtSignal()
 
     @pyqtProperty("QVariantList", notify = instancesChanged)
     def discoveredInstances(self) -> List[Any]:
@@ -159,8 +160,10 @@ class DiscoverOctoPrintAction(MachineAction):
             # Ensure that the connection states are refreshed.
             self._network_plugin.reCheckConnections()
 
-    @pyqtSlot(result = str)
-    def getInstanceId(self) -> str:
+        self.instanceIdChanged.emit()
+
+    @pyqtProperty(str, notify = instanceIdChanged)
+    def instanceId(self) -> str:
         global_container_stack = self._application.getGlobalContainerStack()
         if not global_container_stack:
             return ""
@@ -228,7 +231,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
         global_container_stack.setMetaDataEntry("octoprint_api_key", base64.b64encode(api_key.encode("ascii")).decode("ascii"))
 
-        self._keys_cache[self.getInstanceId()] = api_key
+        self._keys_cache[self.instanceId] = api_key
         keys_cache = base64.b64encode(json.dumps(self._keys_cache).encode("ascii")).decode("ascii")
         self._preferences.setValue("octoprint/keys_cache", keys_cache)
 
@@ -244,7 +247,7 @@ class DiscoverOctoPrintAction(MachineAction):
         if not global_container_stack:
             return ""
 
-        if instance_id == self.getInstanceId():
+        if instance_id == self.instanceId:
             api_key = self._deobfuscateString(global_container_stack.getMetaDataEntry("octoprint_api_key", ""))
         else:
             api_key = self._keys_cache.get(instance_id, "")

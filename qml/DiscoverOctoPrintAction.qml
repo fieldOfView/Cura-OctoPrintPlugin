@@ -160,7 +160,7 @@ Cura.MachineAction
                         model: manager.discoveredInstances
                         onModelChanged:
                         {
-                            var selectedId = manager.getInstanceId();
+                            var selectedId = manager.instanceId;
                             for(var i = 0; i < model.length; i++) {
                                 if(model[i].getId() == selectedId)
                                 {
@@ -191,6 +191,7 @@ Cura.MachineAction
                                 text: listview.model[index].name
                                 color: parent.ListView.isCurrentItem ? palette.highlightedText : palette.text
                                 elide: Text.ElideRight
+                                font.italic: listview.model[index].key == manager.instanceId
                             }
 
                             MouseArea
@@ -500,7 +501,7 @@ Cura.MachineAction
 
                     Button
                     {
-                        text: catalog.i18nc("@action:button", "Connect")
+                        text: (base.selectedInstance.getId() == manager.instanceId) ? catalog.i18nc("@action:button", "Disconnect") : catalog.i18nc("@action:button", "Connect")
                         enabled: apiKey.text != "" && manager.instanceApiKeyAccepted
                         onClicked:
                         {
@@ -508,8 +509,14 @@ Cura.MachineAction
                             {
                                 manager.applyGcodeFlavorFix(fixGcodeFlavor.checked)
                             }
-                            manager.setInstanceId(base.selectedInstance.getId())
-                            manager.setApiKey(apiKey.text)
+                            if(base.selectedInstance.getId() == manager.instanceId) {
+                                manager.setInstanceId("")
+                            }
+                            else
+                            {
+                                manager.setInstanceId(base.selectedInstance.getId())
+                                manager.setApiKey(apiKey.text)
+                            }
                             completed()
                         }
                     }
