@@ -633,7 +633,7 @@ Cura.MachineAction
                 TextField
                 {
                     id: addressField
-                    maximumLength: 30
+                    maximumLength: 253
                     width: Math.floor(parent.width * 0.6)
                     validator: RegExpValidator
                     {
