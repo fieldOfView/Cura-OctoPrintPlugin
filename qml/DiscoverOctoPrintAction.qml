@@ -2,7 +2,7 @@
 // OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
 import UM 1.2 as UM
-import Cura 1.0 as Cura
+import Cura 1.1 as Cura
 
 import QtQuick 2.2
 import QtQuick.Controls 1.1
@@ -14,6 +14,20 @@ Cura.MachineAction
     id: base
     anchors.fill: parent;
     property var selectedInstance: null
+    property string activeMachineId:
+    {
+        if (Cura.MachineManager.activeMachineId != undefined)
+        {
+            return Cura.MachineManager.activeMachineId;
+        }
+        else if (Cura.MachineManager.activeMachine !== null)
+        {
+            return Cura.MachineManager.activeMachine.id;
+        }
+
+        CuraApplication.log("There does not seem to be an active machine");
+        return "";
+    }
 
     onVisibleChanged:
     {
@@ -426,10 +440,10 @@ Cura.MachineAction
                         id: autoPrintCheckBox
                         text: catalog.i18nc("@label", "Automatically start print job after uploading")
                         enabled: manager.instanceApiKeyAccepted
-                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_auto_print") != "false"
+                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_print") != "false"
                         onClicked:
                         {
-                            manager.setContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_auto_print", String(checked))
+                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_auto_print", String(checked))
                         }
                     }
                     CheckBox
@@ -437,10 +451,10 @@ Cura.MachineAction
                         id: autoPSUControlCheckBox
                         text: catalog.i18nc("@label", "Automatically turn on printer with PSU Control plugin")
                         visible: manager.instanceInstalledPlugins.indexOf("psucontrol") > -1
-                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_psu_control") == "true"
+                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_psu_control") == "true"
                         onClicked:
                         {
-                            manager.setContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_psu_control", String(checked))
+                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_psu_control", String(checked))
                         }
                     }
                     CheckBox
@@ -448,10 +462,10 @@ Cura.MachineAction
                         id: showCameraCheckBox
                         text: catalog.i18nc("@label", "Show webcam image")
                         enabled: manager.instanceSupportsCamera
-                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_show_camera") != "false"
+                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_show_camera") != "false"
                         onClicked:
                         {
-                            manager.setContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_show_camera", String(checked))
+                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_show_camera", String(checked))
                         }
                     }
                     CheckBox
@@ -459,10 +473,10 @@ Cura.MachineAction
                         id: storeOnSdCheckBox
                         text: catalog.i18nc("@label", "Store G-code on the printer SD card")
                         enabled: manager.instanceSupportsSd
-                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_store_sd") == "true"
+                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_store_sd") == "true"
                         onClicked:
                         {
-                            manager.setContainerMetaDataEntry(Cura.MachineManager.activeMachineId, "octoprint_store_sd", String(checked))
+                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_store_sd", String(checked))
                         }
                     }
                     Label
@@ -501,8 +515,18 @@ Cura.MachineAction
 
                     Button
                     {
-                        text: (base.selectedInstance.getId() == manager.instanceId) ? catalog.i18nc("@action:button", "Disconnect") : catalog.i18nc("@action:button", "Connect")
-                        enabled: apiKey.text != "" && manager.instanceApiKeyAccepted
+                        text:
+                        {
+                            if (base.selectedInstance !== null)
+                            {
+                                if (base.selectedInstance.getId() == manager.instanceId)
+                                {
+                                    return catalog.i18nc("@action:button", "Disconnect");
+                                }
+                            }
+                            return  catalog.i18nc("@action:button", "Connect")
+                        }
+                        enabled: base.selectedInstance !== null && apiKey.text != "" && manager.instanceApiKeyAccepted
                         onClicked:
                         {
                             if(fixGcodeFlavor.visible)
@@ -529,7 +553,7 @@ Cura.MachineAction
     {
         id: machineGCodeFlavorProvider
 
-        containerStackId: Cura.MachineManager.activeMachineId
+        containerStackId: activeMachineId
         key: "machine_gcode_flavor"
         watchedProperties: [ "value" ]
         storeIndex: 4
