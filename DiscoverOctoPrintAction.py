@@ -15,6 +15,8 @@ from PyQt5.QtQml import QQmlComponent, QQmlContext
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager, QNetworkReply
 
+from .NetworkReplyTimeout import NetworkReplyTimeout
+
 import os.path
 import json
 import base64
@@ -41,6 +43,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._network_manager.finished.connect(self._onRequestFinished)
 
         self._settings_reply = None # type: Optional[QNetworkReply]
+        self._settings_reply_timeout = None # type: Optional[NetworkReplyTimeout]
 
         self._instance_supports_appkeys = False
         self._appkey_reply = None # type: Optional[QNetworkReply]
@@ -182,7 +185,8 @@ class DiscoverOctoPrintAction(MachineAction):
     @pyqtSlot()
     def cancelApiKeyRequest(self) -> None:
         if self._appkey_reply:
-            self._appkey_reply.abort()
+            if self._appkey_reply.isRunning():
+                self._appkey_reply.abort()
             self._appkey_reply = None
 
         self._appkey_request = None # type: Optional[QNetworkRequest]
@@ -211,6 +215,14 @@ class DiscoverOctoPrintAction(MachineAction):
         self._instance_installed_plugins = [] # type: List[str]
         self.selectedInstanceSettingsChanged.emit()
 
+        if self._settings_reply:
+            if self._settings_reply.isRunning():
+                self._settings_reply.abort()
+            self._settings_reply = None
+        if self._settings_reply_timeout:
+            self._settings_reply_timeout.timeout.disconnect(self._onRequestTimeout)
+            self._settings_reply_timeout = None
+
         if api_key != "":
             Logger.log("d", "Trying to access OctoPrint instance at %s with the provided API key." % base_url)
 
@@ -218,10 +230,8 @@ class DiscoverOctoPrintAction(MachineAction):
             settings_request = self._createRequest(QUrl(base_url + "api/settings"), basic_auth_username, basic_auth_password)
             settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
             self._settings_reply = self._network_manager.get(settings_request)
-        else:
-            if self._settings_reply:
-                self._settings_reply.abort()
-                self._settings_reply = None
+            self._settings_reply_timeout = NetworkReplyTimeout(self._settings_reply, 1000)
+            self._settings_reply_timeout.timeout.connect(self._onRequestTimeout)
 
     @pyqtSlot(str)
     def setApiKey(self, api_key: str) -> None:
@@ -357,6 +367,13 @@ class DiscoverOctoPrintAction(MachineAction):
 
         self._application.addAdditionalComponent("monitorButtons", self._additional_components.findChild(QObject, "openOctoPrintButton"))
 
+    def _onRequestTimeout(self, reply: QNetworkReply) -> None:
+        if reply.operation() == QNetworkAccessManager.GetOperation:
+            if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
+                Logger.log("w", "Timeout when trying to access Octoprint at %s" % reply.url().toString())
+                self._instance_in_error = True
+                self.selectedInstanceSettingsChanged.emit()
+
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply: QNetworkReply) -> None:
 
@@ -449,10 +466,10 @@ class DiscoverOctoPrintAction(MachineAction):
 
     def _createRequest(self, url: str, basic_auth_username: str = "", basic_auth_password: str = "") -> QNetworkRequest:
         request = QNetworkRequest(url)
-        request.setRawHeader("User-Agent".encode(), self._user_agent)
+        request.setRawHeader(b"User-Agent", self._user_agent)
         if basic_auth_username and basic_auth_password:
             data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
-            request.setRawHeader("Authorization".encode(), ("Basic %s" % data).encode())
+            request.setRawHeader(b"Authorization", ("Basic %s" % data).encode())
         return request
 
     ##  Utility handler to base64-decode a string (eg an obfuscated API key), if it has been encoded before
