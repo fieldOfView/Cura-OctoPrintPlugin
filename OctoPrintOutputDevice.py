@@ -96,7 +96,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             plugin_version = "Unknown"
             Logger.logException("w", "Could not get version information for the plugin")
 
-        self._user_agent_header = "User-Agent".encode()
         self._user_agent = ("%s/%s %s/%s" % (
             CuraApplication.getInstance().getApplicationName(),
             CuraApplication.getInstance().getVersion(),
@@ -277,13 +276,26 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _createEmptyRequest(self, target: str, content_type: Optional[str] = "application/json") -> QNetworkRequest:
         request = QNetworkRequest(QUrl(self._api_url + target))
-        request.setRawHeader(self._user_agent_header, self._user_agent.encode())
         request.setRawHeader(self._api_header, self._api_key)
+        request.setRawHeader(QNetworkRequest.UserAgentHeader, self._user_agent.encode())
         if content_type is not None:
-            request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
+            request.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
         if self._basic_auth_data:
             request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
         return request
+
+    # This is a patched version from NetworkedPrinterOutputdevice, which adds "form_data" instead of "form-data"
+    def _createFormPart(self, content_header: str, data: bytes, content_type: Optional[str] = None) -> QHttpPart:
+        part = QHttpPart()
+
+        if not content_header.startswith("form-data;"):
+            content_header = "form-data; " + content_header
+        part.setHeader(QNetworkRequest.ContentDispositionHeader, content_header)
+        if content_type is not None:
+            part.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
+
+        part.setBody(data)
+        return part
 
     def close(self) -> None:
         self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Closed))
@@ -424,16 +436,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         post_parts = [] # type: List[QHttpPart]
 
         ##  Create parts (to be placed inside multipart)
-        post_part = QHttpPart()
-        post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"select\"")
-        post_part.setBody(b"true")
-        post_parts.append(post_part)
+        post_parts.append(self._createFormPart("name=\"select\"", b"true", "text//plain"))
 
         if self._auto_print and not self._forced_queue:
-            post_part = QHttpPart()
-            post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"print\"")
-            post_part.setBody(b"true")
-            post_parts.append(post_part)
+            post_parts.append(self._createFormPart("name=\"print\"", b"true", "text//plain"))
 
         gcode_body = self._gcode_stream.getvalue()
         try:
@@ -443,10 +449,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             # encode BytesIO is already byte-encoded
             pass
 
-        post_part = QHttpPart()
-        post_part.setHeader(QNetworkRequest.ContentDispositionHeader, "form-data; name=\"file\"; filename=\"%s\"" % file_name)
-        post_part.setBody(gcode_body)
-        post_parts.append(post_part)
+        post_parts.append(self._createFormPart("name=\"path\"", b"//", "text//plain"))
+        post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application//octet-stream"))
 
         destination = "local"
         if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
