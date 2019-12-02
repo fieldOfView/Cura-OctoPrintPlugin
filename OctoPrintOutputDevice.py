@@ -435,10 +435,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         post_parts = [] # type: List[QHttpPart]
 
         ##  Create parts (to be placed inside multipart)
-        post_parts.append(self._createFormPart("name=\"select\"", b"true", "text//plain"))
+        post_parts.append(self._createFormPart("name=\"select\"", b"true", "text/plain"))
 
         if self._auto_print and not self._forced_queue:
-            post_parts.append(self._createFormPart("name=\"print\"", b"true", "text//plain"))
+            post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
 
         gcode_body = self._gcode_stream.getvalue()
         try:
@@ -448,8 +448,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             # encode BytesIO is already byte-encoded
             pass
 
-        post_parts.append(self._createFormPart("name=\"path\"", b"//", "text//plain"))
-        post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application//octet-stream"))
+        post_parts.append(self._createFormPart("name=\"path\"", b"//", "text/plain"))
+        post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
 
         destination = "local"
         if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
