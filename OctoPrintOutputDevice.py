@@ -104,7 +104,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         )) # NetworkedPrinterOutputDevice defines this as string, so we encode this later
 
         self._api_prefix = "api/"
-        self._api_header = "X-Api-Key".encode()
         self._api_key = b""
 
         self._protocol = "https" if properties.get(b'useHttps') == b"true" else "http"
@@ -276,8 +275,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _createEmptyRequest(self, target: str, content_type: Optional[str] = "application/json") -> QNetworkRequest:
         request = QNetworkRequest(QUrl(self._api_url + target))
-        request.setRawHeader(self._api_header, self._api_key)
-        request.setRawHeader(QNetworkRequest.UserAgentHeader, self._user_agent.encode())
+        request.setRawHeader(b"X-Api-Key", self._api_key)
+        request.setRawHeader(b"User-Agent", self._user_agent.encode())
         if content_type is not None:
             request.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
         if self._basic_auth_data:
