@@ -220,7 +220,6 @@ class DiscoverOctoPrintAction(MachineAction):
                 self._settings_reply.abort()
             self._settings_reply = None
         if self._settings_reply_timeout:
-            self._settings_reply_timeout.timeout.disconnect(self._onRequestTimeout)
             self._settings_reply_timeout = None
 
         if api_key != "":
@@ -230,8 +229,7 @@ class DiscoverOctoPrintAction(MachineAction):
             settings_request = self._createRequest(QUrl(base_url + "api/settings"), basic_auth_username, basic_auth_password)
             settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
             self._settings_reply = self._network_manager.get(settings_request)
-            self._settings_reply_timeout = NetworkReplyTimeout(self._settings_reply, 1000)
-            self._settings_reply_timeout.timeout.connect(self._onRequestTimeout)
+            self._settings_reply_timeout = NetworkReplyTimeout(self._settings_reply, 1000, self._onRequestTimeout)
 
     @pyqtSlot(str)
     def setApiKey(self, api_key: str) -> None:
