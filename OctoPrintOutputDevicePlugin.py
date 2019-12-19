@@ -17,16 +17,21 @@ import re
 import base64
 import os.path
 
-import importlib.util
-zeroconf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-zeroconf", "zeroconf", "__init__.py")
-spec = importlib.util.spec_from_file_location("zeroconf", zeroconf_path)
-zeroconf = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(zeroconf)
+try:
+    # import the included version of python-zeroconf
+    import importlib.util
+    zeroconf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-zeroconf", "zeroconf", "__init__.py")
+    spec = importlib.util.spec_from_file_location("zeroconf", zeroconf_path)
+    zeroconf = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(zeroconf)
 
-Zeroconf = zeroconf.Zeroconf
-ServiceBrowser = zeroconf.ServiceBrowser
-ServiceStateChange = zeroconf.ServiceStateChange
-ServiceInfo = zeroconf.ServiceInfo
+    Zeroconf = zeroconf.Zeroconf
+    ServiceBrowser = zeroconf.ServiceBrowser
+    ServiceStateChange = zeroconf.ServiceStateChange
+    ServiceInfo = zeroconf.ServiceInfo
+except FileNotFoundError:
+    # fall back to the system-installed version, or what comes with Cura
+    from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
 
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
