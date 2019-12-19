@@ -8,7 +8,6 @@ install(FILES
     OctoPrintOutputDevice.py
     OctoPrintOutputDevicePlugin.py
     NetworkMJPGImage.py
-    zeroconf.py
     LICENSE
     README.md
     DESTINATION lib/cura/plugins/OctoPrintPlugin
@@ -20,4 +19,15 @@ install(FILES
     qml/MonitorItem3x.qml
     qml/MonitorItem4x.qml
     DESTINATION lib/cura/plugins/OctoPrintPlugin/qml
+)
+
+install(FILES
+    python-zeroconf/README.rst
+    python-zeroconf/COPYING
+    DESTINATION lib/cura/plugins/OctoPrintPlugin/python-zeroconf
+)
+
+install(FILES
+    python-zeroconf/zeroconf/__init__.py
+    DESTINATION lib/cura/plugins/OctoPrintPlugin/python-zeroconf/zeroconf
 )
