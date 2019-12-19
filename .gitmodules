@@ -1,0 +1,3 @@
+[submodule "python-zeroconf"]
+	path = python-zeroconf
+	url = https://github.com/jstasiak/python-zeroconf

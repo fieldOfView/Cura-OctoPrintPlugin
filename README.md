@@ -35,6 +35,9 @@ using OctoPrint does not work with UltiGCode flavor.
 
 zeroconf
 ----
-This plugin contains a fork of the python zeroconf module by jstasiak which is licensed under the LGPL-2.1:
+This plugin contains a submodule/copy of the python zeroconf module as maintained by
+jstasiak.
+Python-zeroconf is licensed under the LGPL-2.1:
 https://github.com/jstasiak/python-zeroconf
-This fork is included with the plugin because the version that is included with Cura itself is old and contains bugs.
+The module is included in the OctoPrintPlugin to replace the version that ships with
+older versions of Cura because that version has bugs.

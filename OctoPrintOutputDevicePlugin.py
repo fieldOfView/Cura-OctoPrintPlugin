@@ -4,7 +4,6 @@
 from UM.OutputDevice.OutputDevicePlugin import OutputDevicePlugin
 from . import OctoPrintOutputDevice
 
-from .zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
 from UM.Signal import Signal, signalemitter
 from UM.Application import Application
 from UM.Logger import Logger
@@ -16,6 +15,18 @@ import time
 import json
 import re
 import base64
+import os.path
+
+import importlib.util
+zeroconf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-zeroconf", "zeroconf", "__init__.py")
+spec = importlib.util.spec_from_file_location("zeroconf", zeroconf_path)
+zeroconf = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(zeroconf)
+
+Zeroconf = zeroconf.Zeroconf
+ServiceBrowser = zeroconf.ServiceBrowser
+ServiceStateChange = zeroconf.ServiceStateChange
+ServiceInfo = zeroconf.ServiceInfo
 
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -219,13 +230,15 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             for record in zeroconf.cache.entries_with_name(key.lower()):
                 info.update_record(zeroconf, time.time(), record)
 
+            address = ""
             for record in zeroconf.cache.entries_with_name(info.server):
                 info.update_record(zeroconf, time.time(), record)
-                if info.address and info.address[:2] != b'\xa9\xfe': # don't accept 169.254.x.x address
+                if not repr(record).startswith("169."): # don't accept 169.254.x.x address
+                    address = repr(record)
                     break
 
             # Request more data if info is not complete
-            if not info.address or not info.port:
+            if not address or not info.port:
                 Logger.log("d", "Trying to get address of %s", name)
                 info = zeroconf.get_service_info(service_type, key)
 
@@ -233,8 +246,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
                     Logger.log("w", "Could not get information about %s" % name)
                     return
 
-            if info.address and info.port:
-                address = '.'.join(map(lambda n: str(n), info.address))
+            if address and info.port:
                 self.addInstanceSignal.emit(name, address, info.port, info.properties)
             else:
                 Logger.log("d", "Discovered instance named %s but received no address", name)
