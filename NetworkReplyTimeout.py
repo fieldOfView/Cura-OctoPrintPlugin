@@ -1,5 +1,5 @@
 # Copyright (c) 2019 Aldo Hoeben / fieldOfView
-# NetworkReplyTimeout is released under the terms of the LGPLv3 or higher.
+# NetworkReplyTimeout is released under the terms of the AGPLv3 or higher.
 
 from PyQt5.QtCore import QObject, QTimer
 from PyQt5.QtNetwork import QNetworkReply
