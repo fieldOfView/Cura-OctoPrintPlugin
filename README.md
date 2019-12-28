@@ -11,10 +11,6 @@ Installation
 * Manually:
   Download or clone the repository into [Cura configuration folder]/plugins/OctoPrintPlugin
   The configuration folder can be found via Help -> Show Configuration Folder inside Cura.
-* Cura PPA (*Ubuntu):
-  - Add the cura PPA via (if not already done): `sudo add-apt-repository ppa:thopiekar/cura`
-  - Update APT via: `sudo apt update`
-  - Install the plugin via: `sudo apt install cura-plugin-octoprint`
 
 
 How to use
