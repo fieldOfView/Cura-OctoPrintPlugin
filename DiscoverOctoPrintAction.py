@@ -229,7 +229,7 @@ class DiscoverOctoPrintAction(MachineAction):
             settings_request = self._createRequest(QUrl(base_url + "api/settings"), basic_auth_username, basic_auth_password)
             settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
             self._settings_reply = self._network_manager.get(settings_request)
-            self._settings_reply_timeout = NetworkReplyTimeout(self._settings_reply, 1000, self._onRequestTimeout)
+            self._settings_reply_timeout = NetworkReplyTimeout(self._settings_reply, 5000, self._onRequestFailed)
 
     @pyqtSlot(str)
     def setApiKey(self, api_key: str) -> None:
@@ -365,7 +365,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
         self._application.addAdditionalComponent("monitorButtons", self._additional_components.findChild(QObject, "openOctoPrintButton"))
 
-    def _onRequestTimeout(self, reply: QNetworkReply) -> None:
+    def _onRequestFailed(self, reply: QNetworkReply) -> None:
         if reply.operation() == QNetworkAccessManager.GetOperation:
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
                 Logger.log("w", "Timeout when trying to access Octoprint at %s" % reply.url().toString())
@@ -378,6 +378,7 @@ class DiscoverOctoPrintAction(MachineAction):
         http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
         if not http_status_code:
             # Received no or empty reply
+            self._onRequestFailed(reply)
             return
 
         if reply.operation() == QNetworkAccessManager.PostOperation:
@@ -404,6 +405,7 @@ class DiscoverOctoPrintAction(MachineAction):
                 else:
                     self._instance_supports_appkeys = False
                 self.appKeysSupportedChanged.emit()
+
             if "/plugin/appkeys/request" in reply.url().toString():  # Periodic AppKey request poll
                 if http_status_code == 202:
                     self._appkey_poll_timer.start()
