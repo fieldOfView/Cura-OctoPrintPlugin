@@ -164,11 +164,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
-        self._psucontrol_timer = QTimer()
-        self._psucontrol_timer.setInterval(20000) # TODO; Add preference for timer interval
-        self._psucontrol_timer.setSingleShot(True)
-        self._psucontrol_timer.timeout.connect(self._startPrint)
-
         self._show_camera = True
         self._camera_mirror = False
         self._camera_rotation = 0
@@ -179,6 +174,22 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._ufp_supported = False # supports .ufp files in addition to raw .gcode files
 
         self._plugin_data = {} #type: Dict[str, Any]
+
+        # message used when waiting for the printer to become available after turning on the power
+        self._waiting_for_printer_online_message = Message(
+            i18n_catalog.i18nc("@info:status", "Waiting for OctoPrint to connect to the printer..."),
+            progress=-1, lifetime=0, dismissable=False
+        )
+        self._waiting_for_printer_online_message.addAction(
+            "Queue", i18n_catalog.i18nc("@action:button", "Queue"), "",
+            i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the printer and queue the printjob instead")
+        )
+        self._waiting_for_printer_online_message.addAction(
+            "Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
+            i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the printer to come online and cancel the printjob"),
+            button_style=Message.ActionButtonStyle.SECONDARY
+        )
+        self._waiting_for_printer_online_message.actionTriggered.connect(self._stopWaitingForPrinter)
 
         self._output_controller = GenericOutputController(self)
 
@@ -378,7 +389,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if self.activePrinter.state == "offline" and "psucontrol" in self._plugin_data and use_psu_control:
             self._sendCommandToApi("plugin/psucontrol", "turnPSUOn")
             Logger.log("d", "PSU control 'on' command sent")
-            self._psucontrol_timer.start()
+            self._waiting_for_printer_online_message.show()
             return
 
         elif self.activePrinter.state not in ["idle", ""]:
@@ -398,6 +409,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 return
 
         self._startPrint()
+
+    def _stopWaitingForPrinter(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
+        self._waiting_for_printer_online_message.hide()
+
+        if action_id == "queue":
+            self._queuePrint()
+        elif action_id == "cancel":
+            self._gcode_stream = None # type: Optional[Union[StringIO, BytesIO]]
 
     def _queuePrint(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._error_message:
@@ -709,6 +728,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         print_job.updateTimeTotal(0)
 
                     print_job.updateName(json_data["job"]["file"]["name"])
+
+                    if self._waiting_for_printer_online_message.visible and printer.state == "idle":
+                        self._waiting_for_printer_online_message.hide()
+                        self._startPrint()
                 else:
                     pass  # See generic error handler below
 
