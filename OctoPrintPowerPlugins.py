@@ -11,23 +11,24 @@ class OctoPrintPowerPlugins():
     def parsePluginData(self, plugin_data: OrderedDict):
         self._available_plugs = OrderedDict()
 
-        # plugins that don't require further arguments
+        # plugins that only support a single plug
         for (plugin_id, plugin_name) in [
             ("psucontrol", "PSU Control"),
             ("mystromswitch", "MyStrom Switch")
         ]:
             if plugin_id in plugin_data:
-                plug = OrderedDict([
-                    ("plugin", plugin_id),
-                    ("name", plugin_name)
-                ])
-                self._available_plugs[self._createPlugId(plug)] = plug
+                if plugin_id != "mystromswitch" or plugin_data[plugin_id]["ip"]:
+                    plug = OrderedDict([
+                        ("plugin", plugin_id),
+                        ("name", plugin_name)
+                    ])
+                    self._available_plugs[self._createPlugId(plug)] = plug
 
         # plugins that have a `label` and `ip` specified in `arrSmartplugs`
         for (plugin_id, plugin_name, additional_data) in [
             ("tplinksmartplug", "TP-Link Smartplug", []), # ip
             ("orvibos20", "Orvibo S20", []), # ip
-            ("wemoswitch", "Wemo Switch", []) # ip
+            ("wemoswitch", "Wemo Switch", []), # ip
             ("tuyasmartplug", "Tuya Smartplug", []), # label
             ("domoticz", "Domoticz", ["idx"]), # ip, idx
             ("tasmota", "Tasmota", ["idx", "username", "password"]), # ip, idx, username, password
@@ -37,9 +38,9 @@ class OctoPrintPowerPlugins():
                     if plug_data["ip"] and plug_data["label"]:
                         plug = OrderedDict([
                             ("plugin", plugin_id),
-                            ("name": "%s (%s)" % (plug_data["label"], plugin_name)),
-                            ("label": plug_data["label"]),
-                            ("ip": plug_data["ip"])
+                            ("name", ("%s (%s)" % (plug_data["label"], plugin_name))),
+                            ("label", plug_data["label"]),
+                            ("ip", plug_data["ip"])
                         ])
                         for key in additional_data:
                             plug[key] = plug_data[key]
