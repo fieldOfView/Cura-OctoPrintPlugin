@@ -12,6 +12,8 @@ from UM.PluginError import PluginNotFoundError
 
 from cura.CuraApplication import CuraApplication
 
+from . import OctoPrintPowerPlugins
+
 try:
     # Cura 4.1
     from cura.PrinterOutput.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
@@ -174,6 +176,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._ufp_supported = False # supports .ufp files in addition to raw .gcode files
 
         self._plugin_data = {} #type: Dict[str, Any]
+        self._power_plugins_manager = OctoPrintPowerPlugins.OctoPrintPowerPlugins()
 
         # message used when waiting for the printer to become available after turning on the power
         self._waiting_for_printer_online_message = Message(
@@ -384,13 +387,19 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
         self._forced_queue = False
 
-        use_psu_control = parseBool(global_container_stack.getMetaDataEntry("octoprint_psu_control", False))
+        use_power_plugin = parseBool(global_container_stack.getMetaDataEntry("octoprint_power_control", False))
+        power_plug_id = global_container_stack.getMetaDataEntry("octoprint_power_plug", "")
 
-        if self.activePrinter.state == "offline" and "psucontrol" in self._plugin_data and use_psu_control:
-            self._sendCommandToApi("plugin/psucontrol", "turnPSUOn")
-            Logger.log("d", "PSU control 'on' command sent")
-            self._waiting_for_printer_online_message.show()
-            return
+        if self.activePrinter.state == "offline" and use_power_plugin and power_plug_id in self._power_plugins_manager.getAvailablePowerPlugs():
+            set_state_command = self._power_plugins_manager.getSetStateCommand(True, power_plug_id)
+            if set_state_command:
+                self._sendCommandToApi(set_state_command[0], set_state_command[1])
+                Logger.log("d", "Sent %s command to endpoint %s", (set_state_command[1], set_state_command[0]))
+
+                self._waiting_for_printer_online_message.show()
+                return
+            else:
+                Logger.log("e", "No command to power on plugin %s", power_plug_id)
 
         elif self.activePrinter.state not in ["idle", ""]:
             Logger.log("d", "Tried starting a print, but current state is %s" % self.activePrinter.state)
@@ -783,6 +792,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     if "plugins" in json_data:
                         self._plugin_data = json_data["plugins"]
+                        self._power_plugins_manager.parsePluginData(self._plugin_data)
 
                         if "UltimakerFormatPackage" in self._plugin_data:
                             try:
