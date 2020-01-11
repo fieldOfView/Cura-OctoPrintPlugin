@@ -149,7 +149,7 @@ Cura.MachineAction
 
             Item
             {
-                width: Math.floor(parent.width * 0.5)
+                width: Math.floor(parent.width * 0.4)
                 height: base.height - parent.y
 
                 ScrollView
@@ -249,7 +249,7 @@ Cura.MachineAction
 
             Column
             {
-                width: Math.floor(parent.width * 0.5)
+                width: Math.floor(parent.width * 0.6)
                 spacing: UM.Theme.getSize("default_margin").height
                 Label
                 {
@@ -446,15 +446,64 @@ Cura.MachineAction
                             manager.setContainerMetaDataEntry(activeMachineId, "octoprint_auto_print", String(checked))
                         }
                     }
-                    CheckBox
+                    Row
                     {
-                        id: autoPSUControlCheckBox
-                        text: catalog.i18nc("@label", "Automatically turn on printer with PSU Control plugin")
-                        visible: manager.instanceInstalledPlugins.indexOf("psucontrol") > -1
-                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_psu_control") == "true"
-                        onClicked:
+                        spacing: UM.Theme.getSize("default_margin").width
+
+                        CheckBox
                         {
-                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_psu_control", String(checked))
+                            id: autoPowerControlCheckBox
+                            text: catalog.i18nc("@label", "Automatically turn on printer with")
+                            visible: autoPowerControlPlugs.visible
+                            anchors.verticalCenter: autoPowerControlPlugs.verticalCenter
+                            checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_power_control") == "true"
+                            onClicked:
+                            {
+                                manager.setContainerMetaDataEntry(activeMachineId, "octoprint_power_control", String(checked))
+                            }
+                        }
+                        Connections
+                        {
+                            target: manager
+                            onInstanceAvailablePowerPluginsChanged: autoPowerControlPlugsModel.populateModel()
+                        }
+
+                        ComboBox
+                        {
+                            id: autoPowerControlPlugs
+                            visible: manager.instanceApiKeyAccepted && model.count > 0
+                            property bool populatingModel: false
+                            textRole: "text"
+                            model: ListModel
+                            {
+                                id: autoPowerControlPlugsModel
+
+                                Component.onCompleted: populateModel()
+
+                                function populateModel()
+                                {
+                                    autoPowerControlPlugs.populatingModel = true;
+                                    clear();
+
+                                    var current_index = 0;
+
+                                    var power_plugs = manager.instanceAvailablePowerPlugins;
+                                    for(var i in power_plugs)
+                                    {
+                                        append({
+                                            key: power_plugs[i].key,
+                                            text: power_plugs[i].text
+                                        });
+                                        if(power_plugs[i].key == Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_power_plug"))
+                                        {
+                                            current_index = i;
+                                        }
+                                    }
+
+                                    autoPowerControlPlugs.currentIndex = current_index;
+                                    autoPowerControlPlugs.populatingModel = false;
+                                }
+                            }
                         }
                     }
                     CheckBox

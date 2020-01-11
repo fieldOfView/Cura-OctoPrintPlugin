@@ -12,7 +12,7 @@ from UM.PluginError import PluginNotFoundError
 
 from cura.CuraApplication import CuraApplication
 
-from . import OctoPrintPowerPlugins
+from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
 
 try:
     # Cura 4.1
@@ -176,7 +176,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._ufp_supported = False # supports .ufp files in addition to raw .gcode files
 
         self._plugin_data = {} #type: Dict[str, Any]
-        self._power_plugins_manager = OctoPrintPowerPlugins.OctoPrintPowerPlugins()
+        self._power_plugins_manager = OctoPrintPowerPlugins()
 
         # message used when waiting for the printer to become available after turning on the power
         self._waiting_for_printer_online_message = Message(
@@ -388,18 +388,24 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._forced_queue = False
 
         use_power_plugin = parseBool(global_container_stack.getMetaDataEntry("octoprint_power_control", False))
-        power_plug_id = global_container_stack.getMetaDataEntry("octoprint_power_plug", "")
+        if use_power_plugin:
+            available_plugs = self._power_plugins_manager.getAvailablePowerPlugs()
+            power_plug_id = global_container_stack.getMetaDataEntry("octoprint_power_plug", "")
+            if use_power_plugin and power_plug_id == "" and len(available_plugs) > 0:
+                self._power_plugins_manager.getAvailablePowerPlugs().keys()[0]
 
-        if self.activePrinter.state == "offline" and use_power_plugin and power_plug_id in self._power_plugins_manager.getAvailablePowerPlugs():
-            set_state_command = self._power_plugins_manager.getSetStateCommand(True, power_plug_id)
-            if set_state_command:
-                self._sendCommandToApi(set_state_command[0], set_state_command[1])
-                Logger.log("d", "Sent %s command to endpoint %s", (set_state_command[1], set_state_command[0]))
+            if self.activePrinter.state == "offline" and power_plug_id in available_plugs:
+                set_state_command = self._power_plugins_manager.getSetStateCommand(True, power_plug_id)
+                if set_state_command:
+                    self._sendCommandToApi(set_state_command[0], set_state_command[1])
+                    Logger.log("d", "Sent %s command to endpoint %s", (set_state_command[1], set_state_command[0]))
 
-                self._waiting_for_printer_online_message.show()
-                return
+                    self._waiting_for_printer_online_message.show()
+                    return
+                else:
+                    Logger.log("e", "No command to power on plug %s", power_plug_id)
             else:
-                Logger.log("e", "No command to power on plugin %s", power_plug_id)
+                Logger.log("e", "Specified power plug %s is not available", power_plug_id)
 
         elif self.activePrinter.state not in ["idle", ""]:
             Logger.log("d", "Tried starting a print, but current state is %s" % self.activePrinter.state)

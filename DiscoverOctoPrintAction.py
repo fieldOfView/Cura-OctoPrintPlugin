@@ -16,6 +16,7 @@ from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager, QNetworkReply
 
 from .NetworkReplyTimeout import NetworkReplyTimeout
+from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
 
 import os.path
 import json
@@ -79,6 +80,8 @@ class DiscoverOctoPrintAction(MachineAction):
         self._instance_supports_sd = False
         self._instance_supports_camera = False
         self._instance_installed_plugins = [] # type: List[str]
+
+        self._power_plugins_manager = OctoPrintPowerPlugins()
 
         # Load keys cache from preferences
         self._preferences = self._application.getPreferences()
@@ -288,6 +291,11 @@ class DiscoverOctoPrintAction(MachineAction):
     def instanceInstalledPlugins(self) -> List[str]:
         return self._instance_installed_plugins
 
+    @pyqtProperty("QVariantList", notify = selectedInstanceSettingsChanged)
+    def instanceAvailablePowerPlugins(self) -> List[Dict[str, str]]:
+        available_plugins = self._power_plugins_manager.getAvailablePowerPlugs()
+        return [{"key":plug_id, "text":plug_data["name"]} for (plug_id, plug_data) in available_plugins.items()]
+
     @pyqtProperty(bool, notify = appKeysSupportedChanged)
     def instanceSupportsAppKeys(self) -> bool:
         return self._instance_supports_appkeys
@@ -450,6 +458,7 @@ class DiscoverOctoPrintAction(MachineAction):
                             self._instance_supports_camera = True
 
                     if "plugins" in json_data:
+                        self._power_plugins_manager.parsePluginData(json_data["plugins"])
                         self._instance_installed_plugins = list(json_data["plugins"].keys())
 
                 elif http_status_code == 401:
