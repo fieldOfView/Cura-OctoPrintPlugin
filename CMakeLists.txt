@@ -7,6 +7,8 @@ install(FILES
     DiscoverOctoPrintAction.py
     OctoPrintOutputDevice.py
     OctoPrintOutputDevicePlugin.py
+    OctoPrintPowerPlugins.py
+    NetworkReplyTimeout.py
     NetworkMJPGImage.py
     LICENSE
     README.md
