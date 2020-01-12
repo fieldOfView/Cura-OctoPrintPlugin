@@ -37,3 +37,12 @@ Python-zeroconf is licensed under the LGPL-2.1:
 https://github.com/jstasiak/python-zeroconf
 The module is included in the OctoPrintPlugin to replace the version that ships with
 older versions of Cura because that version has bugs.
+
+ifaddr
+----
+This plugin contains a submodule/copy of the python ifaddr module as maintained by
+pydron.
+ifaddr is licensed under the MIT license:
+https://github.com/pydron/ifaddr
+The module is included in the OctoPrintPlugin because it is a dependency of
+python-zeroconf and it is not included with older versions of Cura

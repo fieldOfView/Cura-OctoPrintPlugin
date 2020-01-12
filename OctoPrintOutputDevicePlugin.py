@@ -19,17 +19,24 @@ import os.path
 
 try:
     # import the included version of python-zeroconf
+    import sys
     import importlib.util
+
+    # expand path so local copy of ifaddr can be imported by zeroconf
+    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ifaddr"))
+
     zeroconf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-zeroconf", "zeroconf", "__init__.py")
     spec = importlib.util.spec_from_file_location("zeroconf", zeroconf_path)
     zeroconf = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(zeroconf)
 
+    del sys.path[-1] # restore original path
+
     Zeroconf = zeroconf.Zeroconf
     ServiceBrowser = zeroconf.ServiceBrowser
     ServiceStateChange = zeroconf.ServiceStateChange
     ServiceInfo = zeroconf.ServiceInfo
-except FileNotFoundError:
+except FileNotFoundError, ImportError:
     # fall back to the system-installed version, or what comes with Cura
     from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
 

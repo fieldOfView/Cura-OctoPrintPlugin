@@ -33,3 +33,18 @@ install(FILES
     python-zeroconf/zeroconf/__init__.py
     DESTINATION lib/cura/plugins/OctoPrintPlugin/python-zeroconf/zeroconf
 )
+
+install(FILES
+    ifaddr/README.rst
+    ifaddr/LICENSE.txt
+    DESTINATION lib/cura/plugins/OctoPrintPlugin/ifaddr
+)
+
+install(FILES
+    ifaddr/ifaddr/__ini__.py
+    ifaddr/ifaddr/_posix.py
+    ifaddr/ifaddr/_win32.py
+    ifaddr/ifaddr/_shared.py
+    ifaddr/ifaddr/test_ifaddr.py
+    DESTINATION lib/cura/plugins/OctoPrintPlugin/ifaddr/ifaddr
+)

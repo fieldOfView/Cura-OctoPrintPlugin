@@ -1,3 +1,6 @@
 [submodule "python-zeroconf"]
 	path = python-zeroconf
 	url = https://github.com/jstasiak/python-zeroconf
+[submodule "ifaddr"]
+	path = ifaddr
+	url = https://github.com/pydron/ifaddr
