@@ -61,7 +61,8 @@ class OctoPrintPowerPlugins():
                     self._available_plugs[self._createPlugId(plug)] = plug
 
     def _createPlugId(self, plug_data: OrderedDict) -> str:
-        return "/".join(list(plug_data.values()))
+        interesting_bits = [v for (k, v) in plug_data.items() if k != "name"]
+        return "/".join(interesting_bits)
 
     def getAvailablePowerPlugs(self) -> OrderedDict:
         return self._available_plugs
