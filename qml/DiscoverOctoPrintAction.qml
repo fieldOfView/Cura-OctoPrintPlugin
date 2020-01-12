@@ -485,25 +485,48 @@ Cura.MachineAction
                                     autoPowerControlPlugs.populatingModel = true;
                                     clear();
 
-                                    var current_index = 0;
+                                    var current_index = -1;
 
                                     var power_plugs = manager.instanceAvailablePowerPlugins;
+                                    var current_key = Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_power_plug");
+                                    if (current_key == "" && power_plugs.length > 0)
+                                    {
+                                        current_key = power_plugs[0].key;
+                                        manager.setContainerMetaDataEntry(activeMachineId, "octoprint_power_plug", current_key);
+                                    }
+
                                     for(var i in power_plugs)
                                     {
                                         append({
                                             key: power_plugs[i].key,
                                             text: power_plugs[i].text
                                         });
-                                        if(power_plugs[i].key == Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_power_plug"))
+                                        if(power_plugs[i].key == current_key)
                                         {
                                             current_index = i;
                                         }
+                                    }
+                                    if(current_index == -1 && current_key != "")
+                                    {
+                                        append({
+                                            key: current_key,
+                                            text: catalog.i18nc("@label", "Unknown plug")
+                                        });
+                                        current_index = count - 1;
                                     }
 
                                     autoPowerControlPlugs.currentIndex = current_index;
                                     autoPowerControlPlugs.populatingModel = false;
                                 }
                             }
+                            onActivated:
+                            {
+                                if(!populatingModel && model.get(index))
+                                {
+                                    manager.setContainerMetaDataEntry(activeMachineId, "octoprint_power_plug", model.get(index).key);
+                                }
+                            }
+
                         }
                     }
                     CheckBox
