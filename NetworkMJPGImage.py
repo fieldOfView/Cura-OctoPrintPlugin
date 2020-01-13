@@ -8,6 +8,8 @@ from PyQt5.QtNetwork import QNetworkRequest, QNetworkReply, QNetworkAccessManage
 
 from UM.Logger import Logger
 
+import base64
+
 #
 # A QQuickPaintedItem that progressively downloads a network mjpeg stream,
 # picks it apart in individual jpeg frames, and paints it.
@@ -88,20 +90,31 @@ class NetworkMJPGImage(QQuickPaintedItem):
         if not self._source_url:
             Logger.log("w", "Unable to start camera stream without target!")
             return
-        self._started = True
+
+        auth_data = ""
+        if self._source_url.userInfo():
+            # move auth data to basic authorization header
+            auth_data = base64.b64encode(self._source_url.userInfo().encode()).decode("utf-8")
+            authority = self._source_url.authority()
+            self._source_url.setAuthority(authority.rsplit("@", 1)[1])
 
         self._image_request = QNetworkRequest(self._source_url)
+        if auth_data:
+            self._image_request.setRawHeader(b"Authorization", ("basic %s" % auth_data).encode())
 
-        # ignore SSL errors (eg for self-signed certificates)
-        ssl_configuration = QSslConfiguration.defaultConfiguration()
-        ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
-        request.setSslConfiguration(ssl_configuration)
+        if self._source_url.scheme().lower() == "https":
+            # ignore SSL errors (eg for self-signed certificates)
+            ssl_configuration = QSslConfiguration.defaultConfiguration()
+            ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
+            self._image_request.setSslConfiguration(ssl_configuration)
 
         if self._network_manager is None:
             self._network_manager = QNetworkAccessManager()
 
         self._image_reply = self._network_manager.get(self._image_request)
         self._image_reply.downloadProgress.connect(self._onStreamDownloadProgress)
+
+        self._started = True
 
     @pyqtSlot()
     def stop(self) -> None:

@@ -230,7 +230,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
             ## Request 'settings' dump
             settings_request = self._createRequest(QUrl(base_url + "api/settings"), basic_auth_username, basic_auth_password)
-            settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
+            settings_request.setRawHeader(b"X-Api-Key", api_key.encode())
             self._settings_reply = self._network_manager.get(settings_request)
             self._settings_reply_timeout = NetworkReplyTimeout(self._settings_reply, 5000, self._onRequestFailed)
 

@@ -112,13 +112,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._base_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, self._path)
         self._api_url = self._base_url + self._api_prefix
 
-        self._basic_auth_header = "Authorization".encode()
         self._basic_auth_data = None
+        self._basic_auth_string = ""
         basic_auth_username = properties.get(b"userName", b"").decode("utf-8")
         basic_auth_password = properties.get(b"password", b"").decode("utf-8")
         if basic_auth_username and basic_auth_password:
             data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
             self._basic_auth_data = ("basic %s" % data).encode()
+            self._basic_auth_string = "%s:%s" % (basic_auth_username, basic_auth_password)
 
         try:
             major_api_version = CuraApplication.getInstance().getAPIVersion().getMajor()
@@ -170,7 +171,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._camera_mirror = False
         self._camera_rotation = 0
         self._camera_url = ""
-        self._camera_shares_proxy = False
 
         self._sd_supported = False # supports storing gcode on sd card in printer
         self._ufp_supported = False # supports .ufp files in addition to raw .gcode files
@@ -301,7 +301,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         request.setSslConfiguration(ssl_configuration)
 
         if self._basic_auth_data:
-            request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+            request.setRawHeader(b"Authorization", self._basic_auth_data)
 
         return request
 
@@ -791,7 +791,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         self._sd_supported = json_data["feature"]["sdSupport"]
 
                     if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
-                        self._camera_shares_proxy = False
                         stream_url = json_data["webcam"]["streamUrl"]
                         if not stream_url: #empty string or None
                             self._camera_url = ""
@@ -802,8 +801,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         elif stream_url[:1] == ":": # domain-relative (on another port)
                             self._camera_url = "%s://%s%s" % (self._protocol, self._address, stream_url)
                         elif stream_url[:1] == "/": # domain-relative (on same port)
-                            self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
-                            self._camera_shares_proxy = True
+                            if not self._basic_auth_string:
+                                self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
+                            else:
+                                self._camera_url = "%s://%s@%s:%d%s" % (self._protocol, self._basic_auth_string, self._address, self._port, stream_url)
                         else:
                             Logger.log("w", "Unusable stream url received: %s", stream_url)
                             self._camera_url = ""
