@@ -95,6 +95,7 @@ class NetworkMJPGImage(QQuickPaintedItem):
             self._network_manager = QNetworkAccessManager()
 
         self._image_reply = self._network_manager.get(self._image_request)
+        self._image_reply.ignoreSslErrors()
         self._image_reply.downloadProgress.connect(self._onStreamDownloadProgress)
 
     @pyqtSlot()

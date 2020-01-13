@@ -184,6 +184,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._appkey_request.setRawHeader(b"Content-Type", b"application/json")
         data = json.dumps({"app": "Cura"})
         self._appkey_reply = self._network_manager.post(self._appkey_request, data.encode())
+        self._appkey_reply.ignoreSslErrors()
 
     @pyqtSlot()
     def cancelApiKeyRequest(self) -> None:
@@ -200,6 +201,7 @@ class DiscoverOctoPrintAction(MachineAction):
         if not self._appkey_request:
             return
         self._appkey_reply = self._network_manager.get(self._appkey_request)
+        self._appkey_reply.ignoreSslErrors()
 
     @pyqtSlot(str, str, str)
     def probeAppKeySupport(self, base_url: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
@@ -208,6 +210,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
         appkey_probe_request = self._createRequest(QUrl(base_url + "plugin/appkeys/probe"), basic_auth_username, basic_auth_password)
         self._appkey_reply = self._network_manager.get(appkey_probe_request)
+        self._appkey_reply.ignoreSslErrors()
 
     @pyqtSlot(str, str, str, str)
     def testApiKey(self, base_url: str, api_key: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
@@ -232,6 +235,7 @@ class DiscoverOctoPrintAction(MachineAction):
             settings_request = self._createRequest(QUrl(base_url + "api/settings"), basic_auth_username, basic_auth_password)
             settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
             self._settings_reply = self._network_manager.get(settings_request)
+            self._settings_reply.ignoreSslErrors()
             self._settings_reply_timeout = NetworkReplyTimeout(self._settings_reply, 5000, self._onRequestFailed)
 
     @pyqtSlot(str)
@@ -376,7 +380,7 @@ class DiscoverOctoPrintAction(MachineAction):
     def _onRequestFailed(self, reply: QNetworkReply) -> None:
         if reply.operation() == QNetworkAccessManager.GetOperation:
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
-                Logger.log("w", "Timeout when trying to access Octoprint at %s" % reply.url().toString())
+                Logger.log("w", "Connection refused or timeout when trying to access Octoprint at %s" % reply.url().toString())
                 self._instance_in_error = True
                 self.selectedInstanceSettingsChanged.emit()
 

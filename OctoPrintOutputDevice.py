@@ -493,6 +493,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             ##  Post request + data
             post_request = self._createEmptyRequest("files/" + destination)
             self._post_reply = self.postFormWithParts("files/" + destination, post_parts, on_finished=self._onRequestFinished, on_progress=self._onUploadProgress)
+            self._post_reply.ignoreSslErrors()
 
         except IOError:
             self._progress_message.hide()
@@ -544,7 +545,24 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             data = json.dumps({"command": commands})
         self.post(end_point, data, self._onRequestFinished)
 
+    ## Overloaded from NetworkedPrinterOutputDevice.get() to be permissive of
+    #  self-signed certificates
+    def get(self, url: str, on_finished: Optional[Callable[[QNetworkReply], None]]) -> None:
+        self._validateManager()
+
+        request = self._createEmptyRequest(url)
+        self._last_request_time = time()
+
+        if not self._manager:
+            Logger.log("e", "No network manager was created to execute the GET call with.")
+            return
+
+        reply = self._manager.get(request)
+        reply.ignoreSslErrors()
+        self._registerOnFinishedCallback(reply, on_finished)
+
     ## Overloaded from NetworkedPrinterOutputDevice.post() to backport https://github.com/Ultimaker/Cura/pull/4678
+    #  and allow self-signed certificates
     def post(self, url: str, data: Union[str, bytes],
              on_finished: Optional[Callable[[QNetworkReply], None]],
              on_progress: Optional[Callable[[int, int], None]] = None) -> None:
@@ -559,6 +577,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         body = data if isinstance(data, bytes) else data.encode()  # type: bytes
         reply = self._manager.post(request, body)
+        reply.ignoreSslErrors()
         if on_progress is not None:
             reply.uploadProgress.connect(on_progress)
         self._registerOnFinishedCallback(reply, on_finished)
