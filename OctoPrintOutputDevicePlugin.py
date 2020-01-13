@@ -36,7 +36,7 @@ try:
     ServiceBrowser = zeroconf.ServiceBrowser
     ServiceStateChange = zeroconf.ServiceStateChange
     ServiceInfo = zeroconf.ServiceInfo
-except FileNotFoundError, ImportError:
+except (FileNotFoundError, ImportError):
     # fall back to the system-installed version, or what comes with Cura
     from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
 

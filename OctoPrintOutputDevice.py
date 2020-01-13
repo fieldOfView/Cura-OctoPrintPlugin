@@ -395,10 +395,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 self._power_plugins_manager.getAvailablePowerPlugs().keys()[0]
 
             if self.activePrinter.state == "offline" and power_plug_id in available_plugs:
-                set_state_command = self._power_plugins_manager.getSetStateCommand(True, power_plug_id)
-                if set_state_command:
-                    self._sendCommandToApi(set_state_command[0], set_state_command[1])
-                    Logger.log("d", "Sent %s command to endpoint %s", (set_state_command[1], set_state_command[0]))
+                (end_point, command) = self._power_plugins_manager.getSetStateCommand(power_plug_id, True)
+                if end_point and command:
+                    self._sendCommandToApi(end_point, command)
+                    Logger.log("d", "Sent %s command to endpoint %s" % (command["command"], end_point))
 
                     self._waiting_for_printer_online_message.show()
                     return
@@ -532,8 +532,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._sendCommandToApi("job", command)
         Logger.log("d", "Sent job command to OctoPrint instance: %s", command)
 
-    def _sendCommandToApi(self, end_point: str, commands: Union[str, List[str]]) -> None:
-        if isinstance(commands, list):
+    def _sendCommandToApi(self, end_point: str, commands: Union[Dict[str, Any], str, List[str]]) -> None:
+        if isinstance(commands, dict):
+            if "command" not in commands and "commands" not in commands:
+                Logger.log("e", "Command dictionary does not include API command: %s", json.dumps())
+                return
+            data = json.dumps(commands)
+        elif isinstance(commands, list):
             data = json.dumps({"commands": commands})
         else:
             data = json.dumps({"command": commands})
