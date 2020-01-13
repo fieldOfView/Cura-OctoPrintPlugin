@@ -28,7 +28,7 @@ except ImportError:
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 from cura.PrinterOutput.GenericOutputController import GenericOutputController
 
-from PyQt5.QtNetwork import QHttpMultiPart, QHttpPart, QNetworkRequest, QNetworkAccessManager, QNetworkReply
+from PyQt5.QtNetwork import QHttpMultiPart, QHttpPart, QNetworkRequest, QNetworkAccessManager, QNetworkReply, QSslConfiguration, QSslSocket
 from PyQt5.QtCore import QUrl, QTimer, pyqtSignal, pyqtProperty, pyqtSlot, QCoreApplication
 from PyQt5.QtGui import QImage, QDesktopServices
 
@@ -291,10 +291,18 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         request = QNetworkRequest(QUrl(self._api_url + target))
         request.setRawHeader(b"X-Api-Key", self._api_key)
         request.setRawHeader(b"User-Agent", self._user_agent.encode())
+
         if content_type is not None:
             request.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
+
+        # ignore SSL errors (eg for self-signed certificates)
+        ssl_configuration = QSslConfiguration.defaultConfiguration()
+        ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
+        request.setSslConfiguration(ssl_configuration)
+
         if self._basic_auth_data:
             request.setRawHeader(self._basic_auth_header, self._basic_auth_data)
+
         return request
 
     # This is a patched version from NetworkedPrinterOutputdevice, which adds "form_data" instead of "form-data"
@@ -493,7 +501,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             ##  Post request + data
             post_request = self._createEmptyRequest("files/" + destination)
             self._post_reply = self.postFormWithParts("files/" + destination, post_parts, on_finished=self._onRequestFinished, on_progress=self._onUploadProgress)
-            self._post_reply.ignoreSslErrors()
 
         except IOError:
             self._progress_message.hide()
@@ -558,7 +565,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             return
 
         reply = self._manager.get(request)
-        reply.ignoreSslErrors()
         self._registerOnFinishedCallback(reply, on_finished)
 
     ## Overloaded from NetworkedPrinterOutputDevice.post() to backport https://github.com/Ultimaker/Cura/pull/4678
@@ -577,7 +583,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         body = data if isinstance(data, bytes) else data.encode()  # type: bytes
         reply = self._manager.post(request, body)
-        reply.ignoreSslErrors()
         if on_progress is not None:
             reply.uploadProgress.connect(on_progress)
         self._registerOnFinishedCallback(reply, on_finished)

@@ -4,7 +4,7 @@
 from PyQt5.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QByteArray
 from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtQuick import QQuickPaintedItem
-from PyQt5.QtNetwork import QNetworkRequest, QNetworkReply, QNetworkAccessManager
+from PyQt5.QtNetwork import QNetworkRequest, QNetworkReply, QNetworkAccessManager, QSslConfiguration, QSslSocket
 
 from UM.Logger import Logger
 
@@ -91,11 +91,16 @@ class NetworkMJPGImage(QQuickPaintedItem):
         self._started = True
 
         self._image_request = QNetworkRequest(self._source_url)
+
+        # ignore SSL errors (eg for self-signed certificates)
+        ssl_configuration = QSslConfiguration.defaultConfiguration()
+        ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
+        request.setSslConfiguration(ssl_configuration)
+
         if self._network_manager is None:
             self._network_manager = QNetworkAccessManager()
 
         self._image_reply = self._network_manager.get(self._image_request)
-        self._image_reply.ignoreSslErrors()
         self._image_reply.downloadProgress.connect(self._onStreamDownloadProgress)
 
     @pyqtSlot()

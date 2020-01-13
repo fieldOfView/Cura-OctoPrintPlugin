@@ -13,7 +13,7 @@ from cura.Settings.CuraStackBuilder import CuraStackBuilder
 from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
 from PyQt5.QtQml import QQmlComponent, QQmlContext
 from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager, QNetworkReply
+from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager, QNetworkReply, QSslConfiguration, QSslSocket
 
 from .NetworkReplyTimeout import NetworkReplyTimeout
 from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
@@ -184,7 +184,6 @@ class DiscoverOctoPrintAction(MachineAction):
         self._appkey_request.setRawHeader(b"Content-Type", b"application/json")
         data = json.dumps({"app": "Cura"})
         self._appkey_reply = self._network_manager.post(self._appkey_request, data.encode())
-        self._appkey_reply.ignoreSslErrors()
 
     @pyqtSlot()
     def cancelApiKeyRequest(self) -> None:
@@ -201,7 +200,6 @@ class DiscoverOctoPrintAction(MachineAction):
         if not self._appkey_request:
             return
         self._appkey_reply = self._network_manager.get(self._appkey_request)
-        self._appkey_reply.ignoreSslErrors()
 
     @pyqtSlot(str, str, str)
     def probeAppKeySupport(self, base_url: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
@@ -210,7 +208,6 @@ class DiscoverOctoPrintAction(MachineAction):
 
         appkey_probe_request = self._createRequest(QUrl(base_url + "plugin/appkeys/probe"), basic_auth_username, basic_auth_password)
         self._appkey_reply = self._network_manager.get(appkey_probe_request)
-        self._appkey_reply.ignoreSslErrors()
 
     @pyqtSlot(str, str, str, str)
     def testApiKey(self, base_url: str, api_key: str, basic_auth_username: str = "", basic_auth_password: str = "") -> None:
@@ -235,7 +232,6 @@ class DiscoverOctoPrintAction(MachineAction):
             settings_request = self._createRequest(QUrl(base_url + "api/settings"), basic_auth_username, basic_auth_password)
             settings_request.setRawHeader("X-Api-Key".encode(), api_key.encode())
             self._settings_reply = self._network_manager.get(settings_request)
-            self._settings_reply.ignoreSslErrors()
             self._settings_reply_timeout = NetworkReplyTimeout(self._settings_reply, 5000, self._onRequestFailed)
 
     @pyqtSlot(str)
@@ -480,9 +476,16 @@ class DiscoverOctoPrintAction(MachineAction):
     def _createRequest(self, url: str, basic_auth_username: str = "", basic_auth_password: str = "") -> QNetworkRequest:
         request = QNetworkRequest(url)
         request.setRawHeader(b"User-Agent", self._user_agent)
+
         if basic_auth_username and basic_auth_password:
             data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
             request.setRawHeader(b"Authorization", ("Basic %s" % data).encode())
+
+        # ignore SSL errors (eg for self-signed certificates)
+        ssl_configuration = QSslConfiguration.defaultConfiguration()
+        ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
+        request.setSslConfiguration(ssl_configuration)
+
         return request
 
     ##  Utility handler to base64-decode a string (eg an obfuscated API key), if it has been encoded before
