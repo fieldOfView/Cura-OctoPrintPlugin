@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Aldo Hoeben / fieldOfView
+# Copyright (c) 2020 Aldo Hoeben / fieldOfView
 # OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
 from UM.i18n import i18nCatalog
@@ -28,7 +28,8 @@ except ImportError:
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 from cura.PrinterOutput.GenericOutputController import GenericOutputController
 
-from PyQt5.QtNetwork import QHttpMultiPart, QHttpPart, QNetworkRequest, QNetworkAccessManager, QNetworkReply, QSslConfiguration, QSslSocket
+from PyQt5.QtNetwork import QHttpMultiPart, QHttpPart, QNetworkRequest, QNetworkAccessManager
+from PyQt5.QtNetwork import QNetworkReply, QSslConfiguration, QSslSocket
 from PyQt5.QtCore import QUrl, QTimer, pyqtSignal, pyqtProperty, pyqtSlot, QCoreApplication
 from PyQt5.QtGui import QImage, QDesktopServices
 
@@ -147,7 +148,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self.setIconName("print")
         self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._id))
 
-        self._post_reply = None
+        self._post_gcode_reply = None
 
         self._progress_message = None # type: Union[None, Message]
         self._error_message = None # type: Union[None, Message]
@@ -287,37 +288,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         ## Request print_job data
         self.get("job", self._onRequestFinished)
 
-    def _createEmptyRequest(self, target: str, content_type: Optional[str] = "application/json") -> QNetworkRequest:
-        request = QNetworkRequest(QUrl(self._api_url + target))
-        request.setRawHeader(b"X-Api-Key", self._api_key)
-        request.setRawHeader(b"User-Agent", self._user_agent.encode())
-
-        if content_type is not None:
-            request.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
-
-        # ignore SSL errors (eg for self-signed certificates)
-        ssl_configuration = QSslConfiguration.defaultConfiguration()
-        ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
-        request.setSslConfiguration(ssl_configuration)
-
-        if self._basic_auth_data:
-            request.setRawHeader(b"Authorization", self._basic_auth_data)
-
-        return request
-
-    # This is a patched version from NetworkedPrinterOutputdevice, which adds "form_data" instead of "form-data"
-    def _createFormPart(self, content_header: str, data: bytes, content_type: Optional[str] = None) -> QHttpPart:
-        part = QHttpPart()
-
-        if not content_header.startswith("form-data;"):
-            content_header = "form-data; " + content_header
-        part.setHeader(QNetworkRequest.ContentDispositionHeader, content_header)
-        if content_type is not None:
-            part.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
-
-        part.setBody(data)
-        return part
-
     def close(self) -> None:
         self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Closed))
         if self._progress_message:
@@ -363,7 +333,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def cancelPrint(self) -> None:
         self._sendJobCommand("cancel")
 
-    def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False, file_handler: Optional["FileHandler"] = None, **kwargs: str) -> None:
+    def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False,
+                     file_handler: Optional["FileHandler"] = None, **kwargs: str) -> None:
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
         if not global_container_stack:
             return
@@ -426,7 +397,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 self._error_message = Message(i18n_catalog.i18nc("@info:status", "OctoPrint is busy. Unable to start a new job."))
 
             if self._error_message:
-                self._error_message.addAction("Queue", i18n_catalog.i18nc("@action:button", "Queue job"), "", i18n_catalog.i18nc("@action:tooltip", "Queue this print job so it can be printed later"))
+                self._error_message.addAction(
+                    "Queue", i18n_catalog.i18nc("@action:button", "Queue job"), "",
+                    i18n_catalog.i18nc("@action:tooltip", "Queue this print job so it can be printed later")
+                )
                 self._error_message.actionTriggered.connect(self._queuePrint)
                 self._error_message.show()
                 return
@@ -499,8 +473,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         try:
             ##  Post request + data
-            post_request = self._createEmptyRequest("files/" + destination)
-            self._post_reply = self.postFormWithParts("files/" + destination, post_parts, on_finished=self._onRequestFinished, on_progress=self._onUploadProgress)
+            post_gcode_request = self._createEmptyRequest("files/" + destination)
+            self._post_gcode_reply = self.postFormWithParts(
+                "files/" + destination,
+                post_parts,
+                on_finished=self._onRequestFinished,
+                on_progress=self._onUploadProgress
+            )
 
         except IOError:
             self._progress_message.hide()
@@ -513,15 +492,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._gcode_stream = None # type: Optional[Union[StringIO, BytesIO]]
 
     def _cancelSendGcode(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
-        if self._post_reply:
+        if self._post_gcode_reply:
             Logger.log("d", "Stopping upload because the user pressed cancel.")
             try:
-                self._post_reply.uploadProgress.disconnect(self._onUploadProgress)
+                self._post_gcode_reply.uploadProgress.disconnect(self._onUploadProgress)
             except TypeError:
                 pass  # The disconnection can fail on mac in some cases. Ignore that.
 
-            self._post_reply.abort()
-            self._post_reply = None
+            self._post_gcode_reply.abort()
+            self._post_gcode_reply = None
         if self._progress_message:
             self._progress_message.hide()
 
@@ -551,41 +530,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         else:
             data = json.dumps({"command": commands})
         self.post(end_point, data, self._onRequestFinished)
-
-    ## Overloaded from NetworkedPrinterOutputDevice.get() to be permissive of
-    #  self-signed certificates
-    def get(self, url: str, on_finished: Optional[Callable[[QNetworkReply], None]]) -> None:
-        self._validateManager()
-
-        request = self._createEmptyRequest(url)
-        self._last_request_time = time()
-
-        if not self._manager:
-            Logger.log("e", "No network manager was created to execute the GET call with.")
-            return
-
-        reply = self._manager.get(request)
-        self._registerOnFinishedCallback(reply, on_finished)
-
-    ## Overloaded from NetworkedPrinterOutputDevice.post() to backport https://github.com/Ultimaker/Cura/pull/4678
-    #  and allow self-signed certificates
-    def post(self, url: str, data: Union[str, bytes],
-             on_finished: Optional[Callable[[QNetworkReply], None]],
-             on_progress: Optional[Callable[[int, int], None]] = None) -> None:
-        self._validateManager()
-
-        request = self._createEmptyRequest(url)
-        self._last_request_time = time()
-
-        if not self._manager:
-            Logger.log("e", "Could not find manager.")
-            return
-
-        body = data if isinstance(data, bytes) else data.encode()  # type: bytes
-        reply = self._manager.post(request, body)
-        if on_progress is not None:
-            reply.uploadProgress.connect(on_progress)
-        self._registerOnFinishedCallback(reply, on_finished)
 
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply: QNetworkReply) -> None:
@@ -856,8 +800,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint as {0}").format(file_name))
                     else:
                         message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint"))
-                    message.addAction("open_browser", i18n_catalog.i18nc("@action:button", "OctoPrint..."), "globe",
-                                        i18n_catalog.i18nc("@info:tooltip", "Open the OctoPrint web interface"))
+                    message.addAction(
+                        "open_browser", i18n_catalog.i18nc("@action:button", "OctoPrint..."), "globe",
+                        i18n_catalog.i18nc("@info:tooltip", "Open the OctoPrint web interface")
+                    )
                     message.actionTriggered.connect(self._openOctoPrint)
                     message.show()
 
@@ -916,3 +862,69 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _openOctoPrint(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         QDesktopServices.openUrl(QUrl(self._base_url))
+
+    def _createEmptyRequest(self, target: str, content_type: Optional[str] = "application/json") -> QNetworkRequest:
+        request = QNetworkRequest(QUrl(self._api_url + target))
+        request.setRawHeader(b"X-Api-Key", self._api_key)
+        request.setRawHeader(b"User-Agent", self._user_agent.encode())
+
+        if content_type is not None:
+            request.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
+
+        # ignore SSL errors (eg for self-signed certificates)
+        ssl_configuration = QSslConfiguration.defaultConfiguration()
+        ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
+        request.setSslConfiguration(ssl_configuration)
+
+        if self._basic_auth_data:
+            request.setRawHeader(b"Authorization", self._basic_auth_data)
+
+        return request
+
+    # This is a patched version from NetworkedPrinterOutputdevice, which adds "form_data" instead of "form-data"
+    def _createFormPart(self, content_header: str, data: bytes, content_type: Optional[str] = None) -> QHttpPart:
+        part = QHttpPart()
+
+        if not content_header.startswith("form-data;"):
+            content_header = "form-data; " + content_header
+        part.setHeader(QNetworkRequest.ContentDispositionHeader, content_header)
+        if content_type is not None:
+            part.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
+
+        part.setBody(data)
+        return part
+
+    ## Overloaded from NetworkedPrinterOutputDevice.get() to be permissive of
+    #  self-signed certificates
+    def get(self, url: str, on_finished: Optional[Callable[[QNetworkReply], None]]) -> None:
+        self._validateManager()
+
+        request = self._createEmptyRequest(url)
+        self._last_request_time = time()
+
+        if not self._manager:
+            Logger.log("e", "No network manager was created to execute the GET call with.")
+            return
+
+        reply = self._manager.get(request)
+        self._registerOnFinishedCallback(reply, on_finished)
+
+    ## Overloaded from NetworkedPrinterOutputDevice.post() to backport https://github.com/Ultimaker/Cura/pull/4678
+    #  and allow self-signed certificates
+    def post(self, url: str, data: Union[str, bytes],
+             on_finished: Optional[Callable[[QNetworkReply], None]],
+             on_progress: Optional[Callable[[int, int], None]] = None) -> None:
+        self._validateManager()
+
+        request = self._createEmptyRequest(url)
+        self._last_request_time = time()
+
+        if not self._manager:
+            Logger.log("e", "Could not find manager.")
+            return
+
+        body = data if isinstance(data, bytes) else data.encode()  # type: bytes
+        reply = self._manager.post(request, body)
+        if on_progress is not None:
+            reply.uploadProgress.connect(on_progress)
+        self._registerOnFinishedCallback(reply, on_finished)

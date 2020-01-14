@@ -1,4 +1,4 @@
-# Copyright (c) 2019 Aldo Hoeben / fieldOfView
+# Copyright (c) 2020 Aldo Hoeben / fieldOfView
 # NetworkReplyTimeout is released under the terms of the AGPLv3 or higher.
 
 from PyQt5.QtCore import QObject, QTimer
@@ -15,7 +15,8 @@ from typing import Optional, Callable
 class NetworkReplyTimeout(QObject):
     timeout = Signal()
 
-    def __init__(self, reply: QNetworkReply, timeout: int, callback: Optional[Callable[[QNetworkReply], None]] = None) -> None:
+    def __init__(self, reply: QNetworkReply, timeout: int,
+                 callback: Optional[Callable[[QNetworkReply], None]] = None) -> None:
         super().__init__()
 
         self._reply = reply
