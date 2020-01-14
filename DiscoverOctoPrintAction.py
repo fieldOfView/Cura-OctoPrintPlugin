@@ -4,9 +4,10 @@
 from UM.i18n import i18nCatalog
 from UM.Logger import Logger
 from UM.Settings.DefinitionContainer import DefinitionContainer
-from cura.CuraApplication import CuraApplication
-
+from UM.OutputDevice.OutputDevicePlugin import OutputDevicePlugin
 from UM.Settings.ContainerRegistry import ContainerRegistry
+
+from cura.CuraApplication import CuraApplication
 from cura.MachineAction import MachineAction
 from cura.Settings.CuraStackBuilder import CuraStackBuilder
 
@@ -17,15 +18,15 @@ from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager, QNetworkRepl
 
 from .NetworkReplyTimeout import NetworkReplyTimeout
 from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
+from .OctoPrintOutputDevicePlugin import OctoPrintOutputDevicePlugin
 
 import os.path
 import json
 import base64
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import cast, Any, Dict, List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from UM.Settings.ContainerInterface import ContainerInterface
-    from .OctoPrintOutputDevicePlugin import OctoPrintOutputDevicePlugin
 
 catalog = i18nCatalog("cura")
 
@@ -107,8 +108,10 @@ class DiscoverOctoPrintAction(MachineAction):
 
     @pyqtSlot()
     def startDiscovery(self) -> None:
+        if not self._plugin_id:
+            return
         if not self._network_plugin:
-            self._network_plugin = self._application.getOutputDeviceManager().getOutputDevicePlugin(self._plugin_id)
+            self._network_plugin = cast(OctoPrintOutputDevicePlugin, self._application.getOutputDeviceManager().getOutputDevicePlugin(self._plugin_id))
             if not self._network_plugin:
                 return
             self._network_plugin.addInstanceSignal.connect(self._onInstanceDiscovery)

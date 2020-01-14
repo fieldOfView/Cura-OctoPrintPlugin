@@ -79,7 +79,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._id = instance_id
         self._properties = properties  # Properties dict as provided by zero conf
 
-        self._gcode_stream = None # type: Optional[Union[StringIO, BytesIO]]
+        self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
         self._auto_print = True
         self._forced_queue = False
@@ -330,7 +330,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._sendJobCommand("cancel")
 
     def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False,
-                     file_handler: Optional["FileHandler"] = None, **kwargs: str) -> None:
+                     file_handler: Optional["FileHandler"] = None, filter_by_machine: bool = False, **kwargs) -> None:
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
         if not global_container_stack:
             return
@@ -367,7 +367,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             available_plugs = self._power_plugins_manager.getAvailablePowerPlugs()
             power_plug_id = global_container_stack.getMetaDataEntry("octoprint_power_plug", "")
             if power_plug_id == "" and len(available_plugs) > 0:
-                power_plug_id = self._power_plugins_manager.getAvailablePowerPlugs().keys()[0]
+                power_plug_id = list(self._power_plugins_manager.getAvailablePowerPlugs().keys())[0]
 
             if power_plug_id in available_plugs:
                 (end_point, command) = self._power_plugins_manager.getSetStateCommand(power_plug_id, True)
@@ -397,27 +397,27 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     "Queue", i18n_catalog.i18nc("@action:button", "Queue job"), "",
                     i18n_catalog.i18nc("@action:tooltip", "Queue this print job so it can be printed later")
                 )
-                self._error_message.actionTriggered.connect(self._queuePrint)
+                self._error_message.actionTriggered.connect(self._queuePrintJob)
                 self._error_message.show()
                 return
 
-        self._startPrint()
+        self._sendPrintJob()
 
     def _stopWaitingForPrinter(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         self._waiting_for_printer_online_message.hide()
 
         if action_id == "queue":
-            self._queuePrint()
+            self._queuePrintJob()
         elif action_id == "cancel":
-            self._gcode_stream = None # type: Optional[Union[StringIO, BytesIO]]
+            self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
-    def _queuePrint(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
+    def _queuePrintJob(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._error_message:
             self._error_message.hide()
         self._forced_queue = True
-        self._startPrint()
+        self._sendPrintJob()
 
-    def _startPrint(self) -> None:
+    def _sendPrintJob(self) -> None:
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
         if not global_container_stack:
             return
@@ -448,12 +448,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         ##  Create parts (to be placed inside multipart)
         gcode_body = self._gcode_stream.getvalue()
-        try:
+        if isinstance(gcode_body, str):
             # encode StringIO result to bytes
             gcode_body = gcode_body.encode()
-        except AttributeError:
-            # encode BytesIO is already byte-encoded
-            pass
 
         post_parts.append(self._createFormPart("name=\"path\"", b"//", "text/plain"))
         post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
@@ -483,7 +480,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
             Logger.log("e", "An exception occurred in network connection: %s" % str(e))
 
-        self._gcode_stream = None # type: Optional[Union[StringIO, BytesIO]]
+        self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
     def _cancelSendGcode(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._post_gcode_reply:
@@ -516,7 +513,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def _sendCommandToApi(self, end_point: str, commands: Union[Dict[str, Any], str, List[str]]) -> None:
         if isinstance(commands, dict):
             if "command" not in commands and "commands" not in commands:
-                Logger.log("e", "Command dictionary does not include API command: %s", json.dumps())
+                Logger.log("e", "Command dictionary does not include API command: %s", json.dumps(commands))
                 return
             data = json.dumps(commands)
         elif isinstance(commands, list):
@@ -714,7 +711,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     if self._waiting_for_printer_online_message.visible and printer.state == "idle":
                         self._waiting_for_printer_online_message.hide()
-                        self._startPrint()
+                        self._sendPrintJob()
                 else:
                     pass  # See generic error handler below
 

@@ -2,15 +2,15 @@
 # OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
 from collections import OrderedDict
-from typing import Any, Tuple, Dict
+from typing import Any, Tuple, List, Dict
 
 class OctoPrintPowerPlugins():
 
     def __init__(self) -> None:
-        self._available_plugs = OrderedDict()
+        self._available_plugs = OrderedDict()  # type: Dict[str, Any]
 
     def parsePluginData(self, plugin_data: Dict[str, Any]):
-        self._available_plugs = OrderedDict()
+        self._available_plugs = OrderedDict()  # type: Dict[str, Any]
 
         # plugins that only support a single plug
         for (plugin_id, plugin_name) in [
@@ -26,14 +26,15 @@ class OctoPrintPowerPlugins():
                     self._available_plugs[self._createPlugId(plug)] = plug
 
         # plugins that have a `label` and `ip` specified in `arrSmartplugs`
-        for (plugin_id, plugin_name, additional_data) in [
+        common_api_plugins = [
             ("tplinksmartplug", "TP-Link Smartplug", []), # ip
             ("orvibos20", "Orvibo S20", []), # ip
             ("wemoswitch", "Wemo Switch", []), # ip
             ("tuyasmartplug", "Tuya Smartplug", []), # label
             ("domoticz", "Domoticz", ["idx"]), # ip, idx
             ("tasmota", "Tasmota", ["idx", "username", "password"]), # ip, idx, username, password
-        ]:
+        ]  # type: List[Tuple[str, str, List[str]]]
+        for (plugin_id, plugin_name, additional_data) in common_api_plugins:
             if plugin_id in plugin_data and "arrSmartplugs" in plugin_data[plugin_id]:
                 for plug_data in plugin_data[plugin_id]["arrSmartplugs"]:
                     if plug_data["ip"] and plug_data["label"]:
@@ -83,7 +84,7 @@ class OctoPrintPowerPlugins():
 
         plug_data = self._available_plugs[plug_id]
         command = OrderedDict([("command", "turnOn" if state else "turnOff")])
-        arguments = []
+        arguments = []  # type: List[str]
         if plugin_id in ["tplinksmartplug", "orvibos20", "wemoswitch"]:
             # ip
             arguments = ["ip"]

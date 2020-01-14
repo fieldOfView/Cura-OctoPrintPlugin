@@ -17,30 +17,36 @@ import re
 import base64
 import os.path
 
-try:
-    # import the included version of python-zeroconf
-    import sys
-    import importlib.util
-
-    # expand path so local copy of ifaddr can be imported by zeroconf
-    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ifaddr"))
-
-    zeroconf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-zeroconf", "zeroconf", "__init__.py")
-    spec = importlib.util.spec_from_file_location("zeroconf", zeroconf_path)
-    zeroconf = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(zeroconf)
-
-    del sys.path[-1] # restore original path
-
-    Zeroconf = zeroconf.Zeroconf
-    ServiceBrowser = zeroconf.ServiceBrowser
-    ServiceStateChange = zeroconf.ServiceStateChange
-    ServiceInfo = zeroconf.ServiceInfo
-except (FileNotFoundError, ImportError):
-    # fall back to the system-installed version, or what comes with Cura
-    from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
-
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # for MYPY, fall back to the system-installed version
+    from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
+else:
+    try:
+        # import the included version of python-zeroconf
+        import sys
+        import importlib.util
+
+        # expand path so local copy of ifaddr can be imported by zeroconf
+        sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ifaddr"))
+
+        zeroconf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-zeroconf", "zeroconf", "__init__.py")
+        spec = importlib.util.spec_from_file_location("zeroconf", zeroconf_path)
+        zeroconf = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(zeroconf)
+
+        del sys.path[-1] # restore original path
+
+        Zeroconf = zeroconf.Zeroconf
+        ServiceBrowser = zeroconf.ServiceBrowser
+        ServiceStateChange = zeroconf.ServiceStateChange
+        ServiceInfo = zeroconf.ServiceInfo
+    except (FileNotFoundError, ImportError):
+        # fall back to the system-installed version, or what comes with Cura
+        Logger.log("w", "Falling back to default zeroconf module")
+        from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
+
 if TYPE_CHECKING:
     from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
 
@@ -252,11 +258,13 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             # Request more data if info is not complete
             if not address or not info.port:
                 Logger.log("d", "Trying to get address of %s", name)
-                info = zeroconf.get_service_info(service_type, key)
+                requested_info = zeroconf.get_service_info(service_type, key)
 
-                if not info:
+                if not requested_info:
                     Logger.log("w", "Could not get information about %s" % name)
                     return
+
+                info = requested_info
 
             if address and info.port:
                 self.addInstanceSignal.emit(name, address, info.port, info.properties)
