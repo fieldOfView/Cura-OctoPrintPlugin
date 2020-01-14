@@ -447,11 +447,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         post_parts = [] # type: List[QHttpPart]
 
         ##  Create parts (to be placed inside multipart)
-        post_parts.append(self._createFormPart("name=\"select\"", b"true", "text/plain"))
-
-        if self._auto_print and not self._forced_queue:
-            post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
-
         gcode_body = self._gcode_stream.getvalue()
         try:
             # encode StringIO result to bytes
@@ -463,6 +458,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         post_parts.append(self._createFormPart("name=\"path\"", b"//", "text/plain"))
         post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
 
+        # selecting and printing the job is delayed until after the upload
+        # see self._onUploadFinished
+
         destination = "local"
         if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
             destination = "sdcard"
@@ -473,7 +471,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._post_gcode_reply = self.postFormWithParts(
                 "files/" + destination,
                 post_parts,
-                on_finished=self._onRequestFinished,
+                on_finished=self._onUploadFinished,
                 on_progress=self._onUploadProgress
             )
 
@@ -535,7 +533,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Error))
             return
 
-        if self._connection_state_before_timeout and reply.error() == QNetworkReply.NoError:  #  There was a timeout, but we got a correct answer again.
+        if self._connection_state_before_timeout and reply.error() == QNetworkReply.NoError:
+            #  There was a timeout, but we got a correct answer again.
             if self._last_response_time:
                 Logger.log("d", "We got a response from the instance after %s of silence", time() - self._last_response_time)
             self.setConnectionState(self._connection_state_before_timeout)
@@ -780,28 +779,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if self._api_prefix + "files" in reply.url().toString():  # Result from /files command:
-                if http_status_code == 201:
-                    Logger.log("d", "Resource created on OctoPrint instance: %s", reply.header(QNetworkRequest.LocationHeader).toString())
-                else:
-                    pass  # See generic error handler below
-
-                reply.uploadProgress.disconnect(self._onUploadProgress)
-                if self._progress_message:
-                    self._progress_message.hide()
-
-                if self._forced_queue or not self._auto_print:
-                    location = reply.header(QNetworkRequest.LocationHeader)
-                    if location:
-                        file_name = QUrl(reply.header(QNetworkRequest.LocationHeader).toString()).fileName()
-                        message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint as {0}").format(file_name))
-                    else:
-                        message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint"))
-                    message.addAction(
-                        "open_browser", i18n_catalog.i18nc("@action:button", "OctoPrint..."), "globe",
-                        i18n_catalog.i18nc("@info:tooltip", "Open the OctoPrint web interface")
-                    )
-                    message.actionTriggered.connect(self._openOctoPrint)
-                    message.show()
+                pass
 
             elif self._api_prefix + "job" in reply.url().toString():  # Result from /job command (eg start/pause):
                 if http_status_code == 204:
@@ -849,6 +827,50 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 self._progress_message.show()
         else:
             self._progress_message.setProgress(0)
+
+    def _onUploadFinished(self, reply: QNetworkReply) -> None:
+        reply.uploadProgress.disconnect(self._onUploadProgress)
+
+        if self._progress_message:
+            self._progress_message.hide()
+
+        http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        if http_status_code != 201:
+            error_string = bytes(reply.readAll()).decode("utf-8")
+            if not error_string:
+                error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+            if self._error_message:
+                self._error_message.hide()
+            self._error_message = Message(error_string, title=i18n_catalog.i18nc("@label", "OctoPrint error"))
+            self._error_message.show()
+            return
+
+        location_url = reply.header(QNetworkRequest.LocationHeader)
+        Logger.log("d", "Resource created on OctoPrint instance: %s", location_url.toString())
+
+        if self._forced_queue or not self._auto_print:
+            if location_url:
+                file_name = location_url.fileName()
+                message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint as {0}").format(file_name))
+            else:
+                message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint"))
+            message.addAction(
+                "open_browser", i18n_catalog.i18nc("@action:button", "OctoPrint..."), "globe",
+                i18n_catalog.i18nc("@info:tooltip", "Open the OctoPrint web interface")
+            )
+            message.actionTriggered.connect(self._openOctoPrint)
+            message.show()
+        elif self._auto_print:
+            end_point = location_url.toString().split(self._api_prefix, 1)[1]
+            if self._ufp_supported and end_point.endswith(".ufp"):
+                end_point += ".gcode"
+
+            command = {
+                "command": "select",
+                "print": True
+            }
+            self._sendCommandToApi(end_point, command)
+
 
     def _createPrinterList(self) -> None:
         printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
