@@ -880,6 +880,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _createEmptyRequest(self, target: str, content_type: Optional[str] = "application/json") -> QNetworkRequest:
         request = QNetworkRequest(QUrl(self._api_url + target))
+        request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+
         request.setRawHeader(b"X-Api-Key", self._api_key)
         request.setRawHeader(b"User-Agent", self._user_agent.encode())
 

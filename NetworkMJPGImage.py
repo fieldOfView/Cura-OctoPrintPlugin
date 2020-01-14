@@ -99,6 +99,8 @@ class NetworkMJPGImage(QQuickPaintedItem):
             self._source_url.setAuthority(authority.rsplit("@", 1)[1])
 
         self._image_request = QNetworkRequest(self._source_url)
+        self._image_request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+
         if auth_data:
             self._image_request.setRawHeader(b"Authorization", ("basic %s" % auth_data).encode())
 

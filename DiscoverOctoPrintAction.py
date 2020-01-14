@@ -522,6 +522,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
     def _createRequest(self, url: str, basic_auth_username: str = "", basic_auth_password: str = "") -> QNetworkRequest:
         request = QNetworkRequest(url)
+        request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
         request.setRawHeader(b"User-Agent", self._user_agent)
 
         if basic_auth_username and basic_auth_password:
