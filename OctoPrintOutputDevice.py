@@ -396,13 +396,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._forced_queue = False
 
         use_power_plugin = parseBool(global_container_stack.getMetaDataEntry("octoprint_power_control", False))
-        if use_power_plugin:
+        if self.activePrinter.state == "offline" and self._auto_print and use_power_plugin:
             available_plugs = self._power_plugins_manager.getAvailablePowerPlugs()
             power_plug_id = global_container_stack.getMetaDataEntry("octoprint_power_plug", "")
-            if use_power_plugin and power_plug_id == "" and len(available_plugs) > 0:
-                self._power_plugins_manager.getAvailablePowerPlugs().keys()[0]
+            if power_plug_id == "" and len(available_plugs) > 0:
+                power_plug_id = self._power_plugins_manager.getAvailablePowerPlugs().keys()[0]
 
-            if self.activePrinter.state == "offline" and power_plug_id in available_plugs:
+            if power_plug_id in available_plugs:
                 (end_point, command) = self._power_plugins_manager.getSetStateCommand(power_plug_id, True)
                 if end_point and command:
                     self._sendCommandToApi(end_point, command)

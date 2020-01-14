@@ -70,7 +70,7 @@ class OctoPrintPowerPlugins():
 
     def getSetStateCommand(self, plug_id: str, state: bool) -> Tuple[str, Dict[str, Any]]:
         if plug_id not in self._available_plugs:
-            return ""
+            return ("", {})
 
         plugin_id = self._available_plugs[plug_id]["plugin"]
         end_point = "plugin/" + plugin_id

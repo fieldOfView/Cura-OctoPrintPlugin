@@ -455,6 +455,7 @@ Cura.MachineAction
                             id: autoPowerControlCheckBox
                             text: catalog.i18nc("@label", "Automatically turn on printer with")
                             visible: autoPowerControlPlugs.visible
+                            enabled: autoPrintCheckBox.checked
                             anchors.verticalCenter: autoPowerControlPlugs.verticalCenter
                             checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_power_control") == "true"
                             onClicked:
@@ -472,6 +473,7 @@ Cura.MachineAction
                         {
                             id: autoPowerControlPlugs
                             visible: manager.instanceApiKeyAccepted && model.count > 0
+                            enabled: autoPrintCheckBox.checked
                             property bool populatingModel: false
                             textRole: "text"
                             model: ListModel
