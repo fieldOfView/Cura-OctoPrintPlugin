@@ -155,10 +155,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._connection_message = None # type: Union[None, Message]
 
         self._queued_gcode_commands = [] # type: List[str]
-        self._queued_gcode_timer = QTimer()
-        self._queued_gcode_timer.setInterval(0)
-        self._queued_gcode_timer.setSingleShot(True)
-        self._queued_gcode_timer.timeout.connect(self._sendQueuedGcode)
 
         # TODO; Add preference for update intervals
         self._update_fast_interval = 2000
@@ -506,7 +502,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def sendCommand(self, command: str) -> None:
         self._queued_gcode_commands.append(command)
-        self._queued_gcode_timer.start()
+        CuraApplication.getInstance().callLater(self._sendQueuedGcode)
 
     # Send gcode commands that are queued in quick succession as a single batch
     def _sendQueuedGcode(self) -> None:
