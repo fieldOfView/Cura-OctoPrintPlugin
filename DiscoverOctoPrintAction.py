@@ -423,7 +423,7 @@ class DiscoverOctoPrintAction(MachineAction):
     def _onRequestFailed(self, reply: QNetworkReply) -> None:
         if reply.operation() == QNetworkAccessManager.GetOperation:
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
-                Logger.log("w", "Connection refused or timeout when trying to access Octoprint at %s" % reply.url().toString())
+                Logger.log("w", "Connection refused or timeout when trying to access OctoPrint at %s" % reply.url().toString())
                 self._instance_in_error = True
                 self.selectedInstanceSettingsChanged.emit()
 
