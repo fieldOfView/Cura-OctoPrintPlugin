@@ -152,7 +152,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._progress_message = None # type: Union[None, Message]
         self._error_message = None # type: Union[None, Message]
-        self._connection_message = None # type: Union[None, Message]
+        self._waiting_message = None # type: Union[None, Message]
 
         self._queued_gcode_commands = [] # type: List[str]
 
@@ -172,27 +172,16 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._sd_supported = False # supports storing gcode on sd card in printer
         self._ufp_supported = False # supports .ufp files in addition to raw .gcode files
 
-        self._plugin_data = {} #type: Dict[str, Any]
         self._power_plugins_manager = OctoPrintPowerPlugins()
 
-        # message used when waiting for the printer to become available after turning on the power
-        self._waiting_for_printer_online_message = Message(
-            i18n_catalog.i18nc("@info:status", "Waiting for OctoPrint to connect to the printer..."),
-            title=i18n_catalog.i18nc("@label", "OctoPrint"),
-            progress=-1, lifetime=0, dismissable=False
-        )
-        self._waiting_for_printer_online_message.addAction(
-            "Queue", i18n_catalog.i18nc("@action:button", "Queue"), "",
-            i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the printer and queue the printjob instead")
-        )
-        self._waiting_for_printer_online_message.addAction(
-            "Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
-            i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the printer to come online and cancel the printjob"),
-            button_style=Message.ActionButtonStyle.SECONDARY
-        )
-        self._waiting_for_printer_online_message.actionTriggered.connect(self._stopWaitingForPrinter)
+        self._wait_for_analysis = False # wait for analysis to complete before starting a print
+
+        self._waiting_for_analysis = False
+        self._waiting_for_printer = False
 
         self._output_controller = GenericOutputController(self)
+
+        self._polling_end_points = ["printer", "job"]
 
     def getProperties(self) -> Dict[bytes, bytes]:
         return self._properties
@@ -279,11 +268,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         return self._show_camera
 
     def _update(self) -> None:
-        ## Request 'general' printer data
-        self.get("printer", self._onRequestFinished)
-
-        ## Request print_job data
-        self.get("job", self._onRequestFinished)
+        for end_point in self._polling_end_points:
+            self.get(end_point, self._onRequestFinished)
 
     def close(self) -> None:
         self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Closed))
@@ -291,6 +277,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
         if self._error_message:
             self._error_message.hide()
+        if self._waiting_message:
+            self._waiting_message.hide()
+
+        self._waiting_for_printer = False
+        self._waiting_for_analysis = False
+        self._polling_end_points = [point for point in self._polling_end_points if not point.startswith("files/")]
+
         self._update_timer.stop()
 
     ##  Start requesting data from the instance
@@ -376,7 +369,24 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     self._sendCommandToApi(end_point, command)
                     Logger.log("d", "Sent %s command to endpoint %s" % (command["command"], end_point))
 
-                    self._waiting_for_printer_online_message.show()
+                    self._waiting_message = Message(
+                        i18n_catalog.i18nc("@info:status", "Waiting for OctoPrint to connect to the printer..."),
+                        title=i18n_catalog.i18nc("@label", "OctoPrint"),
+                        progress=-1, lifetime=0, dismissable=False, use_inactivity_timer=False
+                    )
+                    self._waiting_message.addAction(
+                        "queue", i18n_catalog.i18nc("@action:button", "Queue"), "",
+                        i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the printer and queue the printjob instead"),
+                        button_style=Message.ActionButtonStyle.SECONDARY
+                    )
+                    self._waiting_message.addAction(
+                        "cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
+                        i18n_catalog.i18nc("@action:tooltip", "Abort the printjob")
+                    )
+                    self._waiting_message.actionTriggered.connect(self._stopWaitingForPrinter)
+
+                    self._waiting_message.show()
+                    self._waiting_for_printer = True
                     return
                 else:
                     Logger.log("e", "No command to power on plug %s", power_plug_id)
@@ -399,7 +409,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     self._error_message.hide()
                 self._error_message = Message(error_string, title=i18n_catalog.i18nc("@label", "OctoPrint error"))
                 self._error_message.addAction(
-                    "Queue", i18n_catalog.i18nc("@action:button", "Queue job"), "",
+                    "queue", i18n_catalog.i18nc("@action:button", "Queue job"), "",
                     i18n_catalog.i18nc("@action:tooltip", "Queue this print job so it can be printed later")
                 )
                 self._error_message.actionTriggered.connect(self._queuePrintJob)
@@ -408,8 +418,31 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._sendPrintJob()
 
+    def _stopWaitingForAnalysis(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
+        self._waiting_message.hide()
+        self._waiting_for_analysis = False
+
+        for end_point in self._polling_end_points:
+            if "files/" in end_point:
+                break
+        if "files/" not in end_point:
+            Logger.log("e", "Could not find files/ endpoint")
+            return
+
+        self._polling_end_points = [point for point in self._polling_end_points if not point.startswith("files/")]
+
+        if action_id == "print":
+            command = {
+                "command": "select",
+                "print": True
+            }
+            self._sendCommandToApi(end_point, command)
+        elif action_id == "cancel":
+            pass
+
     def _stopWaitingForPrinter(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
-        self._waiting_for_printer_online_message.hide()
+        self._waiting_message.hide()
+        self._waiting_for_printer = False
 
         if action_id == "queue":
             self._queuePrintJob()
@@ -439,9 +472,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._progress_message = Message(
             i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"),
-            0, False, -1, title=i18n_catalog.i18nc("@label", "OctoPrint")
+            title=i18n_catalog.i18nc("@label", "OctoPrint"),
+            progress=-1, lifetime=0, dismissable=False, use_inactivity_timer=False
         )
-        self._progress_message.addAction("Cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "", "")
+        self._progress_message.addAction(
+            "cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
+            i18n_catalog.i18nc("@action:tooltip", "Abort the printjob")
+        )
+
         self._progress_message.actionTriggered.connect(self._cancelSendGcode)
         self._progress_message.show()
 
@@ -718,8 +756,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     print_job.updateName(json_data["job"]["file"]["name"])
 
-                    if self._waiting_for_printer_online_message.visible and printer.state == "idle":
-                        self._waiting_for_printer_online_message.hide()
+                    if self._waiting_for_printer and printer.state == "idle":
+                        self._waiting_for_printer = False
+                        if self._waiting_message:
+                            self._waiting_message.hide()
+                        self._waiting_message = None
                         self._sendPrintJob()
                 else:
                     pass  # See generic error handler below
@@ -772,16 +813,51 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             self.cameraOrientationChanged.emit()
 
                     if "plugins" in json_data:
-                        self._plugin_data = json_data["plugins"]
-                        self._power_plugins_manager.parsePluginData(self._plugin_data)
+                        plugin_data = json_data["plugins"]
+                        self._power_plugins_manager.parsePluginData(plugin_data)
 
-                        if "UltimakerFormatPackage" in self._plugin_data:
+                        if "PrintTimeGenius" in plugin_data:
+                            self._wait_for_analysis = True
+
+                        if "UltimakerFormatPackage" in plugin_data:
                             try:
                                 ufp_writer_plugin = PluginRegistry.getInstance().getPluginObject("UFPWriter")
                                 self._ufp_supported = True
-                                Logger.log("d", "Instance supports UFP files")
+                                Logger.log("d", "Instance supports UFP files; uploading .ufp instead of .gcode")
                             except PluginNotFoundError:
                                 Logger.log("w", "Instance supports UFP files, but UFPWriter is not available")
+
+            elif self._api_prefix + "files/" in reply.url().toString():  # Information about a file
+                if http_status_code == 200:
+                    if not self._waiting_for_analysis:
+                        return
+
+                    end_point = reply.url().toString().split(self._api_prefix, 1)[1]
+
+                    try:
+                        json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    except json.decoder.JSONDecodeError:
+                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        json_data = {}
+
+                    if "gcodeAnalysis" in json_data and "progress" in json_data["gcodeAnalysis"]:
+                        Logger.log("d", "PrintTimeGenius analysis of %s is done" % end_point)
+
+                        self._waiting_for_analysis = False
+
+                        if self._waiting_message:
+                            self._waiting_message.hide()
+                            self._waiting_message = None
+
+                        self._polling_end_points = [point for point in self._polling_end_points if not point.startswith("files/")]
+
+                        command = {
+                            "command": "select",
+                            "print": True
+                        }
+                        self._sendCommandToApi(end_point, command)
+                    else:
+                        Logger.log("d", "Still waiting for PrintTimeGenius analysis of %s" % end_point)
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if self._api_prefix + "files" in reply.url().toString():  # Result from /files command to start a printjob:
@@ -830,6 +906,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             if not error_string:
                 error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
             self._showErrorMessage(error_string)
+            Logger.log("e", "OctoPrintOutputDevice got an error while accessing %s", reply.url().toString)
+            Logger.log("e", error_string)
 
     def _onUploadProgress(self, bytes_sent: int, bytes_total: int) -> None:
         if not self._progress_message:
@@ -849,7 +927,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 self._progress_message.hide()
                 self._progress_message = Message(
                     i18n_catalog.i18nc("@info:status", "Storing data on OctoPrint"),
-                    0, False, -1, title=i18n_catalog("@label", "OctoPrint")
+                    0, False, -1, title=i18n_catalog.i18nc("@label", "OctoPrint")
                 )
                 self._progress_message.show()
         else:
@@ -873,6 +951,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if error_string:
             self._showErrorMessage(error_string)
+            Logger.log("e", "OctoPrintOutputDevice got an error uploading %s", reply.url().toString())
+            Logger.log("e", error_string)
             return
 
         location_url = reply.header(QNetworkRequest.LocationHeader)
@@ -896,12 +976,33 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             if self._ufp_supported and end_point.endswith(".ufp"):
                 end_point += ".gcode"
 
-            command = {
-                "command": "select",
-                "print": True
-            }
-            self._sendCommandToApi(end_point, command)
+            if not self._wait_for_analysis:
+                command = {
+                    "command": "select",
+                    "print": True
+                }
+                self._sendCommandToApi(end_point, command)
+                return
 
+            self._waiting_message = Message(
+                i18n_catalog.i18nc("@info:status", "Waiting for OctoPrint to complete Gcode analysis..."),
+                title=i18n_catalog.i18nc("@label", "OctoPrint"),
+                progress=-1, lifetime=0, dismissable=False, use_inactivity_timer=False
+            )
+            self._waiting_message.addAction(
+                "print", i18n_catalog.i18nc("@action:button", "Print now"), "",
+                i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the Gcode analysis and start printing immediately"),
+                button_style=Message.ActionButtonStyle.SECONDARY
+            )
+            self._waiting_message.addAction(
+                "cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
+                i18n_catalog.i18nc("@action:tooltip", "Abort the printjob")
+            )
+            self._waiting_message.actionTriggered.connect(self._stopWaitingForAnalysis)
+            self._waiting_message.show()
+
+            self._waiting_for_analysis = True
+            self._polling_end_points.append(end_point)  # start polling the API for information about this file
 
     def _createPrinterList(self) -> None:
         printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
