@@ -31,8 +31,8 @@ class OctoPrintPowerPlugins():
             ("orvibos20", "Orvibo S20", []), # ip
             ("wemoswitch", "Wemo Switch", []), # ip
             ("tuyasmartplug", "Tuya Smartplug", []), # label
-            ("domoticz", "Domoticz", ["idx"]), # ip, idx
-            ("tasmota", "Tasmota", ["idx", "username", "password"]), # ip, idx, username, password
+            ("domoticz", "Domoticz", ["idx", "username", "password"]), # ip, idx, username, password
+            ("tasmota", "Tasmota", ["idx", "username", "password", "backlog_delay"]), # ip, idx, username, password, backlog_delay
         ]  # type: List[Tuple[str, str, List[str]]]
         for (plugin_id, plugin_name, additional_data) in common_api_plugins:
             if plugin_id in plugin_data and "arrSmartplugs" in plugin_data[plugin_id]:
@@ -89,14 +89,14 @@ class OctoPrintPowerPlugins():
             # ip
             arguments = ["ip"]
         elif plugin_id == "domoticz":
-            # ip, idx
-            arguments = ["ip", "idx"]
+            # ip, idx, username, password
+            arguments = ["ip", "idx", "username", "password"]
         elif plugin_id == "tasmota_mqtt":
             # topic, relayN
             arguments = ["topic", "relayN"]
         elif plugin_id == "tasmota":
-            # ip, idx, username, password
-            arguments = ["ip", "idx", "username", "password"]
+            # ip, idx, username, password, backlog_delay
+            arguments = ["ip", "idx", "username", "password", "backlog_delay"]
         elif plugin_id == "tuyasmartplug":
             # label
             arguments = ["label"]
