@@ -42,6 +42,7 @@ else:
         ServiceBrowser = zeroconf.ServiceBrowser
         ServiceStateChange = zeroconf.ServiceStateChange
         ServiceInfo = zeroconf.ServiceInfo
+        Logger.log("w", "Supplied version of Zeroconf module imported")
     except (FileNotFoundError, ImportError):
         # fall back to the system-installed version, or what comes with Cura
         Logger.log("w", "Falling back to default zeroconf module")
