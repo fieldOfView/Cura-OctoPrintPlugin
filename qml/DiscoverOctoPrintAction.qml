@@ -271,25 +271,25 @@ Cura.MachineAction
                     {
                         width: Math.floor(parent.width * 0.2)
                         wrapMode: Text.WordWrap
+                        text: catalog.i18nc("@label", "Address")
+                    }
+                    Label
+                    {
+                        width: Math.floor(parent.width * 0.75)
+                        wrapMode: Text.WordWrap
+                        text: base.selectedInstance ? "%1:%2".arg(base.selectedInstance.ipAddress).arg(String(base.selectedInstance.port)) : ""
+                    }
+                    Label
+                    {
+                        width: Math.floor(parent.width * 0.2)
+                        wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "Version")
                     }
                     Label
                     {
                         width: Math.floor(parent.width * 0.75)
                         wrapMode: Text.WordWrap
-                        text: base.selectedInstance ? base.selectedInstance.octoprintVersion : ""
-                    }
-                    Label
-                    {
-                        width: Math.floor(parent.width * 0.2)
-                        wrapMode: Text.WordWrap
-                        text: catalog.i18nc("@label", "Address")
-                    }
-                    Label
-                    {
-                        width: Math.floor(parent.width * 0.7)
-                        wrapMode: Text.WordWrap
-                        text: base.selectedInstance ? "%1:%2".arg(base.selectedInstance.ipAddress).arg(String(base.selectedInstance.port)) : ""
+                        text: base.selectedInstance ? base.selectedInstance.octoPrintVersion : ""
                     }
                     Label
                     {
@@ -315,17 +315,25 @@ Cura.MachineAction
                             text: catalog.i18nc("@action", "Request...")
                             onClicked:
                             {
-                                manager.requestApiKey(
-                                    base.selectedInstance.getId(),
-                                    base.selectedInstance.baseURL,
-                                    base.selectedInstance.getProperty("userName"),
-                                    base.selectedInstance.getProperty("password")
-                                );
+                                manager.requestApiKey(base.selectedInstance.getId());
                                 manager.openWebPage(base.selectedInstance.baseURL);
                             }
                         }
 
                     }
+                    Label
+                    {
+                        width: Math.floor(parent.width * 0.2)
+                        wrapMode: Text.WordWrap
+                        text: catalog.i18nc("@label", "User name")
+                    }
+                    Label
+                    {
+                        width: Math.floor(parent.width * 0.75)
+                        wrapMode: Text.WordWrap
+                        text: base.selectedInstance ? base.selectedInstance.octoPrintUserName : ""
+                    }
+
                     Connections
                     {
                         target: base
@@ -333,11 +341,7 @@ Cura.MachineAction
                         {
                             if(base.selectedInstance)
                             {
-                                manager.probeAppKeySupport(
-                                    base.selectedInstance.baseURL,
-                                    base.selectedInstance.getProperty("userName"),
-                                    base.selectedInstance.getProperty("password")
-                                );
+                                manager.probeAppKeySupport(base.selectedInstance.getId());
                                 apiCheckDelay.lastKey = "\0";
                                 apiKey.text = manager.getApiKey(base.selectedInstance.getId());
                             }
@@ -370,12 +374,7 @@ Cura.MachineAction
                             if(apiKey.text != lastKey)
                             {
                                 lastKey = apiKey.text;
-                                manager.testApiKey(
-                                    base.selectedInstance.baseURL,
-                                    apiKey.text,
-                                    base.selectedInstance.getProperty("userName"),
-                                    base.selectedInstance.getProperty("password")
-                                );
+                                manager.testApiKey(base.selectedInstance.getId(), apiKey.text);
                                 checkOnTrigger = false;
                                 restart();
                             }

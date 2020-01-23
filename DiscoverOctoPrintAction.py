@@ -24,7 +24,7 @@ import os.path
 import json
 import base64
 
-from typing import cast, Any, Dict, List, Optional, TYPE_CHECKING
+from typing import cast, Any, Tuple, Dict, List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from UM.Settings.ContainerInterface import ContainerInterface
 
@@ -74,6 +74,8 @@ class DiscoverOctoPrintAction(MachineAction):
             "OctoPrintPlugin",
             self._plugin_version
         )).encode()
+
+        self._settings_instance = None  # type: Optional["OctoPrintOutputDevice"]
 
         self._instance_responded = False
         self._instance_in_error = False
@@ -187,9 +189,12 @@ class DiscoverOctoPrintAction(MachineAction):
 
         return global_container_stack.getMetaDataEntry("octoprint_id", "")
 
-    @pyqtSlot(str, str, str, str)
-    def requestApiKey(self, instance_id: str, base_url: str,
-                      basic_auth_username: str = "", basic_auth_password: str = "") -> None:
+    @pyqtSlot(str)
+    def requestApiKey(self, instance_id: str) -> None:
+        (instance, base_url, basic_auth_username, basic_auth_password) = self._getInstanceInfo(instance_id)
+        if not base_url:
+            return
+
         ## Request appkey
         self._appkey_instance_id = instance_id
         self._appkey_request = self._createRequest(
@@ -216,9 +221,14 @@ class DiscoverOctoPrintAction(MachineAction):
             return
         self._appkey_reply = self._network_manager.get(self._appkey_request)
 
-    @pyqtSlot(str, str, str)
-    def probeAppKeySupport(self, base_url: str, basic_auth_username: str = "",
-                           basic_auth_password: str = "") -> None:
+    @pyqtSlot(str)
+    def probeAppKeySupport(self, instance_id: str) -> None:
+        (instance, base_url, basic_auth_username, basic_auth_password) = self._getInstanceInfo(instance_id)
+        if not base_url:
+            return
+
+        instance.getAdditionalData()
+
         self._instance_supports_appkeys = False
         self.appKeysSupportedChanged.emit()
 
@@ -228,9 +238,12 @@ class DiscoverOctoPrintAction(MachineAction):
         )
         self._appkey_reply = self._network_manager.get(appkey_probe_request)
 
-    @pyqtSlot(str, str, str, str)
-    def testApiKey(self, base_url: str, api_key: str, basic_auth_username: str = "",
-                   basic_auth_password: str = "") -> None:
+    @pyqtSlot(str, str)
+    def testApiKey(self, instance_id: str, api_key: str) -> None:
+        (instance, base_url, basic_auth_username, basic_auth_password) = self._getInstanceInfo(instance_id)
+        if not base_url:
+            return
+
         self._instance_responded = False
         self._instance_api_key_accepted = False
         self._instance_supports_sd = False
@@ -258,6 +271,8 @@ class DiscoverOctoPrintAction(MachineAction):
             self._settings_reply_timeout = NetworkReplyTimeout(
                 self._settings_reply, 5000, self._onRequestFailed
             )
+
+            self._settings_instance = instance
 
     @pyqtSlot(str)
     def setApiKey(self, api_key: str) -> None:
@@ -508,6 +523,14 @@ class DiscoverOctoPrintAction(MachineAction):
                         self._power_plugins_manager.parsePluginData(json_data["plugins"])
                         self._instance_installed_plugins = list(json_data["plugins"].keys())
 
+                    api_key = bytes(reply.request().rawHeader(b"X-Api-Key")).decode("utf-8")
+                    if self._settings_instance:
+                        self._settings_instance.setApiKey(api_key)
+                        self._settings_instance.resetOctoPrintUserName()
+                        self._settings_instance.getAdditionalData()
+
+                    self._settings_instance = None
+
                 elif http_status_code == 401:
                     Logger.log("d", "Invalid API key for OctoPrint.")
                     self._instance_api_key_accepted = False
@@ -542,3 +565,12 @@ class DiscoverOctoPrintAction(MachineAction):
             return base64.b64decode(source.encode("ascii")).decode("ascii")
         except UnicodeDecodeError:
             return source
+
+    def _getInstanceInfo(self, instance_id: str) -> Tuple[Optional["OctoPrintPlugin"], str, str, str]:
+        if not self._network_plugin:
+            return (None, "","","")
+        instance = self._network_plugin.getInstanceById(instance_id)
+        if not instance:
+            return (None, "","","")
+
+        return (instance, instance.baseURL, instance.getProperty("userName"), instance.getProperty("password"))

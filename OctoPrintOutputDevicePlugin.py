@@ -179,6 +179,13 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     def getInstances(self) -> Dict[str, Any]:
         return self._instances
 
+    def getInstanceById(self, instance_id: str) -> Optional["OctoPrintOutputDevice"]:
+        instance = self._instances.get(instance_id, None)
+        if instance:
+            return instance
+        Logger.log("w", "No instance found with id %s", instance_id)
+        return None
+
     def reCheckConnections(self) -> None:
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if not global_container_stack:

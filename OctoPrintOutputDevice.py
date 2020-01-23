@@ -80,6 +80,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._properties = properties  # Properties dict as provided by zero conf
 
         self._octoprint_version = self._properties.get(b"version", b"").decode("utf-8")
+        self._octoprint_user_name = ""
 
         self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
@@ -212,10 +213,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         return self._name
 
     ##  Version (as returned from the zeroConf properties or from /api/version)
-    octoprintVersionChanged = pyqtSignal()
-    @pyqtProperty(str, notify=octoprintVersionChanged)
-    def octoprintVersion(self) -> str:
+    additionalDataChanged = pyqtSignal()
+    @pyqtProperty(str, notify=additionalDataChanged)
+    def octoPrintVersion(self) -> str:
         return self._octoprint_version
+
+    @pyqtProperty(str, notify=additionalDataChanged)
+    def octoPrintUserName(self) -> str:
+        return self._octoprint_user_name
+
+    def resetOctoPrintUserName(self) -> None:
+        self._octoprint_user_name = ""
 
     ## IPadress of this instance
     @pyqtProperty(str, constant=True)
@@ -305,8 +313,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         ## Request 'settings' dump
         self.get("settings", self._onRequestFinished)
+
+        self.getAdditionalData()
+
+    def getAdditionalData(self) -> None:
         if not self._octoprint_version:
             self.get("version", self._onRequestFinished)
+
+        if not self._octoprint_user_name and self._api_key:
+            self._sendCommandToApi("login", {"passive":True})
 
     ##  Stop requesting data from the instance
     def disconnect(self) -> None:
@@ -562,9 +577,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _sendCommandToApi(self, end_point: str, commands: Union[Dict[str, Any], str, List[str]]) -> None:
         if isinstance(commands, dict):
-            if "command" not in commands and "commands" not in commands:
-                Logger.log("e", "Command dictionary does not include API command: %s", json.dumps(commands))
-                return
             data = json.dumps(commands)
         elif isinstance(commands, list):
             data = json.dumps({"commands": commands})
@@ -840,7 +852,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     if "server" in json_data:
                         self._octoprint_version = json_data["server"]
-                        self.octoprintVersionChanged.emit()
+                        self.additionalDataChanged.emit()
 
             elif self._api_prefix + "files/" in reply.url().toString():  # Information about a file
                 if http_status_code == 200:
@@ -907,6 +919,27 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                 else:
                     pass  # See generic error handler below
+
+            elif self._api_prefix + "login" in reply.url().toString():
+                if http_status_code == 200:
+                    try:
+                        json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    except json.decoder.JSONDecodeError:
+                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        json_data = {}
+
+                    if "name" in json_data:
+                        self._octoprint_user_name = json_data["name"]
+                    else:
+                        self._octoprint_user_name = i18n_catalog.i18nc("@label", "Anonymous user")
+                    self.additionalDataChanged.emit()
+
+                elif http_status_code == 401 or http_status_code == 403:
+                    self._octoprint_user_name = i18n_catalog.i18nc("@label", "Unknown user")
+                    self.additionalDataChanged.emit()
+
+                    error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to access to OctoPrint with the configured API key.")
+                    self._showErrorMessage(error_string)
 
         else:
             Logger.log("d", "OctoPrintOutputDevice got an unhandled operation %s", reply.operation())
