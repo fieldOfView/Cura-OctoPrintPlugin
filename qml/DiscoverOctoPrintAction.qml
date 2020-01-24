@@ -717,7 +717,7 @@ Cura.MachineAction
                     width: Math.floor(parent.width * 0.6)
                     validator: RegExpValidator
                     {
-                        regExp: /[a-zA-Z0-9\.\-\_]*/
+                        regExp: /[a-zA-Z0-9\.\-\_\:\[\]]*/
                     }
                 }
 
