@@ -233,9 +233,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     ## IPadress of this instance
     #  Overridden from NetworkedPrinterOutputDevice because OctoPrint does not
     #  send the ip address with zeroconf
-    @pyqtProperty(str, constant=True)
+    @pyqtProperty(str, notify=additionalDataChanged)
     def address(self) -> str:
-        return self._address
+        if self._octoprint_user_name:
+            return "%s@%s" % (self._octoprint_user_name, self._address)
+        else:
+            return self._address
 
     ## port of this instance
     @pyqtProperty(int, constant=True)
