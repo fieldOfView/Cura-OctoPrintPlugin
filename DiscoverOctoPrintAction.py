@@ -27,6 +27,7 @@ import base64
 from typing import cast, Any, Tuple, Dict, List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from UM.Settings.ContainerInterface import ContainerInterface
+    from .OctoPrintOutputDevice import OctoPrintOutputDevice
 
 catalog = i18nCatalog("cura")
 
@@ -75,7 +76,7 @@ class DiscoverOctoPrintAction(MachineAction):
             self._plugin_version
         )).encode()
 
-        self._settings_instance = None  # type: Optional["OctoPrintOutputDevice"]
+        self._settings_instance = None  # type: Optional[OctoPrintOutputDevice]
 
         self._instance_responded = False
         self._instance_in_error = False
@@ -224,7 +225,7 @@ class DiscoverOctoPrintAction(MachineAction):
     @pyqtSlot(str)
     def probeAppKeySupport(self, instance_id: str) -> None:
         (instance, base_url, basic_auth_username, basic_auth_password) = self._getInstanceInfo(instance_id)
-        if not base_url:
+        if not base_url or not instance:
             return
 
         instance.getAdditionalData()
@@ -566,7 +567,7 @@ class DiscoverOctoPrintAction(MachineAction):
         except UnicodeDecodeError:
             return source
 
-    def _getInstanceInfo(self, instance_id: str) -> Tuple[Optional["OctoPrintPlugin"], str, str, str]:
+    def _getInstanceInfo(self, instance_id: str) -> Tuple[Optional[OctoPrintOutputDevice], str, str, str]:
         if not self._network_plugin:
             return (None, "","","")
         instance = self._network_plugin.getInstanceById(instance_id)

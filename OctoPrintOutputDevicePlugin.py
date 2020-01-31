@@ -2,7 +2,7 @@
 # OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
 from UM.OutputDevice.OutputDevicePlugin import OutputDevicePlugin
-from . import OctoPrintOutputDevice
+from .OctoPrintOutputDevice import OctoPrintOutputDevice
 
 from UM.Signal import Signal, signalemitter
 from UM.Application import Application
@@ -60,7 +60,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         super().__init__()
         self._zero_conf = None # type: Optional[Zeroconf]
         self._browser = None # type: Optional[ServiceBrowser]
-        self._instances = {} # type: Dict[str, OctoPrintOutputDevice.OctoPrintOutputDevice]
+        self._instances = {} # type: Dict[str, OctoPrintOutputDevice]
 
         # Because the model needs to be created in the same thread as the QMLEngine, we use a signal.
         self.addInstanceSignal.connect(self.addInstance)
@@ -179,7 +179,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     def getInstances(self) -> Dict[str, Any]:
         return self._instances
 
-    def getInstanceById(self, instance_id: str) -> Optional["OctoPrintOutputDevice"]:
+    def getInstanceById(self, instance_id: str) -> Optional[OctoPrintOutputDevice]:
         instance = self._instances.get(instance_id, None)
         if instance:
             return instance
@@ -204,7 +204,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
     ##  Because the model needs to be created in the same thread as the QMLEngine, we use a signal.
     def addInstance(self, name: str, address: str, port: int, properties: Dict[bytes, bytes]) -> None:
-        instance = OctoPrintOutputDevice.OctoPrintOutputDevice(name, address, port, properties)
+        instance = OctoPrintOutputDevice(name, address, port, properties)
         self._instances[instance.getId()] = instance
         global_container_stack = Application.getInstance().getGlobalContainerStack()
         if global_container_stack and instance.getId() == global_container_stack.getMetaDataEntry("octoprint_id"):
