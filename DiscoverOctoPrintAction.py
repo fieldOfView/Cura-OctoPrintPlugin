@@ -19,6 +19,7 @@ from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager, QNetworkRepl
 from .NetworkReplyTimeout import NetworkReplyTimeout
 from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
 from .OctoPrintOutputDevicePlugin import OctoPrintOutputDevicePlugin
+from .OctoPrintOutputDevice import OctoPrintOutputDevice
 
 import os.path
 import json
@@ -27,7 +28,6 @@ import base64
 from typing import cast, Any, Tuple, Dict, List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from UM.Settings.ContainerInterface import ContainerInterface
-    from .OctoPrintOutputDevice import OctoPrintOutputDevice
 
 catalog = i18nCatalog("cura")
 
