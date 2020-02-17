@@ -23,6 +23,9 @@ How to use
 - From this point on, the print monitor should be functional and you should be
   able to switch to "Print to Octoprint" on the bottom of the sidebar.
 
+View from Cura 4.4
+![CuraPlugin](/docs/CuraOctoPrintPlugin.png)
+
 Notes on UltiGCode (Ultimaker 2/Ultimaker 2+)
 ----
 The Ultimaker 2(+) family uses a flavor of GCode named UltiGCode. Unfortunately printing
