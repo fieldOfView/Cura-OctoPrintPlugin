@@ -15,7 +15,7 @@ from cura.CuraApplication import CuraApplication
 from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
 
 try:
-    # Cura 4.1
+    # Cura 4.1 and newer
     from cura.PrinterOutput.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
     from cura.PrinterOutput.Models.PrinterOutputModel import PrinterOutputModel
     from cura.PrinterOutput.Models.PrintJobOutputModel import PrintJobOutputModel
