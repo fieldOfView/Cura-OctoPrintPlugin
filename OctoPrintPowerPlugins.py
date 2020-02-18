@@ -32,7 +32,7 @@ class OctoPrintPowerPlugins():
             ("wemoswitch", "Wemo Switch", []), # ip
             ("tuyasmartplug", "Tuya Smartplug", []), # label
             ("domoticz", "Domoticz", ["idx", "username", "password"]), # ip, idx, username, password
-            ("tasmota", "Tasmota", ["idx", "username", "password", "backlog_delay"]), # ip, idx, username, password, backlog_delay
+            ("tasmota", "Tasmota", ["idx"]), # ip, idx, username, password, backlog_delay
         ]  # type: List[Tuple[str, str, List[str]]]
         for (plugin_id, plugin_name, additional_data) in common_api_plugins:
             if plugin_id in plugin_data and "arrSmartplugs" in plugin_data[plugin_id]:
@@ -45,7 +45,7 @@ class OctoPrintPowerPlugins():
                             ("ip", plug_data["ip"])
                         ])
                         for key in additional_data:
-                            plug[key] = plug_data[key]
+                            plug[key] = plug_data.get(key, "")
                         self._available_plugs[self._createPlugId(plug)] = plug
 
         # `tasmota_mqtt` has a slightly different settings dialect
@@ -57,7 +57,7 @@ class OctoPrintPowerPlugins():
                     plug = OrderedDict([
                         ("plugin", plugin_id),
                         ("name", "%s/%s (%s)" % (plug_data["topic"], plug_data["relayN"], plugin_name)),
-                        ("topic", plug_data["relayN"]),
+                        ("topic", plug_data["topic"]),
                         ("relayN", plug_data["relayN"])
                     ])
                     self._available_plugs[self._createPlugId(plug)] = plug
@@ -95,8 +95,8 @@ class OctoPrintPowerPlugins():
             # topic, relayN
             arguments = ["topic", "relayN"]
         elif plugin_id == "tasmota":
-            # ip, idx, username, password, backlog_delay
-            arguments = ["ip", "idx", "username", "password", "backlog_delay"]
+            # ip, idx
+            arguments = ["ip", "idx"]
         elif plugin_id == "tuyasmartplug":
             # label
             arguments = ["label"]
