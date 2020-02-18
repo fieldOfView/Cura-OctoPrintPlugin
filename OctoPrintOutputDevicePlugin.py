@@ -16,6 +16,7 @@ import json
 import re
 import base64
 import os.path
+import ipaddress
 
 from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
@@ -259,8 +260,15 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             address = ""
             for record in zeroconf.cache.entries_with_name(info.server):
                 info.update_record(zeroconf, time.time(), record)
-                if not repr(record).startswith("169."): # don't accept 169.254.x.x address
-                    address = repr(record)
+                try:
+                    ip = ipaddress.IPv4Address(record.address) # IPv4
+                except ipaddress.AddressValueError:
+                    ip = ipaddress.IPv6Address(record.address) # IPv6
+                except:
+                    continue
+
+                if not ip.is_link_local: # don't accept 169.254.x.x address
+                    address = str(ip) if ip.version == 4 else "[%s]" % str(ip)
                     break
 
             # Request more data if info is not complete
