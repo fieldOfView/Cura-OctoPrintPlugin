@@ -44,7 +44,7 @@ else:
         ServiceStateChange = zeroconf.ServiceStateChange
         ServiceInfo = zeroconf.ServiceInfo
         Logger.log("w", "Supplied version of Zeroconf module imported")
-    except (FileNotFoundError, ImportError, TypeError): # TypeError for Python 3.5.2 (see https://github.com/python/typing/issues/259)
+    except (FileNotFoundError, ImportError):
         # fall back to the system-installed version, or what comes with Cura
         Logger.log("w", "Falling back to default zeroconf module")
         from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
