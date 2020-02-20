@@ -953,7 +953,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             if not error_string:
                 error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
             self._showErrorMessage(error_string)
-            Logger.log("e", "OctoPrintOutputDevice got an error while accessing %s", reply.url().toString)
+            Logger.log("e", "OctoPrintOutputDevice got an error while accessing %s", reply.url().toString())
             Logger.log("e", error_string)
 
     def _onUploadProgress(self, bytes_sent: int, bytes_total: int) -> None:
