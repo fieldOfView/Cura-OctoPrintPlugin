@@ -18,11 +18,11 @@ import base64
 import os.path
 import ipaddress
 
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, List, Union, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     # for MYPY, fall back to the system-installed version
-    from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
+    from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo, DNSAddress
 else:
     try:
         # import the included version of python-zeroconf
@@ -43,6 +43,7 @@ else:
         ServiceBrowser = zeroconf.ServiceBrowser
         ServiceStateChange = zeroconf.ServiceStateChange
         ServiceInfo = zeroconf.ServiceInfo
+        DNSAddress = zeroconf.DNSAddress
         Logger.log("w", "Supplied version of Zeroconf module imported")
     except (FileNotFoundError, ImportError):
         # fall back to the system-installed version, or what comes with Cura
@@ -260,6 +261,9 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             address = ""
             for record in zeroconf.cache.entries_with_name(info.server):
                 info.update_record(zeroconf, time.time(), record)
+                if not isinstance(record, DNSAddress):
+                    return
+                ip = None  # type: Optional[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]
                 try:
                     ip = ipaddress.IPv4Address(record.address) # IPv4
                 except ipaddress.AddressValueError:
@@ -267,7 +271,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
                 except:
                     continue
 
-                if not ip.is_link_local: # don't accept 169.254.x.x address
+                if ip and not ip.is_link_local: # don't accept 169.254.x.x address
                     address = str(ip) if ip.version == 4 else "[%s]" % str(ip)
                     break
 
