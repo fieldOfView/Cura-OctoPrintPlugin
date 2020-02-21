@@ -9,7 +9,7 @@ class OctoPrintPowerPlugins():
     def __init__(self) -> None:
         self._available_plugs = OrderedDict()  # type: Dict[str, Any]
 
-    def parsePluginData(self, plugin_data: Dict[str, Any]):
+    def parsePluginData(self, plugin_data: Dict[str, Any]) -> None:
         self._available_plugs = OrderedDict()  # type: Dict[str, Any]
 
         # plugins that only support a single plug

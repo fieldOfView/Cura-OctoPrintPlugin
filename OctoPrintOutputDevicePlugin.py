@@ -32,7 +32,9 @@ else:
         # expand path so local copy of ifaddr can be imported by zeroconf
         sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ifaddr"))
 
-        zeroconf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python-zeroconf", "zeroconf", "__init__.py")
+        zeroconf_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "python-zeroconf", "zeroconf", "__init__.py"
+        )
         spec = importlib.util.spec_from_file_location("zeroconf", zeroconf_path)
         zeroconf = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(zeroconf)
@@ -53,9 +55,9 @@ else:
 if TYPE_CHECKING:
     from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
 
-##      This plugin handles the connection detection & creation of output device objects for OctoPrint-connected printers.
-#       Zero-Conf is used to detect printers, which are saved in a dict.
-#       If we discover an instance that has the same key as the active machine instance a connection is made.
+##  This plugin handles the connection detection & creation of output device objects for OctoPrint-connected printers.
+#   Zero-Conf is used to detect printers, which are saved in a dict.
+#   If we discover an instance that has the same key as the active machine instance a connection is made.
 @signalemitter
 class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     def __init__(self) -> None:
@@ -163,10 +165,23 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             self._keep_alive_timer.start()
 
     def addManualInstance(self, name: str, address: str, port: int, path: str, useHttps: bool = False, userName: str = "", password: str = "") -> None:
-        self._manual_instances[name] = {"address": address, "port": port, "path": path, "useHttps": useHttps, "userName": userName, "password": password}
+        self._manual_instances[name] = {
+            "address": address,
+            "port": port,
+            "path": path,
+            "useHttps": useHttps,
+            "userName": userName,
+            "password": password
+        }
         self._preferences.setValue("octoprint/manual_instances", json.dumps(self._manual_instances))
 
-        properties = { b"path": path.encode("utf-8"), b"useHttps": b"true" if useHttps else b"false", b'userName': userName.encode("utf-8"), b'password': password.encode("utf-8"), b"manual": b"true" }
+        properties = {
+            b"path": path.encode("utf-8"),
+            b"useHttps": b"true" if useHttps else b"false",
+            b'userName': userName.encode("utf-8"),
+            b'password': password.encode("utf-8"),
+            b"manual": b"true"
+        }
 
         if name in self._instances:
             self.removeInstance(name)
@@ -213,7 +228,9 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             if key == global_container_stack.getMetaDataEntry("octoprint_id"):
                 api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
                 self._instances[key].setApiKey(self._deobfuscateString(api_key))
-                self._instances[key].setShowCamera(parseBool(global_container_stack.getMetaDataEntry("octoprint_show_camera", "true")))
+                self._instances[key].setShowCamera(parseBool(
+                    global_container_stack.getMetaDataEntry("octoprint_show_camera", "true"))
+                )
                 self._instances[key].connectionStateChanged.connect(self._onInstanceConnectionStateChanged)
                 self._instances[key].connect()
             else:
@@ -257,7 +274,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             self.getOutputDeviceManager().removeOutputDevice(key)
 
     ##  Handler for zeroConf detection
-    def _onServiceChanged(self, zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange):
+    def _onServiceChanged(self, zeroconf: Zeroconf, service_type: str, name: str, state_change: ServiceStateChange) -> None:
         if state_change == ServiceStateChange.Added:
             key = name
             result = self._name_regex.match(name)
