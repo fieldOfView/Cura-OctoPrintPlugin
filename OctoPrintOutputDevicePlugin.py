@@ -88,6 +88,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         self._keep_alive_timer.setInterval(2000)
         self._keep_alive_timer.setSingleShot(True)
         self._keep_alive_timer.timeout.connect(self._keepDiscoveryAlive)
+        self._consecutive_zeroconf_restarts = 0
 
 
     addInstanceSignal = Signal()
@@ -99,10 +100,16 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         self.startDiscovery()
 
     def startDiscovery(self) -> None:
+        # Clean up previous discovery components and results
+        if self._zero_conf:
+            self._zero_conf.close()
+            self._zero_conf = None # type: Optional[Zeroconf]
+
         if self._browser:
             self._browser.cancel()
             self._browser = None # type: Optional[ServiceBrowser]
             self._printers = [] # type: List[PrinterOutputModel]
+
         instance_keys = list(self._instances.keys())
         for key in instance_keys:
             self.removeInstance(key)
@@ -127,7 +134,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         try:
             self._zero_conf = Zeroconf()
         except Exception:
-            self._zero_conf = None
+            self._zero_conf = None # type: Optional[Zeroconf]
             self._keep_alive_timer.stop()
             Logger.logException("e", "Failed to create Zeroconf instance. Auto-discovery will not work.")
 
@@ -141,9 +148,18 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
     def _keepDiscoveryAlive(self) -> None:
         if not self._browser or not self._browser.is_alive():
-            Logger.log("w", "Zeroconf discovery has died, restarting discovery of OctoPrint instances.")
-            self.startDiscovery()
+            if self._consecutive_zeroconf_restarts < 5:
+                Logger.log("w", "Zeroconf discovery has died, restarting discovery of OctoPrint instances.")
+                self._consecutive_zeroconf_restarts += 1
+                self.startDiscovery()
+            else:
+                if self._zero_conf:
+                    self._zero_conf.close()
+                    self._zero_conf = None # type: Optional[Zeroconf]
+                Logger.log("e", "Giving up restarting Zeroconf browser after 5 consecutive attempts. Auto-discovery will not work.")
         else:
+            # ZeroConf has been alive and well for the past 2 seconds
+            self._consecutive_zeroconf_restarts = 0
             self._keep_alive_timer.start()
 
     def addManualInstance(self, name: str, address: str, port: int, path: str, useHttps: bool = False, userName: str = "", password: str = "") -> None:
