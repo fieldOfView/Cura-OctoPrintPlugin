@@ -131,6 +131,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
         # Don't start zeroconf discovery if it is disabled
         if not self._preferences.getValue("octoprint/use_zeroconf"):
+            self._keep_alive_timer.stop()
             return
 
         try:
