@@ -41,7 +41,7 @@ install(FILES
 )
 
 install(FILES
-    ifaddr/ifaddr/__ini__.py
+    ifaddr/ifaddr/__init__.py
     ifaddr/ifaddr/_posix.py
     ifaddr/ifaddr/_win32.py
     ifaddr/ifaddr/_shared.py
