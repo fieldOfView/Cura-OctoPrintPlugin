@@ -688,34 +688,29 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             printer_state = "idle"
                     printer.updateState(printer_state)
 
-                elif http_status_code == 401:
-                    printer.updateState("offline")
-                    if printer.activePrintJob:
-                        printer.activePrintJob.updateState("offline")
-                    self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} does not allow access to print").format(self._id))
+                elif http_status_code == 401 or http_status_code == 403:
+                    self._setOffline(printer, i18n_catalog.i18nc(
+                        "@info:status", "OctoPrint on {0} does not allow access to the printer state").format(self._id)
+                    )
                     error_handled = True
 
                 elif http_status_code == 409:
                     if self._connection_state == UnifiedConnectionState.Connecting:
                         self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Connected))
 
-                    printer.updateState("offline")
-                    if printer.activePrintJob:
-                        printer.activePrintJob.updateState("offline")
-                    self.setConnectionText(i18n_catalog.i18nc("@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._id))
+                    self._setOffline(printer, i18n_catalog.i18nc(
+                        "@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._id)
+                    )
                     error_handled = True
 
                 elif http_status_code == 502 or http_status_code == 503:
-                    printer.updateState("offline")
-                    if printer.activePrintJob:
-                        printer.activePrintJob.updateState("offline")
-                    self.setConnectionText(i18n_catalog.i18nc("@info:status", "OctoPrint on {0} is not running").format(self._id))
+                    self._setOffline(printer, i18n_catalog.i18nc(
+                        "@info:status", "OctoPrint on {0} is not running").format(self._id)
+                    )
                     error_handled = True
 
                 else:
-                    printer.updateState("offline")
-                    if printer.activePrintJob:
-                        printer.activePrintJob.updateState("offline")
+                    self._setOffline(printer)
                     Logger.log("w", "Received an unexpected returncode: %d", http_status_code)
 
                 if update_pace != self._update_timer.interval():
@@ -780,6 +775,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             self._waiting_message.hide()
                         self._waiting_message = None
                         self._sendPrintJob()
+
+                elif http_status_code == 401 or http_status_code == 403:
+                    self._setOffline(printer, i18n_catalog.i18nc(
+                        "@info:status", "OctoPrint on {0} does not allow access to the job state").format(self._id)
+                    )
+                    error_handled = True
+
                 else:
                     pass  # See generic error handler below
 
@@ -890,7 +892,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 if http_status_code == 204:
                     Logger.log("d", "OctoPrint file command accepted")
 
-                elif http_status_code == 401:
+                elif http_status_code == 401 or http_status_code == 403:
                     error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to start print jobs on OctoPrint with the configured API key.")
                     self._showErrorMessage(error_string)
                     return
@@ -902,7 +904,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 if http_status_code == 204:
                     Logger.log("d", "OctoPrint job command accepted")
 
-                elif http_status_code == 401:
+                elif http_status_code == 401 or http_status_code == 403:
                     error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to control print jobs on OctoPrint with the configured API key.")
                     self._showErrorMessage(error_string)
                     return
@@ -915,7 +917,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     Logger.log("d", "OctoPrint gcode command(s) accepted")
 
                 elif self._api_prefix + "printer/command" in reply.url().toString():  # Gcode command sent to printer.
-                    if http_status_code == 401:
+                    if http_status_code == 401 or http_status_code == 403:
                         error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to send gcode commands to OctoPrint with the configured API key.")
                         self._showErrorMessage(error_string)
                         return
@@ -948,10 +950,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             Logger.log("d", "OctoPrintOutputDevice got an unhandled operation %s", reply.operation())
 
         if not error_handled and http_status_code >= 400:
-            # Received an error reply
-            error_string = bytes(reply.readAll()).decode("utf-8")
-            if not error_string:
-                error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+            if http_status_code == 401 or http_status_code == 403:
+                error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to access OctoPrint with the configured API key.")
+            else:
+                # Received another error reply
+                error_string = bytes(reply.readAll()).decode("utf-8")
+                if not error_string:
+                    error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+
             self._showErrorMessage(error_string)
             Logger.log("e", "OctoPrintOutputDevice got an error while accessing %s", reply.url().toString())
             Logger.log("e", error_string)
@@ -988,7 +994,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
         error_string = ""
-        if http_status_code == 401:
+        if http_status_code == 401 or http_status_code == 403:
             error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to upload files to OctoPrint with the configured API key.")
 
         elif http_status_code == 409:
@@ -1065,6 +1071,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             "print": True
         }
         self._sendCommandToApi(end_point, command)
+
+    def _setOffline(self, printer:PrinterOutputModel, reason: str = "") -> None:
+        if printer.state != "offline":
+            printer.updateState("offline")
+            if printer.activePrintJob:
+                printer.activePrintJob.updateState("offline")
+            self.setConnectionText(reason)
+        Logger.log("w", reason)
 
     def _showErrorMessage(self, error_string: str) -> None:
         if self._error_message:
