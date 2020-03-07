@@ -1003,7 +1003,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             else:
                 error_string = i18n_catalog.i18nc("@info:error", "Can't store the printjob with the same name as the one that is currently printing.")
 
-        elif http_status_code != 201:
+        elif http_status_code >= 400:
             error_string = bytes(reply.readAll()).decode("utf-8")
             if not error_string:
                 error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
@@ -1078,7 +1078,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             if printer.activePrintJob:
                 printer.activePrintJob.updateState("offline")
             self.setConnectionText(reason)
-        Logger.log("w", reason)
+            Logger.log("w", reason)
 
     def _showErrorMessage(self, error_string: str) -> None:
         if self._error_message:
