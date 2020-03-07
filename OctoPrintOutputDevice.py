@@ -916,11 +916,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 if http_status_code == 204:
                     Logger.log("d", "OctoPrint gcode command(s) accepted")
 
-                elif self._api_prefix + "printer/command" in reply.url().toString():  # Gcode command sent to printer.
-                    if http_status_code == 401 or http_status_code == 403:
-                        error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to send gcode commands to OctoPrint with the configured API key.")
-                        self._showErrorMessage(error_string)
-                        return
+                elif http_status_code == 401 or http_status_code == 403:
+                    error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to send gcode commands to OctoPrint with the configured API key.")
+                    self._showErrorMessage(error_string)
+                    return
 
                 else:
                     pass  # See generic error handler below
