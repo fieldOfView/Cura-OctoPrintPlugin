@@ -939,6 +939,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         self._octoprint_user_name = i18n_catalog.i18nc("@label", "Anonymous user")
                     self.additionalDataChanged.emit()
 
+                elif http_status_code == 404:
+                    self._octoprint_user_name = i18n_catalog.i18nc("@label", "Anonymous user")
+                    self.additionalDataChanged.emit()
+
                 elif http_status_code == 401 or http_status_code == 403:
                     self._octoprint_user_name = i18n_catalog.i18nc("@label", "Unknown user")
                     self.additionalDataChanged.emit()
