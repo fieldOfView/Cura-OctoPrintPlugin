@@ -532,6 +532,17 @@ Cura.MachineAction
                     }
                     CheckBox
                     {
+                        id: autoConnectCheckBox
+                        text: catalog.i18nc("@label", "Automatically connect to printer before sending printjob")
+                        enabled: manager.instanceApiKeyAccepted && !autoPowerControlCheckBox.checked
+                        checked: enabled && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_connect") == "true"
+                        onClicked:
+                        {
+                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_auto_connect", String(checked))
+                        }
+                    }
+                    CheckBox
+                    {
                         id: showCameraCheckBox
                         text: catalog.i18nc("@label", "Show webcam image")
                         enabled: manager.instanceSupportsCamera

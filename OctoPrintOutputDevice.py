@@ -380,41 +380,52 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._forced_queue = False
 
         use_power_plugin = parseBool(global_container_stack.getMetaDataEntry("octoprint_power_control", False))
-        if self.activePrinter.state == "offline" and self._auto_print and use_power_plugin:
-            available_plugs = self._power_plugins_manager.getAvailablePowerPlugs()
-            power_plug_id = global_container_stack.getMetaDataEntry("octoprint_power_plug", "")
-            if power_plug_id == "" and len(available_plugs) > 0:
-                power_plug_id = list(self._power_plugins_manager.getAvailablePowerPlugs().keys())[0]
+        auto_connect = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_connect", True))
+        if self.activePrinter.state == "offline" and self._auto_print and (use_power_plugin or auto_connect):
+            wait_for_printer = False
+            if use_power_plugin:
+                available_plugs = self._power_plugins_manager.getAvailablePowerPlugs()
+                power_plug_id = global_container_stack.getMetaDataEntry("octoprint_power_plug", "")
+                if power_plug_id == "" and len(available_plugs) > 0:
+                    power_plug_id = list(self._power_plugins_manager.getAvailablePowerPlugs().keys())[0]
 
-            if power_plug_id in available_plugs:
-                (end_point, command) = self._power_plugins_manager.getSetStateCommand(power_plug_id, True)
-                if end_point and command:
-                    self._sendCommandToApi(end_point, command)
-                    Logger.log("d", "Sent %s command to endpoint %s" % (command["command"], end_point))
-
-                    self._waiting_message = Message(
-                        i18n_catalog.i18nc("@info:status", "Waiting for OctoPrint to connect to the printer..."),
-                        title=i18n_catalog.i18nc("@label", "OctoPrint"),
-                        progress=-1, lifetime=0, dismissable=False, use_inactivity_timer=False
-                    )
-                    self._waiting_message.addAction(
-                        "queue", i18n_catalog.i18nc("@action:button", "Queue"), "",
-                        i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the printer and queue the printjob instead"),
-                        button_style=Message.ActionButtonStyle.SECONDARY
-                    )
-                    self._waiting_message.addAction(
-                        "cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
-                        i18n_catalog.i18nc("@action:tooltip", "Abort the printjob")
-                    )
-                    self._waiting_message.actionTriggered.connect(self._stopWaitingForPrinter)
-
-                    self._waiting_message.show()
-                    self._waiting_for_printer = True
-                    return
+                if power_plug_id in available_plugs:
+                    (end_point, command) = self._power_plugins_manager.getSetStateCommand(power_plug_id, True)
+                    if end_point and command:
+                        self._sendCommandToApi(end_point, command)
+                        Logger.log("d", "Sent %s command to endpoint %s" % (command["command"], end_point))
+                        wait_for_printer = True
+                    else:
+                        Logger.log("e", "No command to power on plug %s", power_plug_id)
                 else:
-                    Logger.log("e", "No command to power on plug %s", power_plug_id)
-            else:
-                Logger.log("e", "Specified power plug %s is not available", power_plug_id)
+                    Logger.log("e", "Specified power plug %s is not available", power_plug_id)
+
+            else: # auto_connect
+                self._sendCommandToApi("connection/connect", {})
+                Logger.log("d", "Sent command to connect printer to OctoPrint with current settings")
+
+                wait_for_printer = True
+
+            if wait_for_printer:
+                self._waiting_message = Message(
+                    i18n_catalog.i18nc("@info:status", "Waiting for OctoPrint to connect to the printer..."),
+                    title=i18n_catalog.i18nc("@label", "OctoPrint"),
+                    progress=-1, lifetime=0, dismissable=False, use_inactivity_timer=False
+                )
+                self._waiting_message.addAction(
+                    "queue", i18n_catalog.i18nc("@action:button", "Queue"), "",
+                    i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the printer and queue the printjob instead"),
+                    button_style=Message.ActionButtonStyle.SECONDARY
+                )
+                self._waiting_message.addAction(
+                    "cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
+                    i18n_catalog.i18nc("@action:tooltip", "Abort the printjob")
+                )
+                self._waiting_message.actionTriggered.connect(self._stopWaitingForPrinter)
+
+                self._waiting_message.show()
+                self._waiting_for_printer = True
+                return
 
         elif self.activePrinter.state not in ["idle", ""]:
             Logger.log("d", "Tried starting a print, but current state is %s" % self.activePrinter.state)
@@ -953,6 +964,18 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to access to OctoPrint with the configured API key.")
                     self._showErrorMessage(error_string)
                     return
+
+            elif self._api_prefix + "connection/connect" in reply.url().toString():  # Result from /connection/connect command (eg start/pause):
+                if http_status_code == 204:
+                    Logger.log("d", "OctoPrint connection command accepted")
+
+                elif http_status_code == 401 or http_status_code == 403:
+                    error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to control printer connections on OctoPrint with the configured API key.")
+                    self._showErrorMessage(error_string)
+                    return
+
+                else:
+                    pass  # See generic error handler below
 
         else:
             Logger.log("d", "OctoPrintOutputDevice got an unhandled operation %s", reply.operation())
