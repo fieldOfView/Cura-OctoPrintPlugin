@@ -713,6 +713,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     return
 
                 elif http_status_code == 502 or http_status_code == 503:
+                    Logger.log("w", "Received an error status code: %d", http_status_code)
                     self._setOffline(printer, i18n_catalog.i18nc(
                         "@info:status", "OctoPrint on {0} is not running").format(self._id)
                     )
@@ -720,7 +721,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                 else:
                     self._setOffline(printer)
-                    Logger.log("w", "Received an unexpected returncode: %d", http_status_code)
+                    Logger.log("w", "Received an unexpected status code: %d", http_status_code)
 
                 if update_pace != self._update_timer.interval():
                     self._update_timer.setInterval(update_pace)
@@ -788,6 +789,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 elif http_status_code == 401 or http_status_code == 403:
                     self._setOffline(printer, i18n_catalog.i18nc(
                         "@info:status", "OctoPrint on {0} does not allow access to the job state").format(self._id)
+                    )
+                    return
+
+                elif http_status_code == 502 or http_status_code == 503:
+                    Logger.log("w", "Received an error status code: %d", http_status_code)
+                    self._setOffline(printer, i18n_catalog.i18nc(
+                        "@info:status", "OctoPrint on {0} is not running").format(self._id)
                     )
                     return
 
