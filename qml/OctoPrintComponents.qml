@@ -14,7 +14,7 @@ Item
     id: base
 
     property bool printerConnected: Cura.MachineManager.printerOutputDevices.length != 0
-    property bool octoPrintConnected: printerConnected && Cura.MachineManager.printerOutputDevices[0].hasOwnProperty("octoprintVersion")
+    property bool octoPrintConnected: printerConnected && Cura.MachineManager.printerOutputDevices[0].toString().indexOf("OctoPrintOutputDevice") == 0
 
     Button
     {
