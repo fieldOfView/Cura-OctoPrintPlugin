@@ -310,7 +310,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         Logger.log("d", "Connection with instance %s with url %s started", self._id, self._base_url)
         self._update_timer.start()
 
-        self._last_response_time = None
+        self._last_response_time = None  # type: Optional[float]
         self._setAcceptsCommands(False)
         self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._id))
 
@@ -1037,7 +1037,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to upload files to OctoPrint with the configured API key.")
 
         elif http_status_code == 409:
-            if "files/sdcard/" in reply.url().toString():
+            if "files/sdcard" in reply.url().toString():
                 error_string = i18n_catalog.i18nc("@info:error", "Can't store the printjob on the printer sd card.")
             else:
                 error_string = i18n_catalog.i18nc("@info:error", "Can't store the printjob with the same name as the one that is currently printing.")
