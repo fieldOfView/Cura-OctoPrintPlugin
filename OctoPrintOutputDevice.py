@@ -533,7 +533,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         post_parts.append(self._createFormPart("name=\"path\"", b"//", "text/plain"))
         post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
 
-        # selecting and printing the job is delayed until after the upload
+        if (self._auto_print and not self._forced_queue) and (
+            self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp)
+        ):
+            # tell OctoPrint to start the print when there is no reason to delay doing so
+            post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
+
+        # otherwise selecting and printing the job is delayed until after the upload
         # see self._onUploadFinished
 
         destination = "local"
@@ -755,7 +761,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             print_job_state = "pausing"
                         elif state == "Paused":
                             print_job_state = "paused"
-                        elif state == "Printing":
+                        elif state == "Printing" or state == "Printing from SD":
                             print_job_state = "printing"
                         elif state == "Cancelling":
                             print_job_state = "abort"
@@ -819,7 +825,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     if "feature" in json_data and "sdSupport" in json_data["feature"]:
                         sd_supported = json_data["feature"]["sdSupport"]
-                        self._store_on_sd = sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False))
+                        global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
+                        if global_container_stack:
+                            self._store_on_sd = sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False))
+                        else:
+                            self._store_on_sd = False
 
                     if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
                         stream_url = json_data["webcam"]["streamUrl"]
@@ -862,7 +872,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         self._power_plugins_manager.parsePluginData(plugin_data)
 
                         if "PrintTimeGenius" in plugin_data:
-                            self._wait_for_analysis = True
+                            if not self._store_on_sd:
+                                Logger.log("d", "Instance needs time after uploading to analyse gcode")
+                                self._wait_for_analysis = True
+                            else:
+                                Logger.log("d", "Instance does not do analysis after uploading to sd-card")
+                                self._wait_for_analysis = False
 
                         if "UltimakerFormatPackage" in plugin_data:
                             self._transfer_as_ufp = False
@@ -1081,7 +1096,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             )
             message.actionTriggered.connect(self._openOctoPrint)
             message.show()
-        elif self._auto_print:
+        elif self._auto_print and self._wait_for_analysis:
             end_point = location_url.toString().split(self._api_prefix, 1)[1]
             if self._transfer_as_ufp and end_point.endswith(".ufp"):
                 end_point += ".gcode"
