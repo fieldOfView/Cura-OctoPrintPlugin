@@ -286,6 +286,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self.get(end_point, self._onRequestFinished)
 
     def close(self) -> None:
+        self._update_timer.stop()
+
         self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Closed))
         if self._progress_message:
             self._progress_message.hide()
@@ -297,8 +299,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._waiting_for_printer = False
         self._waiting_for_analysis = False
         self._polling_end_points = [point for point in self._polling_end_points if not point.startswith("files/")]
-
-        self._update_timer.stop()
 
     ##  Start requesting data from the instance
     def connect(self) -> None:
