@@ -153,9 +153,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._post_gcode_reply = None
 
-        self._progress_message = None # type: Union[None, Message]
-        self._error_message = None # type: Union[None, Message]
-        self._waiting_message = None # type: Union[None, Message]
+        self._progress_message = None # type: Optional[Message]
+        self._error_message = None # type: Optional[Message]
+        self._waiting_message = None # type: Optional[Message]
 
         self._queued_gcode_commands = [] # type: List[str]
 
@@ -172,11 +172,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._camera_rotation = 0
         self._camera_url = ""
 
-        self._store_on_sd = False # store gcode on sd card in printer instead of locally
-        self._transfer_as_ufp = False # transfer gcode as .ufp files including thumbnail image
-
         self._power_plugins_manager = OctoPrintPowerPlugins()
 
+        self._store_on_sd = False # store gcode on sd card in printer instead of locally
+        self._transfer_as_ufp = False # transfer gcode as .ufp files including thumbnail image
         self._wait_for_analysis = False # wait for analysis to complete before starting a print
 
         self._waiting_for_analysis = False
@@ -291,10 +290,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Closed))
         if self._progress_message:
             self._progress_message.hide()
+            self._progress_message = None #type: Optional[Message]
         if self._error_message:
             self._error_message.hide()
+            self._error_message = None #type: Optional[Message]
         if self._waiting_message:
             self._waiting_message.hide()
+            self._waiting_message = None #type: Optional[Message]
 
         self._waiting_for_printer = False
         self._waiting_for_analysis = False
@@ -370,11 +372,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if self._error_message:
             self._error_message.hide()
-            self._error_message = None
+            self._error_message = None # type: Optional[Message]
 
         if self._progress_message:
             self._progress_message.hide()
-            self._progress_message = None
+            self._progress_message = None # type: Optional[Message]
 
         self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
         self._forced_queue = False
@@ -576,9 +578,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 pass  # The disconnection can fail on mac in some cases. Ignore that.
 
             self._post_gcode_reply.abort()
-            self._post_gcode_reply = None
+            self._post_gcode_reply = None # type:Optional[QNetworkReply]
         if self._progress_message:
             self._progress_message.hide()
+            self._progress_message = None # type:Optional[Message]
 
     def sendCommand(self, command: str) -> None:
         self._queued_gcode_commands.append(command)
@@ -775,11 +778,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     print_job.updateState(print_job_state)
 
                     print_time = json_data["progress"]["printTime"]
+                    completion = json_data["progress"]["completion"]
                     if print_time:
                         print_job.updateTimeElapsed(print_time)
 
                         print_time_left = json_data["progress"]["printTimeLeft"]
-                        completion = json_data["progress"]["completion"]
                         if print_time_left: # not 0 or None or ""
                             print_job.updateTimeTotal(print_time + print_time_left)
                         elif completion: # not 0 or None or ""
@@ -789,6 +792,22 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     else:
                         print_job.updateTimeElapsed(0)
                         print_job.updateTimeTotal(0)
+
+                    if completion and print_job_state == "pre_print": # completion not not 0 or None or "", state "Sending file to SD"
+                        if not self._progress_message:
+                            self._progress_message = Message(
+                                i18n_catalog.i18nc("@info:status", "Streaming file to the printer SD card"),
+                                0, False, -1, title=i18n_catalog.i18nc("@label", "OctoPrint")
+                            )
+                            self._progress_message.show()
+                        if completion < 100:
+                            self._progress_message.setProgress(completion)
+                    else:
+                        if self._progress_message and self._progress_message.getText().startswith(
+                            i18n_catalog.i18nc("@info:status", "Streaming file to the printer SD card")
+                        ):
+                            self._progress_message.hide()
+                            self._progress_message = None # type:Optional[Message]
 
                     print_job.updateName(json_data["job"]["file"]["name"])
 
@@ -1057,6 +1076,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if self._progress_message:
             self._progress_message.hide()
+            self._progress_message = None # type:Optional[message]
 
         http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
         error_string = ""
