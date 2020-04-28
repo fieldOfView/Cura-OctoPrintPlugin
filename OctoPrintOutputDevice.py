@@ -172,8 +172,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._camera_rotation = 0
         self._camera_url = ""
 
-        self._sd_supported = False # supports storing gcode on sd card in printer
-        self._ufp_supported = False # supports .ufp files in addition to raw .gcode files
+        self._store_on_sd = False # store gcode on sd card in printer instead of locally
+        self._transfer_as_ufp = False # transfer gcode as .ufp files including thumbnail image
 
         self._power_plugins_manager = OctoPrintPowerPlugins()
 
@@ -357,7 +357,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         # Get the g-code through the GCodeWriter plugin
         # This produces the same output as "Save to File", adding the print settings to the bottom of the file
-        if not self._ufp_supported:
+        if not self._transfer_as_ufp:
             gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
             self._gcode_stream = StringIO()
         else:
@@ -518,7 +518,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         job_name = CuraApplication.getInstance().getPrintInformation().jobName.strip()
         if job_name is "":
             job_name = "untitled_print"
-        extension = "gcode" if not self._ufp_supported else "ufp"
+        extension = "gcode" if not self._transfer_as_ufp else "ufp"
         file_name = "%s.%s" % (job_name, extension)
 
         ##  Create multi_part request
@@ -537,7 +537,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         # see self._onUploadFinished
 
         destination = "local"
-        if self._sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False)):
+        if self._store_on_sd:
             destination = "sdcard"
 
         try:
@@ -695,6 +695,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             printer_state = "aborted"
                         elif flags["ready"] or flags["operational"]:
                             printer_state = "idle"
+                        else:
+                            Logger.log("w", "Encountered unexpected job state flags: %s" % flags)
                     printer.updateState(printer_state)
 
                 elif http_status_code == 401 or http_status_code == 403:
@@ -746,19 +748,24 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     print_job_state = "offline"
                     if "state" in json_data:
-                        if json_data["state"] == "Error":
+                        state = json_data["state"]
+                        if state == "Error" or state == "Connecting":
                             print_job_state = "error"
-                        elif json_data["state"] == "Pausing":
+                        elif state == "Pausing":
                             print_job_state = "pausing"
-                        elif json_data["state"] == "Paused":
+                        elif state == "Paused":
                             print_job_state = "paused"
-                        elif json_data["state"] == "Printing":
+                        elif state == "Printing":
                             print_job_state = "printing"
-                        elif json_data["state"] == "Cancelling":
+                        elif state == "Cancelling":
                             print_job_state = "abort"
-                        elif json_data["state"] == "Operational":
+                        elif state == "Operational":
                             print_job_state = "ready"
                             printer.updateState("idle")
+                        elif state == "Sending file to SD":
+                            print_job_state = "pre_print"
+                        else:
+                            Logger.log("w", "Encountered unexpected printer state: %s" % state)
                     print_job.updateState(print_job_state)
 
                     print_time = json_data["progress"]["printTime"]
@@ -811,7 +818,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         json_data = {}
 
                     if "feature" in json_data and "sdSupport" in json_data["feature"]:
-                        self._sd_supported = json_data["feature"]["sdSupport"]
+                        sd_supported = json_data["feature"]["sdSupport"]
+                        self._store_on_sd = sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False))
 
                     if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
                         stream_url = json_data["webcam"]["streamUrl"]
@@ -857,10 +865,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             self._wait_for_analysis = True
 
                         if "UltimakerFormatPackage" in plugin_data:
+                            self._transfer_as_ufp = False
                             try:
                                 ufp_writer_plugin = PluginRegistry.getInstance().getPluginObject("UFPWriter")
-                                self._ufp_supported = True
-                                Logger.log("d", "Instance supports UFP files; uploading .ufp instead of .gcode")
+                                if self._store_on_sd:
+                                    Logger.log("d", "Instance supports UFP files but stores files on the printer sd-card")
+                                else:
+                                    self._transfer_as_ufp = True
+                                    Logger.log("d", "Instance supports UFP files; uploading .ufp instead of .gcode")
                             except PluginNotFoundError:
                                 Logger.log("w", "Instance supports UFP files, but UFPWriter is not available")
 
@@ -1071,7 +1083,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             message.show()
         elif self._auto_print:
             end_point = location_url.toString().split(self._api_prefix, 1)[1]
-            if self._ufp_supported and end_point.endswith(".ufp"):
+            if self._transfer_as_ufp and end_point.endswith(".ufp"):
                 end_point += ".gcode"
 
             if not self._wait_for_analysis:
