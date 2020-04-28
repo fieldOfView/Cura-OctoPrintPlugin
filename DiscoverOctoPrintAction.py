@@ -525,6 +525,7 @@ class DiscoverOctoPrintAction(MachineAction):
                         self._instance_installed_plugins = list(json_data["plugins"].keys())
 
                     api_key = bytes(reply.request().rawHeader(b"X-Api-Key")).decode("utf-8")
+                    self.setApiKey(api_key) # store api key in key cache
                     if self._settings_instance:
                         self._settings_instance.setApiKey(api_key)
                         self._settings_instance.resetOctoPrintUserName()
