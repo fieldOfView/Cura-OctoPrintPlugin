@@ -530,6 +530,7 @@ class DiscoverOctoPrintAction(MachineAction):
                         self._settings_instance.setApiKey(api_key)
                         self._settings_instance.resetOctoPrintUserName()
                         self._settings_instance.getAdditionalData()
+                        self._settings_instance.parseSettingsData(json_data)
 
                     self._settings_instance = None
 

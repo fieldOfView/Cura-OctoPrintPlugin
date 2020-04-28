@@ -174,9 +174,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._power_plugins_manager = OctoPrintPowerPlugins()
 
-        self._store_on_sd = False # store gcode on sd card in printer instead of locally
-        self._transfer_as_ufp = False # transfer gcode as .ufp files including thumbnail image
-        self._wait_for_analysis = False # wait for analysis to complete before starting a print
+        self._store_on_sd_supported = False # store gcode on sd card in printer instead of locally
+        self._ufp_transfer_supported = False # transfer gcode as .ufp files including thumbnail image
+        self._gcode_analysis_supported = False # wait for analysis to complete before starting a print
 
         self._waiting_for_analysis = False
         self._waiting_for_printer = False
@@ -184,6 +184,21 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._output_controller = GenericOutputController(self)
 
         self._polling_end_points = ["printer", "job"]
+
+    @property
+    def _store_on_sd(self) -> bool:
+        global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
+        if global_container_stack:
+            return self._store_on_sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False))
+        return False
+
+    @property
+    def _transfer_as_ufp(self) -> bool:
+        return self._ufp_transfer_supported and not self._store_on_sd
+
+    @property
+    def _wait_for_analysis(self) -> bool:
+        return self._gcode_analysis_supported and not self._store_on_sd
 
     def getProperties(self) -> Dict[bytes, bytes]:
         return self._properties
@@ -842,73 +857,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
                         json_data = {}
 
-                    if "feature" in json_data and "sdSupport" in json_data["feature"]:
-                        sd_supported = json_data["feature"]["sdSupport"]
-                        global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
-                        if global_container_stack:
-                            self._store_on_sd = sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False))
-                        else:
-                            self._store_on_sd = False
-
-                    if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
-                        stream_url = json_data["webcam"]["streamUrl"]
-                        if not stream_url: #empty string or None
-                            self._camera_url = ""
-                        elif stream_url[:4].lower() == "http": # absolute uri
-                            self._camera_url = stream_url
-                        elif stream_url[:2] == "//": # protocol-relative
-                            self._camera_url = "%s:%s" % (self._protocol, stream_url)
-                        elif stream_url[:1] == ":": # domain-relative (on another port)
-                            self._camera_url = "%s://%s%s" % (self._protocol, self._address, stream_url)
-                        elif stream_url[:1] == "/": # domain-relative (on same port)
-                            if not self._basic_auth_string:
-                                self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
-                            else:
-                                self._camera_url = "%s://%s@%s:%d%s" % (self._protocol, self._basic_auth_string, self._address, self._port, stream_url)
-                        else:
-                            Logger.log("w", "Unusable stream url received: %s", stream_url)
-                            self._camera_url = ""
-
-                        Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
-                        self.cameraUrlChanged.emit()
-
-                        if "rotate90" in json_data["webcam"]:
-                            self._camera_rotation = -90 if json_data["webcam"]["rotate90"] else 0
-                            if json_data["webcam"]["flipH"] and json_data["webcam"]["flipV"]:
-                                self._camera_mirror = False
-                                self._camera_rotation += 180
-                            elif json_data["webcam"]["flipH"]:
-                                self._camera_mirror = True
-                                self._camera_rotation += 180
-                            elif json_data["webcam"]["flipV"]:
-                                self._camera_mirror = True
-                            else:
-                                self._camera_mirror = False
-                            self.cameraOrientationChanged.emit()
-
-                    if "plugins" in json_data:
-                        plugin_data = json_data["plugins"]
-                        self._power_plugins_manager.parsePluginData(plugin_data)
-
-                        if "PrintTimeGenius" in plugin_data:
-                            if not self._store_on_sd:
-                                Logger.log("d", "Instance needs time after uploading to analyse gcode")
-                                self._wait_for_analysis = True
-                            else:
-                                Logger.log("d", "Instance does not do analysis after uploading to sd-card")
-                                self._wait_for_analysis = False
-
-                        if "UltimakerFormatPackage" in plugin_data:
-                            self._transfer_as_ufp = False
-                            try:
-                                ufp_writer_plugin = PluginRegistry.getInstance().getPluginObject("UFPWriter")
-                                if self._store_on_sd:
-                                    Logger.log("d", "Instance supports UFP files but stores files on the printer sd-card")
-                                else:
-                                    self._transfer_as_ufp = True
-                                    Logger.log("d", "Instance supports UFP files; uploading .ufp instead of .gcode")
-                            except PluginNotFoundError:
-                                Logger.log("w", "Instance supports UFP files, but UFPWriter is not available")
+                    self.parseSettingsData(json_data)
 
             elif self._api_prefix + "version" in reply.url().toString():  # OctoPrint & API version
                 if http_status_code == 200:
@@ -1144,6 +1093,65 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
             self._waiting_for_analysis = True
             self._polling_end_points.append(end_point)  # start polling the API for information about this file
+
+    def parseSettingsData(self, json_data: Dict[str, Any]) -> None:
+        self._store_on_sd_supported = False
+        if "feature" in json_data and "sdSupport" in json_data["feature"]:
+            self._store_on_sd_supported = json_data["feature"]["sdSupport"]
+
+
+        if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
+            stream_url = json_data["webcam"]["streamUrl"]
+            if not stream_url: #empty string or None
+                self._camera_url = ""
+            elif stream_url[:4].lower() == "http": # absolute uri
+                self._camera_url = stream_url
+            elif stream_url[:2] == "//": # protocol-relative
+                self._camera_url = "%s:%s" % (self._protocol, stream_url)
+            elif stream_url[:1] == ":": # domain-relative (on another port)
+                self._camera_url = "%s://%s%s" % (self._protocol, self._address, stream_url)
+            elif stream_url[:1] == "/": # domain-relative (on same port)
+                if not self._basic_auth_string:
+                    self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
+                else:
+                    self._camera_url = "%s://%s@%s:%d%s" % (self._protocol, self._basic_auth_string, self._address, self._port, stream_url)
+            else:
+                Logger.log("w", "Unusable stream url received: %s", stream_url)
+                self._camera_url = ""
+
+            Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
+            self.cameraUrlChanged.emit()
+
+            if "rotate90" in json_data["webcam"]:
+                self._camera_rotation = -90 if json_data["webcam"]["rotate90"] else 0
+                if json_data["webcam"]["flipH"] and json_data["webcam"]["flipV"]:
+                    self._camera_mirror = False
+                    self._camera_rotation += 180
+                elif json_data["webcam"]["flipH"]:
+                    self._camera_mirror = True
+                    self._camera_rotation += 180
+                elif json_data["webcam"]["flipV"]:
+                    self._camera_mirror = True
+                else:
+                    self._camera_mirror = False
+                self.cameraOrientationChanged.emit()
+
+        if "plugins" in json_data:
+            plugin_data = json_data["plugins"]
+            self._power_plugins_manager.parsePluginData(plugin_data)
+
+            if "PrintTimeGenius" in plugin_data:
+                Logger.log("d", "Instance needs time after uploading to analyse gcode")
+                self._gcode_analysis_supported = True
+
+            if "UltimakerFormatPackage" in plugin_data:
+                self._ufp_transfer_supported = False
+                try:
+                    ufp_writer_plugin = PluginRegistry.getInstance().getPluginObject("UFPWriter")
+                    self._ufp_transfer_supported = True
+                    Logger.log("d", "Instance supports uploading .ufp instead of .gcode")
+                except PluginNotFoundError:
+                    Logger.log("w", "Instance supports .ufp files but UFPWriter is not available")
 
     def _createPrinterList(self) -> None:
         printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
