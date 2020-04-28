@@ -603,7 +603,7 @@ Cura.MachineAction
                         {
                             if (base.selectedInstance !== null)
                             {
-                                if (base.selectedInstance.getId() == manager.instanceId)
+                                if (base.selectedInstance.getId() == manager.instanceId && manager.instanceApiKeyAccepted)
                                 {
                                     return catalog.i18nc("@action:button", "Disconnect");
                                 }
@@ -613,17 +613,18 @@ Cura.MachineAction
                         enabled: base.selectedInstance !== null && apiKey.text != "" && manager.instanceApiKeyAccepted
                         onClicked:
                         {
-                            if(fixGcodeFlavor.visible)
-                            {
-                                manager.applyGcodeFlavorFix(fixGcodeFlavor.checked)
-                            }
-                            if(base.selectedInstance.getId() == manager.instanceId) {
+                            if(base.selectedInstance.getId() == manager.instanceId && manager.instanceApiKeyAccepted) {
                                 manager.setInstanceId("")
                             }
                             else
                             {
                                 manager.setInstanceId(base.selectedInstance.getId())
                                 manager.setApiKey(apiKey.text)
+
+                                if(fixGcodeFlavor.visible)
+                                {
+                                    manager.applyGcodeFlavorFix(fixGcodeFlavor.checked)
+                                }
                             }
                             completed()
                         }
