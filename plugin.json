@@ -4,6 +4,6 @@
     "version": "3.5.13-DEV",
     "description": "Enables networked printing and monitoring with OctoPrint",
     "api": 5,
-    "supported_sdk_versions": ["5.0.0", "6.0.0", "6.1.0", "6.2.0", "6.3.0", "7.0.0", "7.1.0"],
+    "supported_sdk_versions": ["5.0.0", "6.0.0", "6.1.0", "6.2.0", "6.3.0", "7.0.0", "7.1.0", "7.2.0"],
     "i18n-catalog": "cura"
 }
