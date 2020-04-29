@@ -1070,7 +1070,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             )
             message.actionTriggered.connect(self._openOctoPrint)
             message.show()
-        elif self._auto_print and self._wait_for_analysis:
+        elif self._auto_print or self._wait_for_analysis:
             end_point = location_url.toString().split(self._api_prefix, 1)[1]
             if self._transfer_as_ufp and end_point.endswith(".ufp"):
                 if self._ufp_plugin_version < Version("0.1.7"): # unfortunately, version 0.1.6 can not be detected
