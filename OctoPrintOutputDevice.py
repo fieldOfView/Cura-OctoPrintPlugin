@@ -6,6 +6,7 @@ from UM.Logger import Logger
 from UM.Signal import signalemitter
 from UM.Message import Message
 from UM.Util import parseBool
+from UM.Version import Version
 from UM.Mesh.MeshWriter import MeshWriter
 from UM.PluginRegistry import PluginRegistry
 from UM.PluginError import PluginNotFoundError
@@ -177,6 +178,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._store_on_sd_supported = False # store gcode on sd card in printer instead of locally
         self._ufp_transfer_supported = False # transfer gcode as .ufp files including thumbnail image
         self._gcode_analysis_supported = False # wait for analysis to complete before starting a print
+
+        self._ufp_plugin_version = Version(0) # used to determine how gcode files are extracted from .ufp
 
         self._waiting_for_analysis = False
         self._waiting_for_printer = False
@@ -1068,7 +1071,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         elif self._auto_print and self._wait_for_analysis:
             end_point = location_url.toString().split(self._api_prefix, 1)[1]
             if self._transfer_as_ufp and end_point.endswith(".ufp"):
-                end_point += ".gcode"
+                if self._ufp_plugin_version < Version("0.1.7"): # unfortunately, version 0.1.6 can not be detected
+                    # before 0.1.6, the plugin extracts gcode from *.ufp files as *.ufp.gcode
+                    end_point += ".gcode"
+                else:
+                    # since 0.1.6, the plugin extracts gcode from *.ufp files as *.gcode
+                    end_point = end_point[:-3] + "gcode"
 
             if not self._wait_for_analysis:
                 self._selectAndPrint(end_point)
@@ -1152,6 +1160,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     Logger.log("d", "Instance supports uploading .ufp instead of .gcode")
                 except PluginNotFoundError:
                     Logger.log("w", "Instance supports .ufp files but UFPWriter is not available")
+                if self._ufp_transfer_supported:
+                    try:
+                        self._ufp_plugin_version = Version(plugin_data["UltimakerFormatPackage"]["installed_version"])
+                    except KeyError:
+                        self._ufp_plugin_version = Version(0)
+                        Logger.log("d", "OctoPrint-UltimakerFormatPackage plugin version < 0.1.7")
 
     def _createPrinterList(self) -> None:
         printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
