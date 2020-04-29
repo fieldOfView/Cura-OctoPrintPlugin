@@ -723,7 +723,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         elif flags["ready"] or flags["operational"]:
                             printer_state = "idle"
                         else:
-                            Logger.log("w", "Encountered unexpected job state flags: %s" % flags)
+                            Logger.log("w", "Encountered unexpected printer state flags: %s" % flags)
                     printer.updateState(printer_state)
 
                 elif http_status_code == 401 or http_status_code == 403:
@@ -791,8 +791,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             printer.updateState("idle")
                         elif state == "Sending file to SD":
                             print_job_state = "pre_print"
+                        elif state == "Offline":
+                            print_job_state = "offline"
                         else:
-                            Logger.log("w", "Encountered unexpected printer state: %s" % state)
+                            Logger.log("w", "Encountered unexpected printjob state: %s" % state)
                     print_job.updateState(print_job_state)
 
                     print_time = json_data["progress"]["printTime"]
