@@ -1060,6 +1060,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         location_url = reply.header(QNetworkRequest.LocationHeader)
         Logger.log("d", "Resource created on OctoPrint instance: %s", location_url.toString())
 
+        end_point = location_url.toString().split(self._api_prefix, 1)[1]
+        if self._transfer_as_ufp and end_point.endswith(".ufp"):
+            if self._ufp_plugin_version < Version("0.1.7"): # unfortunately, version 0.1.6 can not be detected
+                # before 0.1.6, the plugin extracts gcode from *.ufp files as *.ufp.gcode
+                end_point += ".gcode"
+            else:
+                # since 0.1.6, the plugin extracts gcode from *.ufp files as *.gcode
+                end_point = end_point[:-3] + "gcode"
+
         if self._forced_queue or not self._auto_print:
             if location_url:
                 file_name = location_url.fileName()
@@ -1073,17 +1082,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             )
             message.actionTriggered.connect(self._openOctoPrint)
             message.show()
-        elif self._auto_print or self._auto_select or self._wait_for_analysis:
-            end_point = location_url.toString().split(self._api_prefix, 1)[1]
-            if self._transfer_as_ufp and end_point.endswith(".ufp"):
-                if self._ufp_plugin_version < Version("0.1.7"): # unfortunately, version 0.1.6 can not be detected
-                    # before 0.1.6, the plugin extracts gcode from *.ufp files as *.ufp.gcode
-                    end_point += ".gcode"
-                else:
-                    # since 0.1.6, the plugin extracts gcode from *.ufp files as *.gcode
-                    end_point = end_point[:-3] + "gcode"
 
-            if not self._wait_for_analysis:
+            self._selectAndPrint(end_point)
+        elif self._auto_print or self._auto_select or self._wait_for_analysis:
+            if not self._wait_for_analysis or not self._auto_print:
                 self._selectAndPrint(end_point)
                 return
 
@@ -1182,7 +1184,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         command = {
             "command": "select"
         }
-        if self._auto_print:
+        if self._auto_print and not self._forced_queue:
             command["print"] = True
 
         self._sendCommandToApi(end_point, command)
