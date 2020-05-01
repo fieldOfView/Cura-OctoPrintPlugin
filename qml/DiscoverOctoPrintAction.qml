@@ -534,7 +534,7 @@ Cura.MachineAction
                     {
                         id: autoConnectCheckBox
                         text: catalog.i18nc("@label", "Automatically connect to printer before sending printjob")
-                        enabled: manager.instanceApiKeyAccepted && !autoPowerControlCheckBox.checked
+                        enabled: manager.instanceApiKeyAccepted && autoPrintCheckBox.checked && !autoPowerControlCheckBox.checked
                         checked: enabled && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_connect") == "true"
                         onClicked:
                         {
