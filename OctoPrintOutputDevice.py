@@ -86,6 +86,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
         self._auto_print = True
+        self._auto_select = False
         self._forced_queue = False
 
         # We start with a single extruder, but update this when we get data from octoprint
@@ -397,6 +398,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message = None # type: Optional[Message]
 
         self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
+        self._auto_select = parseBool(global_container_stack.getMetaDataEntry("octoprint_select_print", False))
         self._forced_queue = False
 
         use_power_plugin = parseBool(global_container_stack.getMetaDataEntry("octoprint_power_control", False))
@@ -553,11 +555,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         post_parts.append(self._createFormPart("name=\"path\"", b"//", "text/plain"))
         post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
 
-        if (self._auto_print and not self._forced_queue) and (
-            self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp)
-        ):
-            # tell OctoPrint to start the print when there is no reason to delay doing so
-            post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
+        if self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp):
+            if self._auto_print and not self._forced_queue:
+                # tell OctoPrint to start the print when there is no reason to delay doing so
+                post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
+            if self._auto_select:
+                post_parts.append(self._createFormPart("name=\"select\"", b"true", "text/plain"))
 
         # otherwise selecting and printing the job is delayed until after the upload
         # see self._onUploadFinished
@@ -1070,7 +1073,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             )
             message.actionTriggered.connect(self._openOctoPrint)
             message.show()
-        elif self._auto_print or self._wait_for_analysis:
+        elif self._auto_print or self._auto_select or self._wait_for_analysis:
             end_point = location_url.toString().split(self._api_prefix, 1)[1]
             if self._transfer_as_ufp and end_point.endswith(".ufp"):
                 if self._ufp_plugin_version < Version("0.1.7"): # unfortunately, version 0.1.6 can not be detected
@@ -1177,9 +1180,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _selectAndPrint(self, end_point: str) -> None:
         command = {
-            "command": "select",
-            "print": True
+            "command": "select"
         }
+        if self._auto_print:
+            command["print"] = True
+
         self._sendCommandToApi(end_point, command)
 
     def _setOffline(self, printer:PrinterOutputModel, reason: str = "") -> None:

@@ -439,10 +439,21 @@ Cura.MachineAction
                         id: autoPrintCheckBox
                         text: catalog.i18nc("@label", "Automatically start print job after uploading")
                         enabled: manager.instanceApiKeyAccepted
-                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_print") != "false"
+                        checked: Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_print") != "false"
                         onClicked:
                         {
                             manager.setContainerMetaDataEntry(activeMachineId, "octoprint_auto_print", String(checked))
+                        }
+                    }
+                    CheckBox
+                    {
+                        id: autoSelectCheckBox
+                        text: catalog.i18nc("@label", "Select print job after uploading")
+                        enabled: manager.instanceApiKeyAccepted
+                        checked: Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_select") == "true"
+                        onClicked:
+                        {
+                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_auto_select", String(checked))
                         }
                     }
                     Row
@@ -452,7 +463,7 @@ Cura.MachineAction
                         CheckBox
                         {
                             id: autoPowerControlCheckBox
-                            text: catalog.i18nc("@label", "Automatically turn on printer with")
+                            text: catalog.i18nc("@label", "Turn on printer with")
                             visible: autoPowerControlPlugs.visible
                             enabled: autoPrintCheckBox.checked
                             anchors.verticalCenter: autoPowerControlPlugs.verticalCenter
@@ -533,7 +544,7 @@ Cura.MachineAction
                     CheckBox
                     {
                         id: autoConnectCheckBox
-                        text: catalog.i18nc("@label", "Automatically connect to printer before sending printjob")
+                        text: catalog.i18nc("@label", "Connect to printer before sending printjob")
                         enabled: manager.instanceApiKeyAccepted && autoPrintCheckBox.checked && !autoPowerControlCheckBox.checked
                         checked: enabled && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_connect") == "true"
                         onClicked:
