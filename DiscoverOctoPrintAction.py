@@ -489,7 +489,16 @@ class DiscoverOctoPrintAction(MachineAction):
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
                         return
 
-                    self._keys_cache[self._appkey_instance_id] = json_data["api_key"]
+                    api_key = json_data["api_key"]
+                    self._keys_cache[self._appkey_instance_id] = api_key
+
+                    global_container_stack = self._application.getGlobalContainerStack()
+                    if global_container_stack:
+                        global_container_stack.setMetaDataEntry(
+                            "octoprint_api_key",
+                            base64.b64encode(api_key.encode("ascii")).decode("ascii")
+                        )
+
                     self.appKeyReceived.emit()
                 elif http_status_code == 404:
                     Logger.log("d", "AppKey denied")
