@@ -21,7 +21,7 @@ class OctoPrintPowerPlugins():
             if plugin_id in plugin_data:
                 for config_item in additional_data:
                     all_config_set = True
-                    if config_item not in plugin_data or not plugin_data[config_item]:
+                    if config_item not in plugin_data[plugin_id] or not plugin_data[plugin_id][config_item]:
                         all_config_set = False
                         break
                 if all_config_set:
