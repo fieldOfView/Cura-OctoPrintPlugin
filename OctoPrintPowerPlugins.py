@@ -13,12 +13,18 @@ class OctoPrintPowerPlugins():
         self._available_plugs = OrderedDict()  # type: Dict[str, Any]
 
         # plugins that only support a single plug
-        for (plugin_id, plugin_name) in [
-            ("psucontrol", "PSU Control"),
-            ("mystromswitch", "MyStrom Switch")
+        for (plugin_id, plugin_name, additional_data) in [
+            ("psucontrol", "PSU Control", []),
+            ("mystromswitch", "MyStrom Switch", ["ip"]),
+            ("ikea_tradfri", "IKEA Trådfri", ["gateway_ip", "selected_outlet"])
         ]:
             if plugin_id in plugin_data:
-                if plugin_id != "mystromswitch" or plugin_data[plugin_id]["ip"]:
+                for config_item in additional_data:
+                    all_config_set = True
+                    if config_item not in plugin_data or not plugin_data[config_item]:
+                        all_config_set = False
+                        break
+                if all_config_set:
                     plug = OrderedDict([
                         ("plugin", plugin_id),
                         ("name", plugin_name)
