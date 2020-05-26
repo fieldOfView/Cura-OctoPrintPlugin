@@ -13,6 +13,7 @@ from UM.PluginError import PluginNotFoundError
 
 from cura.CuraApplication import CuraApplication
 
+from .OctoPrintOutputController import OctoPrintOutputController
 from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
 
 try:
@@ -27,7 +28,6 @@ except ImportError:
     from cura.PrinterOutput.PrintJobOutputModel import PrintJobOutputModel
 
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
-from cura.PrinterOutput.GenericOutputController import GenericOutputController
 
 from PyQt5.QtNetwork import QHttpMultiPart, QHttpPart, QNetworkRequest, QNetworkAccessManager
 from PyQt5.QtNetwork import QNetworkReply, QSslConfiguration, QSslSocket
@@ -41,6 +41,7 @@ from time import time
 import base64
 from io import StringIO, BytesIO
 from enum import IntEnum
+from collections import namedtuple
 
 from typing import cast, Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -66,6 +67,8 @@ class UnifiedConnectionState(IntEnum):
         Busy = ConnectionState.busy              # type: ignore
         Error = ConnectionState.error            # type: ignore
 
+AxisInformation = namedtuple("AxisInformation", ["speed", "inverted"])
+
 ##  OctoPrint connected (wifi / lan) printer using the OctoPrint API
 @signalemitter
 class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
@@ -80,8 +83,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._id = instance_id
         self._properties = properties  # Properties dict as provided by zero conf
 
+        self._printer_model = ""
+        self._printer_name = ""
+
         self._octoprint_version = self._properties.get(b"version", b"").decode("utf-8")
         self._octoprint_user_name = ""
+
+        self._axis_information = {axis: AxisInformation(speed=6000 if axis != "e" else 300, inverted=False) for axis in ["x", "y", "z", "e"]}
 
         self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
@@ -185,7 +193,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._waiting_for_analysis = False
         self._waiting_for_printer = False
 
-        self._output_controller = GenericOutputController(self)
+        self._output_controller = OctoPrintOutputController(self)
 
         self._polling_end_points = ["printer", "job"]
 
@@ -230,8 +238,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def name(self) -> str:
         return self._name
 
-    ##  Version (as returned from the zeroConf properties or from /api/version)
     additionalDataChanged = pyqtSignal()
+
+    ##  Version (as returned from the zeroConf properties or from /api/version)
     @pyqtProperty(str, notify=additionalDataChanged)
     def octoPrintVersion(self) -> str:
         return self._octoprint_version
@@ -242,6 +251,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def resetOctoPrintUserName(self) -> None:
         self._octoprint_user_name = ""
+
+    @pyqtProperty(str, notify=additionalDataChanged)
+    def printerName(self) -> str:
+        return self._printer_name
+
+    @pyqtProperty(str, notify=additionalDataChanged)
+    def printerModel(self) -> str:
+        return self._printer_model
+
+    def getAxisInformation(self) -> Dict[str, AxisInformation]:
+        return self._axis_information
 
     ## IPadress of this instance
     @pyqtProperty(str, constant=True)
@@ -346,6 +366,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if not self._octoprint_user_name and self._api_key:
             self._sendCommandToApi("login", {"passive":True})
+
+        self.get("printerprofiles", self._onRequestFinished)
 
     ##  Stop requesting data from the instance
     def disconnect(self) -> None:
@@ -652,7 +674,33 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             return
 
         if reply.operation() == QNetworkAccessManager.GetOperation:
-            if self._api_prefix + "printer" in reply.url().toString():  # Status update from /printer.
+            if self._api_prefix + "printerprofiles" in reply.url().toString():
+                if http_status_code == 200:
+                    try:
+                        json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    except json.decoder.JSONDecodeError:
+                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        json_data = {}
+
+                    for profile_id in json_data["profiles"]:
+                        printer_profile = json_data["profiles"][profile_id]
+                        if printer_profile["current"]:
+                            self._printer_name = printer_profile["name"]
+                            self._printer_model = printer_profile["model"]
+
+                            for axis in ["x", "y", "z", "e"]:
+                                self._axis_information[axis] = AxisInformation(
+                                    speed=printer_profile["axes"][axis]["speed"],
+                                    inverted=printer_profile["axes"][axis]["inverted"]
+                            )
+
+                            self.additionalDataChanged.emit()
+                            return
+                else:
+                    Logger.log("w", "Instance does not report printerprofiles with provided API key")
+                    return
+
+            elif self._api_prefix + "printer" in reply.url().toString():  # Status update from /printer.
                 if not self._printers:
                     self._createPrinterList()
 
