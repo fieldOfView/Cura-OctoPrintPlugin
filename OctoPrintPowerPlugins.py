@@ -19,8 +19,8 @@ class OctoPrintPowerPlugins():
             ("ikea_tradfri", "IKEA Trådfri", ["gateway_ip", "selected_outlet"])
         ]:
             if plugin_id in plugin_data:
+                all_config_set = True
                 for config_item in additional_data:
-                    all_config_set = True
                     if config_item not in plugin_data[plugin_id] or not plugin_data[plugin_id][config_item]:
                         all_config_set = False
                         break
