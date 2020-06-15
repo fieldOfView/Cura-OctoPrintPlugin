@@ -424,7 +424,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._forced_queue = False
 
         use_power_plugin = parseBool(global_container_stack.getMetaDataEntry("octoprint_power_control", False))
-        auto_connect = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_connect", True))
+        auto_connect = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_connect", False))
         if self.activePrinter.state == "offline" and self._auto_print and (use_power_plugin or auto_connect):
             wait_for_printer = False
             if use_power_plugin:
@@ -445,7 +445,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     Logger.log("e", "Specified power plug %s is not available", power_plug_id)
 
             else: # auto_connect
-                self._sendCommandToApi("connection/connect", {})
+                self._sendCommandToApi("connection", "connect")
                 Logger.log("d", "Sent command to connect printer to OctoPrint with current settings")
 
                 wait_for_printer = True
