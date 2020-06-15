@@ -969,6 +969,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     self._showErrorMessage(error_string)
                     return
 
+                elif http_status_code == 404 and "files/sdcard/" in reply.url().toString():
+                    Logger.log("d", "OctoPrint reports an 404 not found error after uploading to SD-card, but we ignore that")
+                    return
+
                 else:
                     pass  # See generic error handler below
 
