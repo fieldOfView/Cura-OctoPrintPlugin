@@ -563,7 +563,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if job_name is "":
             job_name = "untitled_print"
         extension = "gcode" if not self._transfer_as_ufp else "ufp"
-        file_name = "%s.%s" % (job_name, extension)
+        file_name = "%s.%s" % (os.path.basename(job_name), extension)
 
         ##  Create multi_part request
         post_parts = [] # type: List[QHttpPart]
@@ -574,7 +574,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             # encode StringIO result to bytes
             gcode_body = gcode_body.encode()
 
-        post_parts.append(self._createFormPart("name=\"path\"", b"//", "text/plain"))
+        post_parts.append(self._createFormPart("name=\"path\"", os.path.dirname(job_name).encode(), "text/plain"))
         post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
 
         if self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp):
@@ -1101,7 +1101,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if error_string:
             self._showErrorMessage(error_string)
-            Logger.log("e", "OctoPrintOutputDevice got an error uploading %s", reply.url().toString())
+            Logger.log("e", "OctoPrintOutputDevice got an %d error uploading to %s", http_status_code, reply.url().toString())
             Logger.log("e", error_string)
             return
 
