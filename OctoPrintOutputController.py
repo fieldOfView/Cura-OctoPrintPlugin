@@ -12,9 +12,9 @@ class OctoPrintOutputController(GenericOutputController):
         if axis_information["x"].inverted:
             x = -x
         if axis_information["y"].inverted:
-            x = -y
+            y = -y
         if axis_information["z"].inverted:
-            x = -z
+            z = -z
 
         self._output_device.sendCommand("G91")
         self._output_device.sendCommand("G0 X%s Y%s Z%s F%s" % (x, y, z, speed))
