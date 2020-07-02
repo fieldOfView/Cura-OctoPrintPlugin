@@ -4,7 +4,7 @@
 from collections import OrderedDict
 from typing import Any, Tuple, List, Dict
 
-class OctoPrintPowerPlugins():
+class PowerPlugins():
 
     def __init__(self) -> None:
         self._available_plugs = OrderedDict()  # type: Dict[str, Any]

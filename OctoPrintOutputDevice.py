@@ -14,7 +14,7 @@ from UM.PluginError import PluginNotFoundError
 from cura.CuraApplication import CuraApplication
 
 from .OctoPrintOutputController import OctoPrintOutputController
-from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
+from .PowerPlugins import PowerPlugins
 
 try:
     # Cura 4.1 and newer
@@ -182,7 +182,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._camera_rotation = 0
         self._camera_url = ""
 
-        self._power_plugins_manager = OctoPrintPowerPlugins()
+        self._power_plugins_manager = PowerPlugins()
 
         self._store_on_sd_supported = False # store gcode on sd card in printer instead of locally
         self._ufp_transfer_supported = False # transfer gcode as .ufp files including thumbnail image
