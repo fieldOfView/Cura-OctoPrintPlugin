@@ -1,8 +1,10 @@
 // Copyright (c) 2020 Aldo Hoeben / fieldOfView
 // OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
-import QtQuick 2.2
-import UM 1.2 as UM
+import QtQuick 2.7
+import QtQuick.Controls 2.3
+
+import UM 1.3 as UM
 import Cura 1.0 as Cura
 import OctoPrintPlugin 1.0 as OctoPrintPlugin
 
@@ -12,14 +14,21 @@ Component
 
     Item
     {
+        property var webcamsModel: OutputDevice != null ? OutputDevice.webcamsModel : null
+        property int activeIndex: 0
+
         OctoPrintPlugin.NetworkMJPGImage
         {
             id: cameraImage
             visible: OutputDevice != null ? OutputDevice.showCamera : false
 
+            source: (OutputDevice != null && activeIndex < webcamsModel.count) ? webcamsModel.items[activeIndex].stream_url : ""
+            rotation: (OutputDevice != null && activeIndex < webcamsModel.count) ? webcamsModel.items[activeIndex].rotation : 0
+            mirror: (OutputDevice != null && activeIndex < webcamsModel.count) ? webcamsModel.items[activeIndex].mirror : false
+
             property real maximumWidthMinusSidebar: maximumWidth - sidebar.width - 2 * UM.Theme.getSize("default_margin").width
             property real maximumZoom: 2
-            property bool rotatedImage: (OutputDevice.cameraOrientation.rotation / 90) % 2
+            property bool rotatedImage: (rotation / 90) % 2
             property bool proportionalHeight:
             {
                 if (imageHeight == 0 || maximumHeight == 0)
@@ -79,10 +88,66 @@ Component
                     stop();
                 }
             }
-            source: OutputDevice.cameraUrl
+        }
 
-            rotation: OutputDevice.cameraOrientation.rotation
-            mirror: OutputDevice.cameraOrientation.mirror
+        Row
+        {
+            id: webcamSelectorContainer
+            spacing: Math.round(UM.Theme.getSize("default_margin").width / 2)
+            visible: (webcamsModel != null) ? webcamsModel.count > 1 : false
+
+            anchors
+            {
+                horizontalCenter: cameraImage.horizontalCenter
+                top: cameraImage.top
+                topMargin: UM.Theme.getSize("default_margin").height
+            }
+
+            Repeater
+            {
+                id: webcamSelector
+                model: webcamsModel
+
+                delegate: Button
+                {
+                    id: control
+                    text: model.name.toUpperCase()
+                    checkable: true
+                    checked: cameraImage.source == model.stream_url
+
+                    anchors.verticalCenter: parent.verticalCenter
+                    ButtonGroup.group: webcamSelectorGroup
+                    height: UM.Theme.getSize("main_window_header_button").height
+
+                    onClicked: activeIndex = index
+
+                    background: Rectangle
+                    {
+                        id: backgroundRectangle
+                        implicitHeight: control.height
+                        radius: UM.Theme.getSize("action_button_radius").width
+
+                        color: (control.checked) ? UM.Theme.getColor("main_window_header_button_background_active") : UM.Theme.getColor("main_window_header_button_background_hovered")
+                        opacity: (control.checked || control.hovered) ? 1 : 0.5
+                    }
+
+                    contentItem: Label
+                    {
+                        id: contents
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: control.height
+                        leftPadding: UM.Theme.getSize("default_margin").width
+                        rightPadding: leftPadding
+
+                        text: control.text
+                        font: UM.Theme.getFont("medium")
+                        color: (control.checked) ? UM.Theme.getColor("main_window_header_button_text_active") : (control.hovered) ? UM.Theme.getColor("main_window_header_button_text_hovered") : UM.Theme.getColor("main_window_header_button_text_inactive")
+                    }
+                }
+            }
+
+            ButtonGroup { id: webcamSelectorGroup }
         }
 
         Item

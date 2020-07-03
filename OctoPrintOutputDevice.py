@@ -15,6 +15,7 @@ from cura.CuraApplication import CuraApplication
 
 from .OctoPrintOutputController import OctoPrintOutputController
 from .PowerPlugins import PowerPlugins
+from .WebcamsModel import WebcamsModel
 
 try:
     # Cura 4.1 and newer
@@ -177,10 +178,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
+        self._webcams_model = WebcamsModel(self._protocol, self._address, self.port, self._basic_auth_string)
+
         self._show_camera = True
-        self._camera_mirror = False
-        self._camera_rotation = 0
-        self._camera_url = ""
 
         self._power_plugins_manager = PowerPlugins()
 
@@ -293,20 +293,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def baseURL(self) -> str:
         return self._base_url
 
-    cameraOrientationChanged = pyqtSignal()
-
-    @pyqtProperty("QVariantMap", notify = cameraOrientationChanged)
-    def cameraOrientation(self) -> Dict[str, Any]:
-        return {
-            "mirror": self._camera_mirror,
-            "rotation": self._camera_rotation,
-        }
-
-    cameraUrlChanged = pyqtSignal()
-
-    @pyqtProperty("QUrl", notify = cameraUrlChanged)
-    def cameraUrl(self) -> QUrl:
-        return QUrl(self._camera_url)
+    @pyqtProperty("QVariant", constant=True)
+    def webcamsModel(self) -> WebcamsModel:
+        return self._webcams_model
 
     def setShowCamera(self, show_camera: bool) -> None:
         if show_camera != self._show_camera:
@@ -315,7 +304,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     showCameraChanged = pyqtSignal()
 
-    @pyqtProperty(bool, notify = showCameraChanged)
+    @pyqtProperty(bool, notify=showCameraChanged)
     def showCamera(self) -> bool:
         return self._show_camera
 
@@ -1168,40 +1157,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
 
         if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
-            stream_url = json_data["webcam"]["streamUrl"].strip()
-            if not stream_url: #empty string or None
-                self._camera_url = ""
-            elif stream_url[:4].lower() == "http": # absolute uri
-                self._camera_url = stream_url
-            elif stream_url[:2] == "//": # protocol-relative
-                self._camera_url = "%s:%s" % (self._protocol, stream_url)
-            elif stream_url[:1] == ":": # domain-relative (on another port)
-                self._camera_url = "%s://%s%s" % (self._protocol, self._address, stream_url)
-            elif stream_url[:1] == "/": # domain-relative (on same port)
-                if not self._basic_auth_string:
-                    self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
-                else:
-                    self._camera_url = "%s://%s@%s:%d%s" % (self._protocol, self._basic_auth_string, self._address, self._port, stream_url)
-            else:
-                Logger.log("w", "Unusable stream url received: %s", stream_url)
-                self._camera_url = ""
-
-            Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
-            self.cameraUrlChanged.emit()
-
-            if "rotate90" in json_data["webcam"]:
-                self._camera_rotation = -90 if json_data["webcam"]["rotate90"] else 0
-                if json_data["webcam"]["flipH"] and json_data["webcam"]["flipV"]:
-                    self._camera_mirror = False
-                    self._camera_rotation += 180
-                elif json_data["webcam"]["flipH"]:
-                    self._camera_mirror = True
-                    self._camera_rotation += 180
-                elif json_data["webcam"]["flipV"]:
-                    self._camera_mirror = True
-                else:
-                    self._camera_mirror = False
-                self.cameraOrientationChanged.emit()
+            webcam_data = [json_data["webcam"]]
 
         if "plugins" in json_data:
             plugin_data = json_data["plugins"]
@@ -1225,6 +1181,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     except KeyError:
                         self._ufp_plugin_version = Version(0)
                         Logger.log("d", "OctoPrint-UltimakerFormatPackage plugin version < 0.1.7")
+
+            if "multicam" in plugin_data:
+                webcam_data = plugin_data["multicam"]["multicam_profiles"]
+
+        self._webcams_model.deserialise(webcam_data)
 
     def _createPrinterList(self) -> None:
         printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
