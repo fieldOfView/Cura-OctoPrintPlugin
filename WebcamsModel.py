@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt
 from UM.Qt.ListModel import ListModel
 from UM.Logger import Logger
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 class WebcamsModel(ListModel):
 
@@ -61,10 +61,10 @@ class WebcamsModel(ListModel):
                 item["rotation"] = -90 if webcam["rotate90"] else 0
                 if webcam["flipH"] and webcam["flipV"]:
                     item["mirror"] = False
-                    item["rotation"] += 180
+                    item["rotation"] += 180  # type: ignore
                 elif webcam["flipH"]:
                     item["mirror"] = True
-                    item["rotation"] += 180
+                    item["rotation"] += 180  # type: ignore
                 elif webcam["flipV"]:
                     item["mirror"] = True
                 else:

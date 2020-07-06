@@ -3,6 +3,15 @@
 
 from cura.PrinterOutput.GenericOutputController import GenericOutputController
 
+try:
+    # Cura 4.1 and newer
+    from cura.PrinterOutput.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
+    from cura.PrinterOutput.Models.PrinterOutputModel import PrinterOutputModel
+except ImportError:
+    # Cura 3.5 - Cura 4.0
+    from cura.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
+    from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
+
 class OctoPrintOutputController(GenericOutputController):
     def __init__(self, output_device: "PrinterOutputDevice") -> None:
         super().__init__(output_device)

@@ -1074,7 +1074,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if self._progress_message:
             self._progress_message.hide()
-            self._progress_message = None # type:Optional[message]
+            self._progress_message = None  # type:Optional[Message]
 
         http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
         error_string = ""
@@ -1196,7 +1196,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def _selectAndPrint(self, end_point: str) -> None:
         command = {
             "command": "select"
-        }
+        }  # type: Dict[str, Any]
         if self._auto_print and not self._forced_queue:
             command["print"] = True
 

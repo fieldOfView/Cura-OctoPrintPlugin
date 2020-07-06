@@ -13,11 +13,12 @@ class PowerPlugins():
         self._available_plugs = OrderedDict()  # type: Dict[str, Any]
 
         # plugins that only support a single plug
-        for (plugin_id, plugin_name, additional_data) in [
+        simple_plugins = [
             ("psucontrol", "PSU Control", []),
             ("mystromswitch", "MyStrom Switch", ["ip"]),
             ("ikea_tradfri", "IKEA Trådfri", ["gateway_ip", "selected_outlet"])
-        ]:
+        ]  # type: List[Tuple[str, str, List[str]]]
+        for (plugin_id, plugin_name, additional_data) in simple_plugins:
             if plugin_id in plugin_data:
                 all_config_set = True
                 for config_item in additional_data:
