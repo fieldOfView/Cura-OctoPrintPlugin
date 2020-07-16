@@ -17,7 +17,7 @@ from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager, QNetworkReply, QSslConfiguration, QSslSocket
 
 from .NetworkReplyTimeout import NetworkReplyTimeout
-from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
+from .PowerPlugins import PowerPlugins
 from .OctoPrintOutputDevicePlugin import OctoPrintOutputDevicePlugin
 from .OctoPrintOutputDevice import OctoPrintOutputDevice
 
@@ -85,7 +85,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._instance_supports_camera = False
         self._instance_installed_plugins = [] # type: List[str]
 
-        self._power_plugins_manager = OctoPrintPowerPlugins()
+        self._power_plugins_manager = PowerPlugins()
 
         # Load keys cache from preferences
         self._preferences = self._application.getPreferences()

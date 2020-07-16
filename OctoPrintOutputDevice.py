@@ -14,7 +14,8 @@ from UM.PluginError import PluginNotFoundError
 from cura.CuraApplication import CuraApplication
 
 from .OctoPrintOutputController import OctoPrintOutputController
-from .OctoPrintPowerPlugins import OctoPrintPowerPlugins
+from .PowerPlugins import PowerPlugins
+from .WebcamsModel import WebcamsModel
 
 try:
     # Cura 4.1 and newer
@@ -177,12 +178,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
-        self._show_camera = True
-        self._camera_mirror = False
-        self._camera_rotation = 0
-        self._camera_url = ""
+        self._webcams_model = WebcamsModel(self._protocol, self._address, self.port, self._basic_auth_string)
 
-        self._power_plugins_manager = OctoPrintPowerPlugins()
+        self._show_camera = True
+
+        self._power_plugins_manager = PowerPlugins()
 
         self._store_on_sd_supported = False # store gcode on sd card in printer instead of locally
         self._ufp_transfer_supported = False # transfer gcode as .ufp files including thumbnail image
@@ -293,20 +293,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def baseURL(self) -> str:
         return self._base_url
 
-    cameraOrientationChanged = pyqtSignal()
-
-    @pyqtProperty("QVariantMap", notify = cameraOrientationChanged)
-    def cameraOrientation(self) -> Dict[str, Any]:
-        return {
-            "mirror": self._camera_mirror,
-            "rotation": self._camera_rotation,
-        }
-
-    cameraUrlChanged = pyqtSignal()
-
-    @pyqtProperty("QUrl", notify = cameraUrlChanged)
-    def cameraUrl(self) -> QUrl:
-        return QUrl(self._camera_url)
+    @pyqtProperty("QVariant", constant=True)
+    def webcamsModel(self) -> WebcamsModel:
+        return self._webcams_model
 
     def setShowCamera(self, show_camera: bool) -> None:
         if show_camera != self._show_camera:
@@ -315,7 +304,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     showCameraChanged = pyqtSignal()
 
-    @pyqtProperty(bool, notify = showCameraChanged)
+    @pyqtProperty(bool, notify=showCameraChanged)
     def showCamera(self) -> bool:
         return self._show_camera
 
@@ -424,7 +413,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._forced_queue = False
 
         use_power_plugin = parseBool(global_container_stack.getMetaDataEntry("octoprint_power_control", False))
-        auto_connect = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_connect", True))
+        auto_connect = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_connect", False))
         if self.activePrinter.state == "offline" and self._auto_print and (use_power_plugin or auto_connect):
             wait_for_printer = False
             if use_power_plugin:
@@ -445,7 +434,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     Logger.log("e", "Specified power plug %s is not available", power_plug_id)
 
             else: # auto_connect
-                self._sendCommandToApi("connection/connect", {})
+                self._sendCommandToApi("connection", "connect")
                 Logger.log("d", "Sent command to connect printer to OctoPrint with current settings")
 
                 wait_for_printer = True
@@ -563,7 +552,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if job_name is "":
             job_name = "untitled_print"
         extension = "gcode" if not self._transfer_as_ufp else "ufp"
-        file_name = "%s.%s" % (job_name, extension)
+        file_name = "%s.%s" % (os.path.basename(job_name), extension)
 
         ##  Create multi_part request
         post_parts = [] # type: List[QHttpPart]
@@ -574,7 +563,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             # encode StringIO result to bytes
             gcode_body = gcode_body.encode()
 
-        post_parts.append(self._createFormPart("name=\"path\"", b"//", "text/plain"))
+        post_parts.append(self._createFormPart("name=\"path\"", os.path.dirname(job_name).encode(), "text/plain"))
         post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
 
         if self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp):
@@ -969,6 +958,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     self._showErrorMessage(error_string)
                     return
 
+                elif http_status_code == 404 and "files/sdcard/" in reply.url().toString():
+                    Logger.log("d", "OctoPrint reports an 404 not found error after uploading to SD-card, but we ignore that")
+                    return
+
                 else:
                     pass  # See generic error handler below
 
@@ -1081,7 +1074,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if self._progress_message:
             self._progress_message.hide()
-            self._progress_message = None # type:Optional[message]
+            self._progress_message = None  # type:Optional[Message]
 
         http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
         error_string = ""
@@ -1101,7 +1094,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if error_string:
             self._showErrorMessage(error_string)
-            Logger.log("e", "OctoPrintOutputDevice got an error uploading %s", reply.url().toString())
+            Logger.log("e", "OctoPrintOutputDevice got an %d error uploading to %s", http_status_code, reply.url().toString())
             Logger.log("e", error_string)
             return
 
@@ -1164,40 +1157,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
 
         if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
-            stream_url = json_data["webcam"]["streamUrl"]
-            if not stream_url: #empty string or None
-                self._camera_url = ""
-            elif stream_url[:4].lower() == "http": # absolute uri
-                self._camera_url = stream_url
-            elif stream_url[:2] == "//": # protocol-relative
-                self._camera_url = "%s:%s" % (self._protocol, stream_url)
-            elif stream_url[:1] == ":": # domain-relative (on another port)
-                self._camera_url = "%s://%s%s" % (self._protocol, self._address, stream_url)
-            elif stream_url[:1] == "/": # domain-relative (on same port)
-                if not self._basic_auth_string:
-                    self._camera_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
-                else:
-                    self._camera_url = "%s://%s@%s:%d%s" % (self._protocol, self._basic_auth_string, self._address, self._port, stream_url)
-            else:
-                Logger.log("w", "Unusable stream url received: %s", stream_url)
-                self._camera_url = ""
-
-            Logger.log("d", "Set OctoPrint camera url to %s", self._camera_url)
-            self.cameraUrlChanged.emit()
-
-            if "rotate90" in json_data["webcam"]:
-                self._camera_rotation = -90 if json_data["webcam"]["rotate90"] else 0
-                if json_data["webcam"]["flipH"] and json_data["webcam"]["flipV"]:
-                    self._camera_mirror = False
-                    self._camera_rotation += 180
-                elif json_data["webcam"]["flipH"]:
-                    self._camera_mirror = True
-                    self._camera_rotation += 180
-                elif json_data["webcam"]["flipV"]:
-                    self._camera_mirror = True
-                else:
-                    self._camera_mirror = False
-                self.cameraOrientationChanged.emit()
+            webcam_data = [json_data["webcam"]]
 
         if "plugins" in json_data:
             plugin_data = json_data["plugins"]
@@ -1222,6 +1182,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         self._ufp_plugin_version = Version(0)
                         Logger.log("d", "OctoPrint-UltimakerFormatPackage plugin version < 0.1.7")
 
+            if "multicam" in plugin_data:
+                webcam_data = plugin_data["multicam"]["multicam_profiles"]
+
+        self._webcams_model.deserialise(webcam_data)
+
     def _createPrinterList(self) -> None:
         printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
         printer.updateName(self.name)
@@ -1231,7 +1196,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def _selectAndPrint(self, end_point: str) -> None:
         command = {
             "command": "select"
-        }
+        }  # type: Dict[str, Any]
         if self._auto_print and not self._forced_queue:
             command["print"] = True
 
