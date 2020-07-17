@@ -35,9 +35,9 @@ class WebcamsModel(ListModel):
             }
 
             stream_url = ""
-            if "streamUrl" in webcam:  # from /webcam/
+            if "streamUrl" in webcam and webcam["streamUrl"] != None:  # from /webcam/
                 stream_url = webcam["streamUrl"].strip()
-            elif "URL" in webcam:  # from /plugins/multicam
+            elif "URL" in webcam and webcam["URL"] != None:  # from /plugins/multicam
                 stream_url = webcam["URL"].strip()
 
             if not stream_url: #empty string or None
@@ -70,7 +70,7 @@ class WebcamsModel(ListModel):
                 else:
                     item["mirror"] = False
 
-            if "name" in webcam:
+            if "name" in webcam and webcam["name"] != None:
                 item["name"] = webcam["name"]
 
             items.append(item)
