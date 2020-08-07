@@ -549,10 +549,21 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._progress_message.show()
 
         job_name = CuraApplication.getInstance().getPrintInformation().jobName.strip()
-        if job_name is "":
-            job_name = "untitled_print"
         extension = "gcode" if not self._transfer_as_ufp else "ufp"
-        file_name = "%s.%s" % (os.path.basename(job_name), extension)
+        
+        try:
+            format_plugin = PluginRegistry.getInstance().getPluginObject("GcodeFilenameFormat")
+            global_stack = CuraApplication.getInstance().getMachineManager().activeMachine
+            filename_format = CuraApplication.getInstance().getPreferences().getValue("gcode_filename_format/filename_format")
+            file_name = format_plugin.parseFilenameFormat(filename_format, os.path.basename(job_name), CuraApplication.getInstance(), global_stack)
+        except PluginNotFoundError as _:
+            Logger.log("w", "GcodeFilenameFormat is not available, using default filename")
+            if job_name is "":
+                file_name = "untitled_print"
+            else:
+                file_name = os.path.basename(job_name)
+
+        file_name = "%s.%s" % (file_name, extension)
 
         ##  Create multi_part request
         post_parts = [] # type: List[QHttpPart]
