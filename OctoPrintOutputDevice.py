@@ -816,22 +816,24 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     print_job_state = "offline"
                     if "state" in json_data:
                         state = json_data["state"]
-                        if state == "Error" or state == "Connecting":
+                        if not isinstance(state, str):
+                            Logger.log("e", "Encountered non-string printjob state: %s" % state)
+                        elif state.startswith("Error"):
                             print_job_state = "error"
                         elif state == "Pausing":
                             print_job_state = "pausing"
                         elif state == "Paused":
                             print_job_state = "paused"
-                        elif state == "Printing" or state == "Printing from SD":
+                        elif state.startswith("Printing"):
                             print_job_state = "printing"
                         elif state == "Cancelling":
                             print_job_state = "abort"
                         elif state == "Operational":
                             print_job_state = "ready"
                             printer.updateState("idle")
-                        elif state == "Sending file to SD":
+                        elif state.startswith("Starting") or state == "Connecting" or state == "Sending file to SD":
                             print_job_state = "pre_print"
-                        elif state == "Offline":
+                        elif state.startswith("Offline"):
                             print_job_state = "offline"
                         else:
                             Logger.log("w", "Encountered unexpected printjob state: %s" % state)
