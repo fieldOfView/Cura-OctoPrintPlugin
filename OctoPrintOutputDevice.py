@@ -97,6 +97,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._auto_print = True
         self._auto_select = False
         self._forced_queue = False
+        self._select_and_print_handled_in_upload = False
 
         # We start with a single extruder, but update this when we get data from octoprint
         self._number_of_extruders_set = False
@@ -567,11 +568,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
 
         if self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp):
+            self._select_and_print_handled_in_upload = True
+
             if self._auto_print and not self._forced_queue:
                 # tell OctoPrint to start the print when there is no reason to delay doing so
                 post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
             if self._auto_select:
                 post_parts.append(self._createFormPart("name=\"select\"", b"true", "text/plain"))
+        else:
+            self._select_and_print_handled_in_upload = False
 
         # otherwise selecting and printing the job is delayed until after the upload
         # see self._onUploadFinished
@@ -1129,7 +1134,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._selectAndPrint(end_point)
         elif self._auto_print or self._auto_select or self._wait_for_analysis:
             if not self._wait_for_analysis or not self._auto_print:
-                self._selectAndPrint(end_point)
+                if not self._select_and_print_handled_in_upload:
+                    self._selectAndPrint(end_point)
                 return
 
             self._waiting_message = Message(
