@@ -437,7 +437,7 @@ Cura.MachineAction
                     CheckBox
                     {
                         id: autoPrintCheckBox
-                        text: catalog.i18nc("@label", "Automatically start print job after uploading")
+                        text: catalog.i18nc("@label", "Start print job after uploading")
                         enabled: manager.instanceApiKeyAccepted
                         checked: Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_print") != "false"
                         onClicked:
@@ -449,7 +449,7 @@ Cura.MachineAction
                     {
                         id: autoSelectCheckBox
                         text: catalog.i18nc("@label", "Select print job after uploading")
-                        enabled: manager.instanceApiKeyAccepted
+                        enabled: manager.instanceApiKeyAccepted && !autoPrintCheckBox.checked
                         checked: Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_select") == "true"
                         onClicked:
                         {
