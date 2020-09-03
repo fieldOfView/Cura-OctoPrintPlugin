@@ -1171,9 +1171,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             plugin_data = json_data["plugins"]
             self._power_plugins_manager.parsePluginData(plugin_data)
 
-            if "PrintTimeGenius" in plugin_data:
-                Logger.log("d", "Instance needs time after uploading to analyse gcode")
-                self._gcode_analysis_supported = True
+            if "PrintTimeGenius" in plugin_data and "analyzers" in plugin_data["PrintTimeGenius"]:
+                for analyzer in plugin_data["PrintTimeGenius"]["analyzers"]:
+                    if analyzer.get("enabled", False):
+                        self._gcode_analysis_supported = True
+                        Logger.log("d", "Instance needs time after uploading to analyse gcode")
+                        break
+
+                if not self._gcode_analysis_supported:
+                    Logger.log("w", "PrintTimeGenius is installed on the instance, but no analyzers are enabled")
 
             if "UltimakerFormatPackage" in plugin_data:
                 self._ufp_transfer_supported = False
