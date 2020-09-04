@@ -533,10 +533,13 @@ class DiscoverOctoPrintAction(MachineAction):
                         self._power_plugins_manager.parsePluginData(json_data["plugins"])
                         self._instance_installed_plugins = list(json_data["plugins"].keys())
 
-                    api_key = bytes(reply.request().rawHeader(b"X-Api-Key")).decode("utf-8")
-                    self.setApiKey(api_key) # store api key in key cache
                     if self._settings_instance:
+                        api_key = bytes(reply.request().rawHeader(b"X-Api-Key")).decode("utf-8")
+
+                        if self._settings_instance.getId() == self.instanceId:
+                            self.setApiKey(api_key) # store api key in key cache
                         self._settings_instance.setApiKey(api_key)
+
                         self._settings_instance.resetOctoPrintUserName()
                         self._settings_instance.getAdditionalData()
                         self._settings_instance.parseSettingsData(json_data)
