@@ -304,6 +304,7 @@ Cura.MachineAction
                         {
                             id: apiKey
                             width: Math.floor(parent.parent.width * (requestApiKey.visible ? 0.5 : 0.8) - UM.Theme.getSize("default_margin").width)
+                            echoMode: activeFocus ? TextInput.Normal : TextInput.Password
                             onTextChanged: apiCheckDelay.throttledCheck()
                         }
 
@@ -344,6 +345,7 @@ Cura.MachineAction
                                 manager.probeAppKeySupport(base.selectedInstance.getId());
                                 apiCheckDelay.lastKey = "\0";
                                 apiKey.text = manager.getApiKey(base.selectedInstance.getId());
+                                apiKey.select(0,0);
                             }
                         }
                     }
@@ -354,6 +356,7 @@ Cura.MachineAction
                         {
                             apiCheckDelay.lastKey = "\0";
                             apiKey.text = manager.getApiKey(base.selectedInstance.getId())
+                            apiKey.select(0,0);
                         }
                     }
                     Timer
