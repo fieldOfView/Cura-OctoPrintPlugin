@@ -482,7 +482,6 @@ class DiscoverOctoPrintAction(MachineAction):
                     self._appkey_poll_timer.start()
                 elif http_status_code == 200:
                     Logger.log("d", "AppKey granted")
-                    self._appkey_request = None # type: Optional[QNetworkRequest]
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
@@ -490,23 +489,16 @@ class DiscoverOctoPrintAction(MachineAction):
                         return
 
                     api_key = json_data["api_key"]
-                    self._keys_cache[self._appkey_instance_id] = api_key
-
-                    global_container_stack = self._application.getGlobalContainerStack()
-                    if global_container_stack:
-                        global_container_stack.setMetaDataEntry(
-                            "octoprint_api_key",
-                            base64.b64encode(api_key.encode("ascii")).decode("ascii")
-                        )
+                    self._keys_cache[self._appkey_instance_id] = api_key  # store api key in key cache
 
                     self.appKeyReceived.emit()
                 elif http_status_code == 404:
                     Logger.log("d", "AppKey denied")
-                    self._appkey_request = None # type: Optional[QNetworkRequest]
                 else:
                     response = bytes(reply.readAll()).decode()
                     Logger.log("w", "Unknown response when waiting for an AppKey: %d. OctoPrint said %s" % (http_status_code, response))
-                    self._appkey_request = None # type: Optional[QNetworkRequest]
+
+                self._appkey_request = None # type: Optional[QNetworkRequest]
 
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
                 self._instance_in_error = False
@@ -536,9 +528,9 @@ class DiscoverOctoPrintAction(MachineAction):
                     if self._settings_instance:
                         api_key = bytes(reply.request().rawHeader(b"X-Api-Key")).decode("utf-8")
 
+                        self._settings_instance.setApiKey(api_key)  # store api key in key cache
                         if self._settings_instance.getId() == self.instanceId:
-                            self.setApiKey(api_key) # store api key in key cache
-                        self._settings_instance.setApiKey(api_key)
+                            self.setApiKey(api_key)
 
                         self._settings_instance.resetOctoPrintUserName()
                         self._settings_instance.getAdditionalData()
