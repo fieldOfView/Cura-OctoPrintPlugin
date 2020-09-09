@@ -486,19 +486,20 @@ class DiscoverOctoPrintAction(MachineAction):
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
-                        return
 
-                    api_key = json_data["api_key"]
-                    self._keys_cache[self._appkey_instance_id] = api_key  # store api key in key cache
+                    if json_data:
+                        api_key = json_data["api_key"]
+                        self._keys_cache[self._appkey_instance_id] = api_key  # store api key in key cache
 
-                    self.appKeyReceived.emit()
+                        self.appKeyReceived.emit()
                 elif http_status_code == 404:
                     Logger.log("d", "AppKey denied")
                 else:
                     response = bytes(reply.readAll()).decode()
                     Logger.log("w", "Unknown response when waiting for an AppKey: %d. OctoPrint said %s" % (http_status_code, response))
 
-                self._appkey_request = None # type: Optional[QNetworkRequest]
+                if http_status_code != 202:
+                    self._appkey_request = None # type: Optional[QNetworkRequest]
 
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
                 self._instance_in_error = False
