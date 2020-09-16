@@ -97,6 +97,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._auto_print = True
         self._auto_select = False
         self._forced_queue = False
+        self._select_and_print_handled_in_upload = False
 
         # We start with a single extruder, but update this when we get data from octoprint
         self._number_of_extruders_set = False
@@ -567,11 +568,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
 
         if self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp):
+            self._select_and_print_handled_in_upload = True
+
             if self._auto_print and not self._forced_queue:
                 # tell OctoPrint to start the print when there is no reason to delay doing so
                 post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
             if self._auto_select:
                 post_parts.append(self._createFormPart("name=\"select\"", b"true", "text/plain"))
+        else:
+            self._select_and_print_handled_in_upload = False
 
         # otherwise selecting and printing the job is delayed until after the upload
         # see self._onUploadFinished
@@ -816,22 +821,24 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     print_job_state = "offline"
                     if "state" in json_data:
                         state = json_data["state"]
-                        if state == "Error" or state == "Connecting":
+                        if not isinstance(state, str):
+                            Logger.log("e", "Encountered non-string printjob state: %s" % state)
+                        elif state.startswith("Error"):
                             print_job_state = "error"
                         elif state == "Pausing":
                             print_job_state = "pausing"
                         elif state == "Paused":
                             print_job_state = "paused"
-                        elif state == "Printing" or state == "Printing from SD":
+                        elif state.startswith("Printing"):
                             print_job_state = "printing"
                         elif state == "Cancelling":
                             print_job_state = "abort"
                         elif state == "Operational":
                             print_job_state = "ready"
                             printer.updateState("idle")
-                        elif state == "Sending file to SD":
+                        elif state.startswith("Starting") or state == "Connecting" or state == "Sending file to SD":
                             print_job_state = "pre_print"
-                        elif state == "Offline":
+                        elif state.startswith("Offline"):
                             print_job_state = "offline"
                         else:
                             Logger.log("w", "Encountered unexpected printjob state: %s" % state)
@@ -1127,7 +1134,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._selectAndPrint(end_point)
         elif self._auto_print or self._auto_select or self._wait_for_analysis:
             if not self._wait_for_analysis or not self._auto_print:
-                self._selectAndPrint(end_point)
+                if not self._select_and_print_handled_in_upload:
+                    self._selectAndPrint(end_point)
                 return
 
             self._waiting_message = Message(
@@ -1163,9 +1171,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             plugin_data = json_data["plugins"]
             self._power_plugins_manager.parsePluginData(plugin_data)
 
-            if "PrintTimeGenius" in plugin_data:
-                Logger.log("d", "Instance needs time after uploading to analyse gcode")
-                self._gcode_analysis_supported = True
+            if "PrintTimeGenius" in plugin_data and "analyzers" in plugin_data["PrintTimeGenius"]:
+                for analyzer in plugin_data["PrintTimeGenius"]["analyzers"]:
+                    if analyzer.get("enabled", False):
+                        self._gcode_analysis_supported = True
+                        Logger.log("d", "Instance needs time after uploading to analyse gcode")
+                        break
+
+                if not self._gcode_analysis_supported:
+                    Logger.log("w", "PrintTimeGenius is installed on the instance, but no analyzers are enabled")
 
             if "UltimakerFormatPackage" in plugin_data:
                 self._ufp_transfer_supported = False

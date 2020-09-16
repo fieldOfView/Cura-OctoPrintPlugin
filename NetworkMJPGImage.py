@@ -150,7 +150,7 @@ class NetworkMJPGImage(QQuickPaintedItem):
             return
         self._stream_buffer += self._image_reply.readAll()
 
-        if len(self._stream_buffer) > 2000000:  # No single camera frame should be 2 Mb or larger
+        if len(self._stream_buffer) > 5000000:  # No single camera frame should be 5 MB or larger
             Logger.log("w", "MJPEG buffer exceeds reasonable size. Restarting stream...")
             self.stop()  # resets stream buffer and start index
             self.start()

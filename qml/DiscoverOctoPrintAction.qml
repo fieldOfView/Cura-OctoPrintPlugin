@@ -304,6 +304,7 @@ Cura.MachineAction
                         {
                             id: apiKey
                             width: Math.floor(parent.parent.width * (requestApiKey.visible ? 0.5 : 0.8) - UM.Theme.getSize("default_margin").width)
+                            echoMode: activeFocus ? TextInput.Normal : TextInput.Password
                             onTextChanged: apiCheckDelay.throttledCheck()
                         }
 
@@ -344,6 +345,7 @@ Cura.MachineAction
                                 manager.probeAppKeySupport(base.selectedInstance.getId());
                                 apiCheckDelay.lastKey = "\0";
                                 apiKey.text = manager.getApiKey(base.selectedInstance.getId());
+                                apiKey.select(0,0);
                             }
                         }
                     }
@@ -354,6 +356,7 @@ Cura.MachineAction
                         {
                             apiCheckDelay.lastKey = "\0";
                             apiKey.text = manager.getApiKey(base.selectedInstance.getId())
+                            apiKey.select(0,0);
                         }
                     }
                     Timer
@@ -437,7 +440,7 @@ Cura.MachineAction
                     CheckBox
                     {
                         id: autoPrintCheckBox
-                        text: catalog.i18nc("@label", "Automatically start print job after uploading")
+                        text: catalog.i18nc("@label", "Start print job after uploading")
                         enabled: manager.instanceApiKeyAccepted
                         checked: Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_print") != "false"
                         onClicked:
@@ -449,7 +452,7 @@ Cura.MachineAction
                     {
                         id: autoSelectCheckBox
                         text: catalog.i18nc("@label", "Select print job after uploading")
-                        enabled: manager.instanceApiKeyAccepted
+                        enabled: manager.instanceApiKeyAccepted && !autoPrintCheckBox.checked
                         checked: Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_select") == "true"
                         onClicked:
                         {

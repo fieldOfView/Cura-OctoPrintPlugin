@@ -5,11 +5,13 @@ install(FILES
     __init__.py
     plugin.json
     DiscoverOctoPrintAction.py
-    OctoPrintOutputDevice.py
     OctoPrintOutputDevicePlugin.py
-    OctoPrintPowerPlugins.py
+    OctoPrintOutputDevice.py
+    OctoPrintOutputController.py
     NetworkReplyTimeout.py
     NetworkMJPGImage.py
+    PowerPlugins.py
+    WebcamsModel.py
     LICENSE
     README.md
     DESTINATION lib/cura/plugins/OctoPrintPlugin

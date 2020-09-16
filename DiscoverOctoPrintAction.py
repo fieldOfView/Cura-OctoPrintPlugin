@@ -482,30 +482,23 @@ class DiscoverOctoPrintAction(MachineAction):
                     self._appkey_poll_timer.start()
                 elif http_status_code == 200:
                     Logger.log("d", "AppKey granted")
-                    self._appkey_request = None # type: Optional[QNetworkRequest]
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
                         Logger.log("w", "Received invalid JSON from octoprint instance.")
-                        return
 
-                    api_key = json_data["api_key"]
-                    self._keys_cache[self._appkey_instance_id] = api_key
+                    if json_data:
+                        api_key = json_data["api_key"]
+                        self._keys_cache[self._appkey_instance_id] = api_key  # store api key in key cache
 
-                    global_container_stack = self._application.getGlobalContainerStack()
-                    if global_container_stack:
-                        global_container_stack.setMetaDataEntry(
-                            "octoprint_api_key",
-                            base64.b64encode(api_key.encode("ascii")).decode("ascii")
-                        )
-
-                    self.appKeyReceived.emit()
+                        self.appKeyReceived.emit()
                 elif http_status_code == 404:
                     Logger.log("d", "AppKey denied")
-                    self._appkey_request = None # type: Optional[QNetworkRequest]
                 else:
                     response = bytes(reply.readAll()).decode()
                     Logger.log("w", "Unknown response when waiting for an AppKey: %d. OctoPrint said %s" % (http_status_code, response))
+
+                if http_status_code != 202:
                     self._appkey_request = None # type: Optional[QNetworkRequest]
 
             if "api/settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
@@ -533,10 +526,13 @@ class DiscoverOctoPrintAction(MachineAction):
                         self._power_plugins_manager.parsePluginData(json_data["plugins"])
                         self._instance_installed_plugins = list(json_data["plugins"].keys())
 
-                    api_key = bytes(reply.request().rawHeader(b"X-Api-Key")).decode("utf-8")
-                    self.setApiKey(api_key) # store api key in key cache
                     if self._settings_instance:
-                        self._settings_instance.setApiKey(api_key)
+                        api_key = bytes(reply.request().rawHeader(b"X-Api-Key")).decode("utf-8")
+
+                        self._settings_instance.setApiKey(api_key)  # store api key in key cache
+                        if self._settings_instance.getId() == self.instanceId:
+                            self.setApiKey(api_key)
+
                         self._settings_instance.resetOctoPrintUserName()
                         self._settings_instance.getAdditionalData()
                         self._settings_instance.parseSettingsData(json_data)
