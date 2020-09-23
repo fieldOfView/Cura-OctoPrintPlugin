@@ -396,12 +396,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if not global_container_stack:
             return
 
+        print_info = CuraApplication.getInstance().getPrintInformation()
+
         # Make sure post-processing plugin are run on the gcode
         self.writeStarted.emit(self)
 
         # Get the g-code through the GCodeWriter plugin
         # This produces the same output as "Save to File", adding the print settings to the bottom of the file
-        if not self._transfer_as_ufp:
+        # The raw `g-code` should always be send using `GCodeWriter`
+        if not self._transfer_as_ufp or not print_info or print_info.preSliced:
             gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
             self._gcode_stream = StringIO()
         else:
@@ -620,7 +623,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if job_name is "":
             job_name = "untitled_print"
 
-        extension = "gcode" if not self._transfer_as_ufp else "ufp"
+        extension = "gcode" if not self._transfer_as_ufp or print_info.preSliced else "ufp"
 
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
         if global_container_stack:
@@ -629,7 +632,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             params["name"] = os.path.basename(job_name)
             params["time"] = strftime("%H:%M:%S")
             params["date"] = strftime("%Y-%m-%d")
-            params["material"] = (print_info.materialNames or ["undefined"])[0]
+
+            if print_info.materialNames:
+                params["material"] = print_info.materialNames[0]
+            elif print_info.preSliced:
+                params["material"] = "presliced"
+            else:
+                params["material"] = "undefined"
+
             for key in UploadProperties:
                 params[key] = global_container_stack.getProperty(key, "value") or ""
 
