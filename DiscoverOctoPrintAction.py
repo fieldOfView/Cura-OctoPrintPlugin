@@ -351,6 +351,19 @@ class DiscoverOctoPrintAction(MachineAction):
     def instanceSupportsAppKeys(self) -> bool:
         return self._instance_supports_appkeys
 
+    @pyqtSlot(str, result=str)
+    def uploadName(self, container_id: str) -> str:
+        containers = ContainerRegistry.getInstance().findContainers(id = container_id)
+        if not containers:
+            Logger.log("w", "Could not get metadata of container %s because it was not found.", container_id)
+            return
+
+        return containers[0].getMetaDataEntry("octoprint_upload_name") or "{name}"
+
+    @pyqtSlot(str, str)
+    def setUploadName(self, container_id: str, uploadName: str) -> None:
+        self.setContainerMetaDataEntry(container_id, "octoprint_upload_name", uploadName)
+
     @pyqtSlot(str, str, str)
     def setContainerMetaDataEntry(self, container_id: str, key: str, value: str) -> None:
         containers = ContainerRegistry.getInstance().findContainers(id = container_id)

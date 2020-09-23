@@ -320,8 +320,46 @@ Cura.MachineAction
                                 manager.openWebPage(base.selectedInstance.baseURL);
                             }
                         }
-
                     }
+
+                    Label
+                    {
+                        width: Math.floor(parent.width * 0.2)
+                        wrapMode: Text.WordWrap
+                        text: catalog.i18nc("@label", "Upload filename")
+                    }
+                    Row
+                    {
+                        spacing: UM.Theme.getSize("default_lining").width
+                        TextField
+                        {
+                            id: uploadName
+                            width: Math.floor(parent.parent.width * 0.5 - UM.Theme.getSize("default_margin").width)
+                            onEditingFinished:
+                            {
+                                manager.setUploadName(activeMachineId, text);
+                            }
+
+                            UM.TooltipArea
+                            {
+                                anchors.fill: parent
+                                text: catalog.i18nc("@info:tooltip", "Ex.: {name}_{layer_height}<br/><br/>- {name}<br/>- {date}<br/>- {time}<br/>- {adhesion_type}<br/>- {layer_height}<br/>- {material}<br/>- {material_print_temperature}<br/>- {material_bed_temperature}<br/>- {material_flow}<br/>- {retraction_min_travel}<br/>- {speed_print}<br/>- {cool_fan_speed}")
+                                acceptedButtons: Qt.NoButton
+                            }
+                        }
+
+                        Button
+                        {
+                            id: resetFileName
+                            text: catalog.i18nc("@action", "Reset")
+                            onClicked:
+                            {
+                                manager.setUploadName(activeMachineId, "");
+                                uploadName.text = manager.uploadName(activeMachineId);
+                            }
+                        }
+                    }
+
                     Label
                     {
                         width: Math.floor(parent.width * 0.2)
@@ -346,6 +384,8 @@ Cura.MachineAction
                                 apiCheckDelay.lastKey = "\0";
                                 apiKey.text = manager.getApiKey(base.selectedInstance.getId());
                                 apiKey.select(0,0);
+                                uploadName.text = manager.uploadName(activeMachineId);
+                                uploadName.select(0,0);
                             }
                         }
                     }

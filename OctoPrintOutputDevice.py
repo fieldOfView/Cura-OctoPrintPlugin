@@ -38,7 +38,7 @@ from PyQt5.QtGui import QImage, QDesktopServices
 import json
 import os.path
 import re
-from time import time
+from time import time, strftime
 import base64
 from io import StringIO, BytesIO
 from enum import IntEnum
@@ -50,6 +50,17 @@ if TYPE_CHECKING:
     from UM.FileHandler.FileHandler import FileHandler #For typing.
 
 i18n_catalog = i18nCatalog("cura")
+
+UploadProperties = [
+    "adhesion_type",
+    "layer_height",
+    "material_print_temperature",
+    "material_bed_temperature",
+    "retraction_min_travel",
+    "speed_print",
+    "material_flow",
+    "cool_fan_speed"
+]
 
 ##  The current processing state of the backend.
 #   This shadows PrinterOutputDevice.ConnectionState because its spelling changed
@@ -549,11 +560,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._progress_message.actionTriggered.connect(self._cancelSendGcode)
         self._progress_message.show()
 
-        job_name = CuraApplication.getInstance().getPrintInformation().jobName.strip()
-        if job_name is "":
-            job_name = "untitled_print"
-        extension = "gcode" if not self._transfer_as_ufp else "ufp"
-        file_name = "%s.%s" % (os.path.basename(job_name), extension)
+        upload_name = self._uploadName()
 
         ##  Create multi_part request
         post_parts = [] # type: List[QHttpPart]
@@ -564,8 +571,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             # encode StringIO result to bytes
             gcode_body = gcode_body.encode()
 
-        post_parts.append(self._createFormPart("name=\"path\"", os.path.dirname(job_name).encode(), "text/plain"))
-        post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
+        post_parts.append(self._createFormPart("name=\"path\"", os.path.dirname(upload_name).encode(), "text/plain"))
+        post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % os.path.basename(upload_name), gcode_body, "application/octet-stream"))
 
         if self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp):
             self._select_and_print_handled_in_upload = True
@@ -605,6 +612,33 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             Logger.log("e", "An exception occurred in network connection: %s" % str(e))
 
         self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
+
+    def _uploadName(self) -> None:
+        print_info = CuraApplication.getInstance().getPrintInformation()
+
+        job_name = print_info.jobName.strip()
+        if job_name is "":
+            job_name = "untitled_print"
+
+        extension = "gcode" if not self._transfer_as_ufp else "ufp"
+
+        global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
+        if global_container_stack:
+            ##  Gather all format params
+            params = {}
+            params["name"] = os.path.basename(job_name)
+            params["time"] = strftime("%H:%M:%S")
+            params["date"] = strftime("%Y-%m-%d")
+            params["material"] = (print_info.materialNames or ["undefined"])[0]
+            for key in UploadProperties:
+                params[key] = global_container_stack.getProperty(key, "value") or ""
+
+            ## Replace all {key} with values
+            file_name = global_container_stack.getMetaDataEntry("octoprint_upload_name", "{name}")
+            for key, value in params.items():
+                file_name = file_name.replace("{%s}" % (key), str(value))
+
+        return "%s/%s.%s" % (os.path.dirname(job_name), file_name, extension)
 
     def _cancelSendGcode(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
         if self._post_gcode_reply:
