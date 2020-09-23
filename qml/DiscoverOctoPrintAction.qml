@@ -343,7 +343,7 @@ Cura.MachineAction
                             UM.TooltipArea
                             {
                                 anchors.fill: parent
-                                text: catalog.i18nc("@info:tooltip", "Ex.: {name}_{layer_height}<br/><br/>- {name}<br/>- {date}<br/>- {time}<br/>- {adhesion_type}<br/>- {layer_height}<br/>- {material}<br/>- {material_print_temperature}<br/>- {material_bed_temperature}<br/>- {material_flow}<br/>- {retraction_min_travel}<br/>- {speed_print}<br/>- {cool_fan_speed}")
+                                text: catalog.i18nc("@info:tooltip", "Ex.: {name}_{layer_height}<br/><br/>- {name}<br/>- {date}<br/>- {time}<br/>- {adhesion_type}<br/>- {layer_height}<br/>- {material_name}<br/>- {material_print_temperature}<br/>- {material_bed_temperature}<br/>- {material_flow}<br/>- {retraction_min_travel}<br/>- {speed_print}<br/>- {cool_fan_speed}")
                                 acceptedButtons: Qt.NoButton
                             }
                         }

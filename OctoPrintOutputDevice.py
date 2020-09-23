@@ -634,11 +634,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             params["date"] = strftime("%Y-%m-%d")
 
             if print_info.materialNames:
-                params["material"] = print_info.materialNames[0]
+                params["material_name"] = print_info.materialNames[0]
             elif print_info.preSliced:
-                params["material"] = "presliced"
+                params["material_name"] = "presliced"
             else:
-                params["material"] = "undefined"
+                params["material_name"] = "undefined"
 
             for key in UploadProperties:
                 params[key] = global_container_stack.getProperty(key, "value") or ""
