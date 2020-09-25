@@ -369,6 +369,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def resumePrint(self) -> None:
         if not self._printers[0].activePrintJob:
+            Logger.log("e", "There is no active printjob to resume")
             return
 
         if self._printers[0].activePrintJob.state == "paused":
@@ -382,7 +383,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False,
                      file_handler: Optional["FileHandler"] = None, filter_by_machine: bool = False, **kwargs) -> None:
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
-        if not global_container_stack:
+        if not global_container_stack or not self.activePrinter:
+            Logger.log("e", "There is no active printer to send the print")
             return
 
         # Make sure post-processing plugin are run on the gcode
@@ -700,6 +702,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                 # An OctoPrint instance has a single printer.
                 printer = self._printers[0]
+                if not printer:
+                    Logger.log("e", "There is no active printer")
+                    return
                 update_pace = self._update_slow_interval
 
                 if http_status_code == 200:
@@ -1163,7 +1168,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if "feature" in json_data and "sdSupport" in json_data["feature"]:
             self._store_on_sd_supported = json_data["feature"]["sdSupport"]
 
-
         if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
             webcam_data = [json_data["webcam"]]
 
@@ -1217,6 +1221,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._sendCommandToApi(end_point, command)
 
     def _setOffline(self, printer:PrinterOutputModel, reason: str = "") -> None:
+        if not printer:
+            Logger.log("e", "There is no active printer")
+            return
         if printer.state != "offline":
             printer.updateState("offline")
             if printer.activePrintJob:
