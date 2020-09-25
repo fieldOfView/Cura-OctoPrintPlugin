@@ -392,7 +392,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         # Get the g-code through the GCodeWriter plugin
         # This produces the same output as "Save to File", adding the print settings to the bottom of the file
-        if not self._transfer_as_ufp:
+        # The presliced print should always be send using `GCodeWriter`
+        print_info = CuraApplication.getInstance().getPrintInformation()
+        if not self._transfer_as_ufp or not print_info or print_info.preSliced:
             gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
             self._gcode_stream = StringIO()
         else:
@@ -551,10 +553,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._progress_message.actionTriggered.connect(self._cancelSendGcode)
         self._progress_message.show()
 
-        job_name = CuraApplication.getInstance().getPrintInformation().jobName.strip()
+        print_info = CuraApplication.getInstance().getPrintInformation()
+        job_name = print_info.jobName.strip()
         if job_name is "":
             job_name = "untitled_print"
-        extension = "gcode" if not self._transfer_as_ufp else "ufp"
+        ##  Presliced print is always send as gcode
+        extension = "gcode" if not self._transfer_as_ufp or print_info.preSliced else "ufp"
         file_name = "%s.%s" % (os.path.basename(job_name), extension)
 
         ##  Create multi_part request
