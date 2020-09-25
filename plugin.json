@@ -1,7 +1,7 @@
 {
     "name": "OctoPrint connection",
     "author": "fieldOfView",
-    "version": "3.5.17",
+    "version": "3.5.18-DEV",
     "description": "Enables networked printing and monitoring with OctoPrint",
     "api": 5,
     "supported_sdk_versions": ["5.0.0", "6.0.0", "6.1.0", "6.2.0", "6.3.0", "7.0.0", "7.1.0", "7.2.0", "7.3.0"],
