@@ -198,6 +198,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._polling_end_points = ["printer", "job"]
 
+        self._destination_folder = properties.get(b"destinationFolder", b"").decode("utf-8")
+
     @property
     def _store_on_sd(self) -> bool:
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
@@ -570,7 +572,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             # encode StringIO result to bytes
             gcode_body = gcode_body.encode()
 
-        post_parts.append(self._createFormPart("name=\"path\"", os.path.dirname(job_name).encode(), "text/plain"))
+        post_parts.append(self._createFormPart("name=\"path\"", self._destination_folder.encode(), "text/plain"))
         post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
 
         if self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp):

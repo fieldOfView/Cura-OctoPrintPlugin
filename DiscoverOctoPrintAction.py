@@ -135,16 +135,16 @@ class DiscoverOctoPrintAction(MachineAction):
 
         self._network_plugin.removeManualInstance(name)
 
-    @pyqtSlot(str, str, int, str, bool, str, str)
+    @pyqtSlot(str, str, int, str, bool, str, str, str)
     def setManualInstance(self, name: str, address: str, port: int, path: str,
-                          useHttps: bool, userName: str = "", password: str = "") -> None:
+                          useHttps: bool, userName: str = "", password: str = "", destinationFolder: str = "") -> None:
         if not self._network_plugin:
             return
 
         # This manual printer could replace a current manual printer
         self._network_plugin.removeManualInstance(name)
 
-        self._network_plugin.addManualInstance(name, address, port, path, useHttps, userName, password)
+        self._network_plugin.addManualInstance(name, address, port, path, useHttps, userName, password, destinationFolder)
 
     def _onContainerAdded(self, container: "ContainerInterface") -> None:
         # Add this action as a supported action to all machine definitions

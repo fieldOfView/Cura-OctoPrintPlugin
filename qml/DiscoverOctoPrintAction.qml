@@ -105,7 +105,7 @@ Cura.MachineAction
                 text: catalog.i18nc("@action:button", "Add");
                 onClicked:
                 {
-                    manualPrinterDialog.showDialog("", "", "80", "/", false, "", "");
+                    manualPrinterDialog.showDialog("", "", "80", "/", false, "", "", "");
                 }
             }
 
@@ -120,7 +120,8 @@ Cura.MachineAction
                         base.selectedInstance.name, base.selectedInstance.ipAddress,
                         base.selectedInstance.port, base.selectedInstance.path,
                         base.selectedInstance.getProperty("useHttps") == "true",
-                        base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password")
+                        base.selectedInstance.getProperty("userName"), base.selectedInstance.getProperty("password"),
+                        base.selectedInstance.getProperty("destinationFolder")
                     );
                 }
             }
@@ -668,6 +669,7 @@ Cura.MachineAction
         property alias pathText: pathField.text
         property alias userNameText: userNameField.text
         property alias passwordText: passwordField.text
+        property alias destinationFolderText: destinationFolderField.text
 
         title: catalog.i18nc("@title:window", "Manually added OctoPrint instance")
 
@@ -676,7 +678,7 @@ Cura.MachineAction
         width: minimumWidth
         height: minimumHeight
 
-        signal showDialog(string name, string address, string port, string path_, bool useHttps, string userName, string password)
+        signal showDialog(string name, string address, string port, string path_, bool useHttps, string userName, string password, string destinationFolder)
         onShowDialog:
         {
             oldName = name;
@@ -690,6 +692,7 @@ Cura.MachineAction
             httpsCheckbox.checked = useHttps;
             userNameText = userName;
             passwordText = password;
+            destinationFolderText = destinationFolder
 
             manualPrinterDialog.show();
         }
@@ -715,7 +718,8 @@ Cura.MachineAction
                 pathText,
                 httpsCheckbox.checked,
                 userNameText,
-                passwordText
+                passwordText,
+                destinationFolderText
             );
         }
 
@@ -790,6 +794,23 @@ Cura.MachineAction
                 TextField
                 {
                     id: pathField
+                    maximumLength: 30
+                    width: Math.floor(parent.width * 0.6)
+                    validator: RegExpValidator
+                    {
+                        regExp: /[a-zA-Z0-9\.\-\_\/]*/
+                    }
+                }
+
+                Label
+                {
+                    text: catalog.i18nc("@label","Destination folder")
+                    width: Math.floor(parent.width * 0.4)
+                }
+
+                TextField
+                {
+                    id: destinationFolderField
                     maximumLength: 30
                     width: Math.floor(parent.width * 0.6)
                     validator: RegExpValidator

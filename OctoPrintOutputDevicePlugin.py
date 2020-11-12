@@ -123,7 +123,8 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
                 b"useHttps": b"true" if properties.get("useHttps", False) else b"false",
                 b'userName': properties.get("userName", "").encode("utf-8"),
                 b'password': properties.get("password", "").encode("utf-8"),
-                b"manual": b"true"
+                b"manual": b"true",
+                b'destinationFolder': properties.get("destinationFolder", "").encode("utf-8"),
             } # These additional properties use bytearrays to mimick the output of zeroconf
             self.addInstance(name, properties["address"], properties["port"], additional_properties)
 
@@ -165,14 +166,15 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             self._consecutive_zeroconf_restarts = 0
             self._keep_alive_timer.start()
 
-    def addManualInstance(self, name: str, address: str, port: int, path: str, useHttps: bool = False, userName: str = "", password: str = "") -> None:
+    def addManualInstance(self, name: str, address: str, port: int, path: str, useHttps: bool = False, userName: str = "", password: str = "", destinationFolder: str = "") -> None:
         self._manual_instances[name] = {
             "address": address,
             "port": port,
             "path": path,
             "useHttps": useHttps,
             "userName": userName,
-            "password": password
+            "password": password,
+            "destinationFolder": destinationFolder
         }
         self._preferences.setValue("octoprint/manual_instances", json.dumps(self._manual_instances))
 
@@ -181,7 +183,8 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             b"useHttps": b"true" if useHttps else b"false",
             b'userName': userName.encode("utf-8"),
             b'password': password.encode("utf-8"),
-            b"manual": b"true"
+            b"manual": b"true",
+            b'destinationFolder': destinationFolder.encode("utf-8")
         }
 
         if name in self._instances:
