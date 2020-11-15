@@ -813,7 +813,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     self._update_timer.setInterval(update_pace)
 
             elif self._api_prefix + "job" in reply.url().toString():  # Status update from /job:
-                if not self._printers:
+                if not self._printers or not self._printers[0]:
                     return  # Ignore the data for now, we don't have info about a printer yet.
                 printer = self._printers[0]
 
