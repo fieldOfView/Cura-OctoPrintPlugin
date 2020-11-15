@@ -417,7 +417,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message = None # type: Optional[Message]
 
         self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
-        self._auto_select = parseBool(global_container_stack.getMetaDataEntry("octoprint_select_print", False))
+        self._auto_select = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_select", False))
         self._forced_queue = False
 
         use_power_plugin = parseBool(global_container_stack.getMetaDataEntry("octoprint_power_control", False))
@@ -579,16 +579,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp):
             self._select_and_print_handled_in_upload = True
 
-            if self._auto_print and not self._forced_queue:
+            if not self._forced_queue:
                 # tell OctoPrint to start the print when there is no reason to delay doing so
-                post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
-            if self._auto_select:
-                post_parts.append(self._createFormPart("name=\"select\"", b"true", "text/plain"))
+                if self._auto_select or self._auto_print:
+                    post_parts.append(self._createFormPart("name=\"select\"", b"true", "text/plain"))
+                if self._auto_print:
+                    post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
+                print(post_parts)
         else:
+            # otherwise selecting and printing the job is delayed until after the upload
+            # see self._onUploadFinished
             self._select_and_print_handled_in_upload = False
-
-        # otherwise selecting and printing the job is delayed until after the upload
-        # see self._onUploadFinished
 
         destination = "local"
         if self._store_on_sd:
@@ -596,7 +597,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         try:
             ##  Post request + data
-            post_gcode_request = self._createEmptyRequest("files/" + destination)
+            post_gcode_request = self._createEmptyRequest("files/" + destination, content_type="application/x-www-form-urlencoded")
             self._post_gcode_reply = self.postFormWithParts(
                 "files/" + destination,
                 post_parts,
@@ -1143,10 +1144,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             message.actionTriggered.connect(self._openOctoPrint)
             message.show()
 
-            self._selectAndPrint(end_point)
+            if self._auto_print or self._auto_select:
+                self._selectAndPrint(end_point)
         elif self._auto_print or self._auto_select or self._wait_for_analysis:
             if not self._wait_for_analysis or not self._auto_print:
-                if not self._select_and_print_handled_in_upload:
+                if not self._select_and_print_handled_in_upload and (self._auto_print or self._auto_select):
                     self._selectAndPrint(end_point)
                 return
 
@@ -1245,7 +1247,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._error_message = Message(error_string, title=i18n_catalog.i18nc("@label", "OctoPrint error"))
         self._error_message.show()
 
-    def _openOctoPrint(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
+    def _openOctoPrint(self, message: Optional[Message] = None, action_id: Optional[str] = None) -> None:
         QDesktopServices.openUrl(QUrl(self._base_url))
 
     def _createEmptyRequest(self, target: str, content_type: Optional[str] = "application/json") -> QNetworkRequest:
