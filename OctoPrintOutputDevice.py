@@ -585,7 +585,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     post_parts.append(self._createFormPart("name=\"select\"", b"true", "text/plain"))
                 if self._auto_print:
                     post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
-                print(post_parts)
         else:
             # otherwise selecting and printing the job is delayed until after the upload
             # see self._onUploadFinished
