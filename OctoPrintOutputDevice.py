@@ -493,9 +493,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._sendPrintJob()
 
-    def _stopWaitingForAnalysis(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
-        if self._waiting_message:
-            self._waiting_message.hide()
+    def _stopWaitingForAnalysis(self, message: Message, action_id: str) -> None:
+        self._waiting_message = None # type:Optional[Message]
+        if message:
+            message.hide()
         self._waiting_for_analysis = False
 
         for end_point in self._polling_end_points:
@@ -512,19 +513,24 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         elif action_id == "cancel":
             pass
 
-    def _stopWaitingForPrinter(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
-        if self._waiting_message:
-            self._waiting_message.hide()
+    def _stopWaitingForPrinter(self, message: Message, action_id: str) -> None:
+        self._waiting_message = None # type:Optional[Message]
+        if message:
+            message.hide()
         self._waiting_for_printer = False
 
         if action_id == "queue":
-            self._queuePrintJob()
+            self._forced_queue = True
+            self._sendPrintJob()
         elif action_id == "cancel":
             self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
-    def _queuePrintJob(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
-        if self._error_message:
-            self._error_message.hide()
+    def _queuePrintJob(self, message: Message, action_id: str) -> None:
+        self._error_message = None # type:Optional[Message]
+        if message:
+            message.hide()
+
+
         self._forced_queue = True
         self._sendPrintJob()
 
@@ -615,7 +621,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
-    def _cancelSendGcode(self, message_id: Optional[str] = None, action_id: Optional[str] = None) -> None:
+    def _cancelSendGcode(self, message: Message, action_id: str) -> None:
+        self._progress_message = None # type:Optional[Message]
+        if message:
+            message.hide()
+
         if self._post_gcode_reply:
             Logger.log("d", "Stopping upload because the user pressed cancel.")
             try:
@@ -625,10 +635,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
             self._post_gcode_reply.abort()
             self._post_gcode_reply = None # type:Optional[QNetworkReply]
-        if self._progress_message:
-            self._progress_message.hide()
-            self._progress_message = None # type:Optional[Message]
-
     def sendCommand(self, command: str) -> None:
         self._queued_gcode_commands.append(command)
         CuraApplication.getInstance().callLater(self._sendQueuedGcode)
@@ -1246,7 +1252,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._error_message = Message(error_string, title=i18n_catalog.i18nc("@label", "OctoPrint error"))
         self._error_message.show()
 
-    def _openOctoPrint(self, message: Optional[Message] = None, action_id: Optional[str] = None) -> None:
+    def _openOctoPrint(self, message: Message, action_id: str) -> None:
         QDesktopServices.openUrl(QUrl(self._base_url))
 
     def _createEmptyRequest(self, target: str, content_type: Optional[str] = "application/json") -> QNetworkRequest:
