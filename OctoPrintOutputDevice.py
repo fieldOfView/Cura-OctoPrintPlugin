@@ -351,6 +351,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self.getAdditionalData()
 
     def getAdditionalData(self) -> None:
+        if not self._api_key:
+            return
+
         if not self._octoprint_version:
             self.get("version", self._onRequestFinished)
 
