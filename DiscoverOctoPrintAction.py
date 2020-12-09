@@ -270,7 +270,7 @@ class DiscoverOctoPrintAction(MachineAction):
             settings_request.setRawHeader(b"X-Api-Key", api_key.encode())
             self._settings_reply = self._network_manager.get(settings_request)
             self._settings_reply_timeout = NetworkReplyTimeout(
-                self._settings_reply, 5000, self._onRequestFailed
+                self._settings_reply, 20000, self._onRequestFailed
             )
 
             self._settings_instance = instance
