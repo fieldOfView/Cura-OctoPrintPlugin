@@ -44,10 +44,10 @@ class PowerPlugins():
         for (plugin_id, plugin_name, additional_data) in common_api_plugins:
             if plugin_id in plugin_data and "arrSmartplugs" in plugin_data[plugin_id]:
                 for plug_data in plugin_data[plugin_id]["arrSmartplugs"]:
-                    if plug_data["ip"] and plug_data["label"]:
+                    if plug_data["ip"]:
                         plug = OrderedDict([
                             ("plugin", plugin_id),
-                            ("name", ("%s (%s)" % (plug_data["label"], plugin_name))),
+                            ("name", "%s (%s)" % (plug_data["label"], plugin_name) if plug_data["label"] else plugin_name),
                             ("label", plug_data["label"]),
                             ("ip", plug_data["ip"])
                         ])
