@@ -157,36 +157,16 @@ Component
             anchors.right: sidebar.left
         }
 
-        Cura.RoundedRectangle
-        {
+        Cura.PrintMonitor {
             id: sidebar
 
             width: UM.Theme.getSize("print_setup_widget").width
             anchors
             {
-                right: parent.right
                 top: parent.top
-                topMargin: UM.Theme.getSize("default_margin").height
+                right: parent.right
                 bottom: actionsPanel.top
-                bottomMargin: UM.Theme.getSize("default_margin").height
-            }
-
-            border.width: UM.Theme.getSize("default_lining").width
-            border.color: UM.Theme.getColor("lining")
-            color: UM.Theme.getColor("main_background")
-
-            cornerSide: Cura.RoundedRectangle.Direction.Left
-            radius: UM.Theme.getSize("default_radius").width
-
-            Cura.PrintMonitor {
-                width: parent.width
-                anchors
-                {
-                    left: parent.left
-                    leftMargin: UM.Theme.getSize("default_margin").width
-                    right: parent.right
-                    rightMargin: UM.Theme.getSize("default_margin").width
-                }
+                margins: UM.Theme.getSize("default_margin").width
             }
         }
 
@@ -194,18 +174,14 @@ Component
         {
             id: actionsPanel
 
-            border.width: UM.Theme.getSize("default_lining").width
-            border.color: UM.Theme.getColor("lining")
-            color: UM.Theme.getColor("main_background")
-
-            cornerSide: Cura.RoundedRectangle.Direction.Left
-            radius: UM.Theme.getSize("default_radius").width
-
             anchors.bottom: parent.bottom
             anchors.right: parent.right
 
+            anchors.bottomMargin: UM.Theme.getSize("default_margin").width
+            anchors.topMargin: UM.Theme.getSize("default_margin").height
+
             width: UM.Theme.getSize("print_setup_widget").width
-            height: monitorButton.height + UM.Theme.getSize("default_margin").height
+            height: monitorButton.height
 
             // MonitorButton is actually the bottom footer panel.
             Cura.MonitorButton
@@ -213,7 +189,6 @@ Component
                 id: monitorButton
                 width: parent.width
                 anchors.top: parent.top
-                anchors.topMargin: UM.Theme.getSize("default_margin").height
             }
         }
     }
