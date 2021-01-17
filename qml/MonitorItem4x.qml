@@ -160,20 +160,19 @@ Component
         Cura.RoundedRectangle
         {
             id: sidebarBackground
-            anchors
-            {
-                top: parent.top
-                right: parent.right
-                bottom: actionsPanel.top
-                topMargin: UM.Theme.getSize("default_margin").height
-                bottomMargin: UM.Theme.getSize("default_margin").height
-            }
 
             width: UM.Theme.getSize("print_setup_widget").width
+            anchors
+            {
+                right: parent.right
+                top: parent.top
+                bottom: actionsPanel.top
+                margins: UM.Theme.getSize("default_margin").height
+            }
 
-            color: UM.Theme.getColor("main_background")
             border.width: UM.Theme.getSize("default_lining").width
             border.color: UM.Theme.getColor("lining")
+            color: UM.Theme.getColor("main_background")
 
             cornerSide: Cura.RoundedRectangle.Direction.Left
             radius: UM.Theme.getSize("default_radius").width
@@ -186,9 +185,10 @@ Component
             anchors
             {
                 top: parent.top
-                right: parent.right
                 bottom: actionsPanel.top
-                margins: UM.Theme.getSize("default_margin").width
+                leftMargin: UM.Theme.getSize("default_margin").width
+                right: parent.right
+                rightMargin: UM.Theme.getSize("default_margin").width
             }
         }
 
