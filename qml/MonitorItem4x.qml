@@ -157,10 +157,32 @@ Component
             anchors.right: sidebar.left
         }
 
+        Cura.RoundedRectangle
+        {
+            id: sidebarBackground
+            anchors
+            {
+                top: parent.top
+                right: parent.right
+                bottom: actionsPanel.top
+                topMargin: UM.Theme.getSize("default_margin").height
+                bottomMargin: UM.Theme.getSize("default_margin").height
+            }
+
+            width: UM.Theme.getSize("print_setup_widget").width
+
+            color: UM.Theme.getColor("main_background")
+            border.width: UM.Theme.getSize("default_lining").width
+            border.color: UM.Theme.getColor("lining")
+
+            cornerSide: Cura.RoundedRectangle.Direction.Left
+            radius: UM.Theme.getSize("default_radius").width
+        }
+
         Cura.PrintMonitor {
             id: sidebar
 
-            width: UM.Theme.getSize("print_setup_widget").width
+            width: UM.Theme.getSize("print_setup_widget").width - UM.Theme.getSize("default_margin").height * 2
             anchors
             {
                 top: parent.top
@@ -173,6 +195,13 @@ Component
         Cura.RoundedRectangle
         {
             id: actionsPanel
+
+            border.width: UM.Theme.getSize("default_lining").width
+            border.color: UM.Theme.getColor("lining")
+            color: UM.Theme.getColor("main_background")
+
+            cornerSide: Cura.RoundedRectangle.Direction.Left
+            radius: UM.Theme.getSize("default_radius").width
 
             anchors.bottom: parent.bottom
             anchors.right: parent.right
