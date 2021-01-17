@@ -166,8 +166,9 @@ Component
             {
                 right: parent.right
                 top: parent.top
+                topMargin: UM.Theme.getSize("default_margin").height
                 bottom: actionsPanel.top
-                margins: UM.Theme.getSize("default_margin").height
+                bottomMargin: UM.Theme.getSize("default_margin").height
             }
 
             border.width: UM.Theme.getSize("default_lining").width
