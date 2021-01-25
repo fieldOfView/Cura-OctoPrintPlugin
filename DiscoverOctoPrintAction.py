@@ -29,7 +29,7 @@ from typing import cast, Any, Tuple, Dict, List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from UM.Settings.ContainerInterface import ContainerInterface
 
-catalog = i18nCatalog("cura")
+catalog = i18nCatalog("octoprint")
 
 class DiscoverOctoPrintAction(MachineAction):
     def __init__(self, parent: QObject = None) -> None:

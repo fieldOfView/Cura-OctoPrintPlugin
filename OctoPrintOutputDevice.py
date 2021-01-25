@@ -49,7 +49,15 @@ if TYPE_CHECKING:
     from UM.Scene.SceneNode import SceneNode #For typing.
     from UM.FileHandler.FileHandler import FileHandler #For typing.
 
-i18n_catalog = i18nCatalog("cura")
+from UM.Resources import Resources
+
+Resources.addSearchPath(os.path.join(os.path.abspath(os.path.dirname(__file__)))) # Plugin translation file import
+
+i18n_catalog = i18nCatalog("octoprint")
+
+if i18n_catalog.hasTranslationLoaded():
+    Logger.log("i", "OctoPrint Plugin translation loaded!")
+
 
 ##  The current processing state of the backend.
 #   This shadows PrinterOutputDevice.ConnectionState because its spelling changed
