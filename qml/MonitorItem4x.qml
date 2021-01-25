@@ -159,7 +159,7 @@ Component
 
         Cura.RoundedRectangle
         {
-            id: sidebar
+            id: sidebarBackground
 
             width: UM.Theme.getSize("print_setup_widget").width
             anchors
@@ -177,16 +177,19 @@ Component
 
             cornerSide: Cura.RoundedRectangle.Direction.Left
             radius: UM.Theme.getSize("default_radius").width
+        }
 
-            Cura.PrintMonitor {
-                width: parent.width
-                anchors
-                {
-                    left: parent.left
-                    leftMargin: UM.Theme.getSize("default_margin").width
-                    right: parent.right
-                    rightMargin: UM.Theme.getSize("default_margin").width
-                }
+        Cura.PrintMonitor {
+            id: sidebar
+
+            width: UM.Theme.getSize("print_setup_widget").width - UM.Theme.getSize("default_margin").height * 2
+            anchors
+            {
+                top: parent.top
+                bottom: actionsPanel.top
+                leftMargin: UM.Theme.getSize("default_margin").width
+                right: parent.right
+                rightMargin: UM.Theme.getSize("default_margin").width
             }
         }
 
@@ -204,8 +207,11 @@ Component
             anchors.bottom: parent.bottom
             anchors.right: parent.right
 
+            anchors.bottomMargin: UM.Theme.getSize("default_margin").width
+            anchors.topMargin: UM.Theme.getSize("default_margin").height
+
             width: UM.Theme.getSize("print_setup_widget").width
-            height: monitorButton.height + UM.Theme.getSize("default_margin").height
+            height: monitorButton.height
 
             // MonitorButton is actually the bottom footer panel.
             Cura.MonitorButton
@@ -213,7 +219,6 @@ Component
                 id: monitorButton
                 width: parent.width
                 anchors.top: parent.top
-                anchors.topMargin: UM.Theme.getSize("default_margin").height
             }
         }
     }
