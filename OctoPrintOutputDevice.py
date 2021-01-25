@@ -862,21 +862,23 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             Logger.log("w", "Encountered unexpected printjob state: %s" % state)
                     print_job.updateState(print_job_state)
 
-                    print_time = json_data["progress"]["printTime"]
-                    completion = json_data["progress"]["completion"]
-                    if print_time:
-                        print_job.updateTimeElapsed(print_time)
+                    if "progress" in json_data:
+                        print_time = json_data["progress"]["printTime"]
+                        completion = json_data["progress"]["completion"]
 
-                        print_time_left = json_data["progress"]["printTimeLeft"]
-                        if print_time_left: # not 0 or None or ""
-                            print_job.updateTimeTotal(print_time + print_time_left)
-                        elif completion: # not 0 or None or ""
-                            print_job.updateTimeTotal(print_time / (completion / 100))
+                        if print_time:
+                            print_job.updateTimeElapsed(print_time)
+
+                            print_time_left = json_data["progress"]["printTimeLeft"]
+                            if print_time_left: # not 0 or None or ""
+                                print_job.updateTimeTotal(print_time + print_time_left)
+                            elif completion: # not 0 or None or ""
+                                print_job.updateTimeTotal(print_time / (completion / 100))
+                            else:
+                                print_job.updateTimeTotal(0)
                         else:
+                            print_job.updateTimeElapsed(0)
                             print_job.updateTimeTotal(0)
-                    else:
-                        print_job.updateTimeElapsed(0)
-                        print_job.updateTimeTotal(0)
 
                     if completion and print_job_state == "pre_print": # completion not not 0 or None or "", state "Sending file to SD"
                         if not self._progress_message:
