@@ -15,9 +15,11 @@ Installation
 #### Marketplace (recommended):
 The plugin is available through the Cura Marketplace as the OctoPrint Connection plugin
 #### Manually:
-Download or clone the repository into `[Cura configuration folder]/plugins/OctoPrintPlugin`.
+Download or clone (including submodules!) the repository into `[Cura configuration folder]/plugins/OctoPrintPlugin`.
 
-The configuration folder can be found via Help -> Show Configuration Folder inside Cura.
+The configuration folder can be found on Macos and Windows in Help -> Show Configuration Folder inside Cura.
+
+On Linux, it is .local/share/cura/(version)/plugins/
 
 How to use
 ----
