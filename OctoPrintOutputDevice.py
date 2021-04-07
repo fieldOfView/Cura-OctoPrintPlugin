@@ -564,7 +564,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         print_info = CuraApplication.getInstance().getPrintInformation()
         job_name = print_info.jobName.strip()
-        if job_name is "":
+        if job_name == "":
             job_name = "untitled_print"
         ##  Presliced print is always send as gcode
         extension = "gcode" if not self._transfer_as_ufp or print_info.preSliced else "ufp"
