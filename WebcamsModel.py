@@ -8,9 +8,16 @@ from UM.Logger import Logger
 
 from typing import List, Dict, Any, Union
 
-class WebcamsModel(ListModel):
 
-    def __init__(self, protocol:str, address:str, port: int = 80, basic_auth_string:str = "", parent = None) -> None:
+class WebcamsModel(ListModel):
+    def __init__(
+        self,
+        protocol: str,
+        address: str,
+        port: int = 80,
+        basic_auth_string: str = "",
+        parent=None,
+    ) -> None:
         super().__init__(parent)
 
         self._protocol = protocol
@@ -23,7 +30,7 @@ class WebcamsModel(ListModel):
         self.addRoleName(Qt.UserRole + 3, "rotation")
         self.addRoleName(Qt.UserRole + 4, "mirror")
 
-    def deserialise(self, data:List[Dict[str, Any]]) -> None:
+    def deserialise(self, data: List[Dict[str, Any]]) -> None:
         items = []
 
         for webcam in data:
@@ -31,7 +38,7 @@ class WebcamsModel(ListModel):
                 "name": "_default",
                 "stream_url": "",
                 "rotation": 0,
-                "mirror": False
+                "mirror": False,
             }
 
             stream_url = ""
@@ -40,19 +47,34 @@ class WebcamsModel(ListModel):
             elif "URL" in webcam and webcam["URL"] != None:  # from /plugins/multicam
                 stream_url = webcam["URL"].strip()
 
-            if not stream_url: #empty string or None
+            if not stream_url:  # empty string or None
                 continue
             elif stream_url[:4].lower() == "http":  # absolute uri
                 item["stream_url"] = stream_url
             elif stream_url[:2] == "//":  # protocol-relative
                 item["stream_url"] = "%s:%s" % (self._protocol, stream_url)
             elif stream_url[:1] == ":":  # domain-relative (on another port)
-                item["stream_url"] = "%s://%s%s" % (self._protocol, self._address, stream_url)
+                item["stream_url"] = "%s://%s%s" % (
+                    self._protocol,
+                    self._address,
+                    stream_url,
+                )
             elif stream_url[:1] == "/":  # domain-relative (on same port)
                 if not self._basic_auth_string:
-                    item["stream_url"] = "%s://%s:%d%s" % (self._protocol, self._address, self._port, stream_url)
+                    item["stream_url"] = "%s://%s:%d%s" % (
+                        self._protocol,
+                        self._address,
+                        self._port,
+                        stream_url,
+                    )
                 else:
-                    item["stream_url"] = "%s://%s@%s:%d%s" % (self._protocol, self._basic_auth_string, self._address, self._port, stream_url)
+                    item["stream_url"] = "%s://%s@%s:%d%s" % (
+                        self._protocol,
+                        self._basic_auth_string,
+                        self._address,
+                        self._port,
+                        stream_url,
+                    )
             else:
                 Logger.log("w", "Unusable stream url received: %s", stream_url)
                 item["stream_url"] = ""

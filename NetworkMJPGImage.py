@@ -4,7 +4,13 @@
 from PyQt5.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QByteArray
 from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtQuick import QQuickPaintedItem
-from PyQt5.QtNetwork import QNetworkRequest, QNetworkReply, QNetworkAccessManager, QSslConfiguration, QSslSocket
+from PyQt5.QtNetwork import (
+    QNetworkRequest,
+    QNetworkReply,
+    QNetworkAccessManager,
+    QSslConfiguration,
+    QSslSocket,
+)
 
 from UM.Logger import Logger
 
@@ -15,7 +21,6 @@ import base64
 # picks it apart in individual jpeg frames, and paints it.
 #
 class NetworkMJPGImage(QQuickPaintedItem):
-
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
@@ -38,14 +43,12 @@ class NetworkMJPGImage(QQuickPaintedItem):
     def __del__(self) -> None:
         self.stop()
 
-
     def paint(self, painter: "QPainter") -> None:
         if self._mirror:
             painter.drawImage(self.contentsBoundingRect(), self._image.mirrored())
             return
 
         painter.drawImage(self.contentsBoundingRect(), self._image)
-
 
     def setSourceURL(self, source_url: "QUrl") -> None:
         self._source_url = source_url
@@ -57,7 +60,9 @@ class NetworkMJPGImage(QQuickPaintedItem):
         return self._source_url
 
     sourceURLChanged = pyqtSignal()
-    source = pyqtProperty(QUrl, fget = getSourceURL, fset = setSourceURL, notify = sourceURLChanged)
+    source = pyqtProperty(
+        QUrl, fget=getSourceURL, fset=setSourceURL, notify=sourceURLChanged
+    )
 
     def setMirror(self, mirror: bool) -> None:
         if mirror == self._mirror:
@@ -70,18 +75,17 @@ class NetworkMJPGImage(QQuickPaintedItem):
         return self._mirror
 
     mirrorChanged = pyqtSignal()
-    mirror = pyqtProperty(bool, fget = getMirror, fset = setMirror, notify = mirrorChanged)
+    mirror = pyqtProperty(bool, fget=getMirror, fset=setMirror, notify=mirrorChanged)
 
     imageSizeChanged = pyqtSignal()
 
-    @pyqtProperty(int, notify = imageSizeChanged)
+    @pyqtProperty(int, notify=imageSizeChanged)
     def imageWidth(self) -> int:
         return self._image.width()
 
-    @pyqtProperty(int, notify = imageSizeChanged)
+    @pyqtProperty(int, notify=imageSizeChanged)
     def imageHeight(self) -> int:
         return self._image.height()
-
 
     @pyqtSlot()
     def start(self) -> None:
@@ -94,7 +98,9 @@ class NetworkMJPGImage(QQuickPaintedItem):
         auth_data = ""
         if self._source_url.userInfo():
             # move auth data to basic authorization header
-            auth_data = base64.b64encode(self._source_url.userInfo().encode()).decode("utf-8")
+            auth_data = base64.b64encode(self._source_url.userInfo().encode()).decode(
+                "utf-8"
+            )
             authority = self._source_url.authority()
             self._source_url.setAuthority(authority.rsplit("@", 1)[1])
 
@@ -102,7 +108,9 @@ class NetworkMJPGImage(QQuickPaintedItem):
         self._image_request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
 
         if auth_data:
-            self._image_request.setRawHeader(b"Authorization", ("basic %s" % auth_data).encode())
+            self._image_request.setRawHeader(
+                b"Authorization", ("basic %s" % auth_data).encode()
+            )
 
         if self._source_url.scheme().lower() == "https":
             # ignore SSL errors (eg for self-signed certificates)
@@ -126,7 +134,9 @@ class NetworkMJPGImage(QQuickPaintedItem):
         if self._image_reply:
             try:
                 try:
-                    self._image_reply.downloadProgress.disconnect(self._onStreamDownloadProgress)
+                    self._image_reply.downloadProgress.disconnect(
+                        self._onStreamDownloadProgress
+                    )
                 except Exception:
                     pass
 
@@ -142,7 +152,6 @@ class NetworkMJPGImage(QQuickPaintedItem):
 
         self._started = False
 
-
     def _onStreamDownloadProgress(self, bytes_received: int, bytes_total: int) -> None:
         # An MJPG stream is (for our purpose) a stream of concatenated JPG images.
         # JPG images start with the marker 0xFFD8, and end with 0xFFD9
@@ -150,21 +159,27 @@ class NetworkMJPGImage(QQuickPaintedItem):
             return
         self._stream_buffer += self._image_reply.readAll()
 
-        if len(self._stream_buffer) > 5000000:  # No single camera frame should be 5 MB or larger
-            Logger.log("w", "MJPEG buffer exceeds reasonable size. Restarting stream...")
+        if (
+            len(self._stream_buffer) > 5000000
+        ):  # No single camera frame should be 5 MB or larger
+            Logger.log(
+                "w", "MJPEG buffer exceeds reasonable size. Restarting stream..."
+            )
             self.stop()  # resets stream buffer and start index
             self.start()
             return
 
         if self._stream_buffer_start_index == -1:
-            self._stream_buffer_start_index = self._stream_buffer.indexOf(b'\xff\xd8')
-        stream_buffer_end_index = self._stream_buffer.lastIndexOf(b'\xff\xd9')
+            self._stream_buffer_start_index = self._stream_buffer.indexOf(b"\xff\xd8")
+        stream_buffer_end_index = self._stream_buffer.lastIndexOf(b"\xff\xd9")
         # If this happens to be more than a single frame, then so be it; the JPG decoder will
         # ignore the extra data. We do it like this in order not to get a buildup of frames
 
         if self._stream_buffer_start_index != -1 and stream_buffer_end_index != -1:
-            jpg_data = self._stream_buffer[self._stream_buffer_start_index:stream_buffer_end_index + 2]
-            self._stream_buffer = self._stream_buffer[stream_buffer_end_index + 2:]
+            jpg_data = self._stream_buffer[
+                self._stream_buffer_start_index : stream_buffer_end_index + 2
+            ]
+            self._stream_buffer = self._stream_buffer[stream_buffer_end_index + 2 :]
             self._stream_buffer_start_index = -1
             self._image.loadFromData(jpg_data)
 

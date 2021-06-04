@@ -4,8 +4,8 @@
 from collections import OrderedDict
 from typing import Any, Tuple, List, Dict
 
-class PowerPlugins():
 
+class PowerPlugins:
     def __init__(self) -> None:
         self._available_plugs = OrderedDict()  # type: Dict[str, Any]
 
@@ -16,41 +16,56 @@ class PowerPlugins():
         simple_plugins = [
             ("psucontrol", "PSU Control", []),
             ("mystromswitch", "MyStrom Switch", ["ip"]),
-            ("ikea_tradfri", "IKEA Trådfri", ["gateway_ip", "selected_outlet"])
+            ("ikea_tradfri", "IKEA Trådfri", ["gateway_ip", "selected_outlet"]),
         ]  # type: List[Tuple[str, str, List[str]]]
         for (plugin_id, plugin_name, additional_data) in simple_plugins:
             if plugin_id in plugin_data:
                 all_config_set = True
                 for config_item in additional_data:
-                    if config_item not in plugin_data[plugin_id] or not plugin_data[plugin_id][config_item]:
+                    if (
+                        config_item not in plugin_data[plugin_id]
+                        or not plugin_data[plugin_id][config_item]
+                    ):
                         all_config_set = False
                         break
                 if all_config_set:
-                    plug = OrderedDict([
-                        ("plugin", plugin_id),
-                        ("name", plugin_name)
-                    ])
+                    plug = OrderedDict([("plugin", plugin_id), ("name", plugin_name)])
                     self._available_plugs[self._createPlugId(plug)] = plug
 
         # plugins that have a `label` and `ip` specified in `arrSmartplugs`
         common_api_plugins = [
-            ("tplinksmartplug", "TP-Link Smartplug", []), # ip
-            ("orvibos20", "Orvibo S20", []), # ip
-            ("wemoswitch", "Wemo Switch", []), # ip
-            ("tuyasmartplug", "Tuya Smartplug", []), # label
-            ("domoticz", "Domoticz", ["idx", "username", "password"]), # ip, idx, username, password
-            ("tasmota", "Tasmota", ["idx"]), # ip, idx, username, password, backlog_delay
+            ("tplinksmartplug", "TP-Link Smartplug", []),  # ip
+            ("orvibos20", "Orvibo S20", []),  # ip
+            ("wemoswitch", "Wemo Switch", []),  # ip
+            ("tuyasmartplug", "Tuya Smartplug", []),  # label
+            (
+                "domoticz",
+                "Domoticz",
+                ["idx", "username", "password"],
+            ),  # ip, idx, username, password
+            (
+                "tasmota",
+                "Tasmota",
+                ["idx"],
+            ),  # ip, idx, username, password, backlog_delay
         ]  # type: List[Tuple[str, str, List[str]]]
         for (plugin_id, plugin_name, additional_data) in common_api_plugins:
             if plugin_id in plugin_data and "arrSmartplugs" in plugin_data[plugin_id]:
                 for plug_data in plugin_data[plugin_id]["arrSmartplugs"]:
                     if plug_data["ip"]:
-                        plug = OrderedDict([
-                            ("plugin", plugin_id),
-                            ("name", "%s (%s)" % (plug_data["label"], plugin_name) if plug_data["label"] else plugin_name),
-                            ("label", plug_data["label"]),
-                            ("ip", plug_data["ip"])
-                        ])
+                        plug = OrderedDict(
+                            [
+                                ("plugin", plugin_id),
+                                (
+                                    "name",
+                                    "%s (%s)" % (plug_data["label"], plugin_name)
+                                    if plug_data["label"]
+                                    else plugin_name,
+                                ),
+                                ("label", plug_data["label"]),
+                                ("ip", plug_data["ip"]),
+                            ]
+                        )
                         for key in additional_data:
                             plug[key] = plug_data.get(key, "")
                         self._available_plugs[self._createPlugId(plug)] = plug
@@ -61,12 +76,22 @@ class PowerPlugins():
             plugin_name = "Tasmota MQTT"
             for plug_data in plugin_data[plugin_id]["arrRelays"]:
                 if plug_data["topic"] and plug_data["relayN"] != "":
-                    plug = OrderedDict([
-                        ("plugin", plugin_id),
-                        ("name", "%s/%s (%s)" % (plug_data["topic"], plug_data["relayN"], plugin_name)),
-                        ("topic", plug_data["topic"]),
-                        ("relayN", plug_data["relayN"])
-                    ])
+                    plug = OrderedDict(
+                        [
+                            ("plugin", plugin_id),
+                            (
+                                "name",
+                                "%s/%s (%s)"
+                                % (
+                                    plug_data["topic"],
+                                    plug_data["relayN"],
+                                    plugin_name,
+                                ),
+                            ),
+                            ("topic", plug_data["topic"]),
+                            ("relayN", plug_data["relayN"]),
+                        ]
+                    )
                     self._available_plugs[self._createPlugId(plug)] = plug
 
     def _createPlugId(self, plug_data: Dict[str, Any]) -> str:
@@ -76,7 +101,9 @@ class PowerPlugins():
     def getAvailablePowerPlugs(self) -> Dict[str, Any]:
         return self._available_plugs
 
-    def getSetStateCommand(self, plug_id: str, state: bool) -> Tuple[str, Dict[str, Any]]:
+    def getSetStateCommand(
+        self, plug_id: str, state: bool
+    ) -> Tuple[str, Dict[str, Any]]:
         if plug_id not in self._available_plugs:
             return ("", {})
 
@@ -84,10 +111,18 @@ class PowerPlugins():
         end_point = "plugin/" + plugin_id
 
         if plugin_id == "psucontrol":
-            return (end_point, OrderedDict([("command", "turnPSUOn" if state else "turnPSUOff")]))
+            return (
+                end_point,
+                OrderedDict([("command", "turnPSUOn" if state else "turnPSUOff")]),
+            )
 
         if plugin_id == "mystromswitch":
-            return (end_point, OrderedDict([("command", "enableRelais" if state else "disableRelais")]))
+            return (
+                end_point,
+                OrderedDict(
+                    [("command", "enableRelais" if state else "disableRelais")]
+                ),
+            )
 
         plug_data = self._available_plugs[plug_id]
         command = OrderedDict([("command", "turnOn" if state else "turnOff")])

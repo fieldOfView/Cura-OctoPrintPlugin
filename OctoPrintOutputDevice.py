@@ -19,7 +19,10 @@ from .WebcamsModel import WebcamsModel
 
 try:
     # Cura 4.1 and newer
-    from cura.PrinterOutput.PrinterOutputDevice import PrinterOutputDevice, ConnectionState
+    from cura.PrinterOutput.PrinterOutputDevice import (
+        PrinterOutputDevice,
+        ConnectionState,
+    )
     from cura.PrinterOutput.Models.PrinterOutputModel import PrinterOutputModel
     from cura.PrinterOutput.Models.PrintJobOutputModel import PrintJobOutputModel
 except ImportError:
@@ -30,9 +33,21 @@ except ImportError:
 
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 
-from PyQt5.QtNetwork import QHttpMultiPart, QHttpPart, QNetworkRequest, QNetworkAccessManager
+from PyQt5.QtNetwork import (
+    QHttpMultiPart,
+    QHttpPart,
+    QNetworkRequest,
+    QNetworkAccessManager,
+)
 from PyQt5.QtNetwork import QNetworkReply, QSslConfiguration, QSslSocket
-from PyQt5.QtCore import QUrl, QTimer, pyqtSignal, pyqtProperty, pyqtSlot, QCoreApplication
+from PyQt5.QtCore import (
+    QUrl,
+    QTimer,
+    pyqtSignal,
+    pyqtProperty,
+    pyqtSlot,
+    QCoreApplication,
+)
 from PyQt5.QtGui import QImage, QDesktopServices
 
 import json
@@ -45,9 +60,10 @@ from enum import IntEnum
 from collections import namedtuple
 
 from typing import cast, Any, Callable, Dict, List, Optional, Union, TYPE_CHECKING
+
 if TYPE_CHECKING:
-    from UM.Scene.SceneNode import SceneNode #For typing.
-    from UM.FileHandler.FileHandler import FileHandler #For typing.
+    from UM.Scene.SceneNode import SceneNode  # For typing.
+    from UM.FileHandler.FileHandler import FileHandler  # For typing.
 
 i18n_catalog = i18nCatalog("cura")
 
@@ -62,19 +78,24 @@ class UnifiedConnectionState(IntEnum):
         Busy = ConnectionState.Busy
         Error = ConnectionState.Error
     except AttributeError:
-        Closed = ConnectionState.closed          # type: ignore
+        Closed = ConnectionState.closed  # type: ignore
         Connecting = ConnectionState.connecting  # type: ignore
-        Connected = ConnectionState.connected    # type: ignore
-        Busy = ConnectionState.busy              # type: ignore
-        Error = ConnectionState.error            # type: ignore
+        Connected = ConnectionState.connected  # type: ignore
+        Busy = ConnectionState.busy  # type: ignore
+        Error = ConnectionState.error  # type: ignore
+
 
 AxisInformation = namedtuple("AxisInformation", ["speed", "inverted"])
 
 ##  OctoPrint connected (wifi / lan) printer using the OctoPrint API
 @signalemitter
 class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
-    def __init__(self, instance_id: str, address: str, port: int, properties: dict, **kwargs) -> None:
-        super().__init__(device_id = instance_id, address = address, properties = properties, **kwargs)
+    def __init__(
+        self, instance_id: str, address: str, port: int, properties: dict, **kwargs
+    ) -> None:
+        super().__init__(
+            device_id=instance_id, address=address, properties=properties, **kwargs
+        )
 
         self._address = address
         self._port = port
@@ -90,7 +111,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._octoprint_version = self._properties.get(b"version", b"").decode("utf-8")
         self._octoprint_user_name = ""
 
-        self._axis_information = {axis: AxisInformation(speed=6000 if axis != "e" else 300, inverted=False) for axis in ["x", "y", "z", "e"]}
+        self._axis_information = {
+            axis: AxisInformation(speed=6000 if axis != "e" else 300, inverted=False)
+            for axis in ["x", "y", "z", "e"]
+        }
 
         self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
@@ -104,7 +128,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._number_of_extruders = 1
 
         # Try to get version information from plugin.json
-        plugin_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin.json")
+        plugin_file_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "plugin.json"
+        )
         try:
             with open(plugin_file_path) as plugin_file:
                 plugin_info = json.load(plugin_file)
@@ -114,18 +140,23 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             plugin_version = "Unknown"
             Logger.logException("w", "Could not get version information for the plugin")
 
-        self._user_agent = ("%s/%s %s/%s" % (
+        self._user_agent = "%s/%s %s/%s" % (
             CuraApplication.getInstance().getApplicationName(),
             CuraApplication.getInstance().getVersion(),
             "OctoPrintPlugin",
-            plugin_version
-        )) # NetworkedPrinterOutputDevice defines this as string, so we encode this later
+            plugin_version,
+        )  # NetworkedPrinterOutputDevice defines this as string, so we encode this later
 
         self._api_prefix = "api/"
         self._api_key = b""
 
-        self._protocol = "https" if properties.get(b'useHttps') == b"true" else "http"
-        self._base_url = "%s://%s:%d%s" % (self._protocol, self._address, self._port, self._path)
+        self._protocol = "https" if properties.get(b"useHttps") == b"true" else "http"
+        self._base_url = "%s://%s:%d%s" % (
+            self._protocol,
+            self._address,
+            self._port,
+            self._path,
+        )
         self._api_url = self._base_url + self._api_prefix
 
         self._basic_auth_data = None
@@ -133,9 +164,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         basic_auth_username = properties.get(b"userName", b"").decode("utf-8")
         basic_auth_password = properties.get(b"password", b"").decode("utf-8")
         if basic_auth_username and basic_auth_password:
-            data = base64.b64encode(("%s:%s" % (basic_auth_username, basic_auth_password)).encode()).decode("utf-8")
+            data = base64.b64encode(
+                ("%s:%s" % (basic_auth_username, basic_auth_password)).encode()
+            ).decode("utf-8")
             self._basic_auth_data = ("basic %s" % data).encode()
-            self._basic_auth_string = "%s:%s" % (basic_auth_username, basic_auth_password)
+            self._basic_auth_string = "%s:%s" % (
+                basic_auth_username,
+                basic_auth_password,
+            )
 
         try:
             major_api_version = CuraApplication.getInstance().getAPIVersion().getMajor()
@@ -146,30 +182,44 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if major_api_version <= 5:
             # In Cura 3.x, the monitor item only shows the camera stream
-            self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "MonitorItem3x.qml")
+            self._monitor_view_qml_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "qml", "MonitorItem3x.qml"
+            )
         else:
             # In Cura 4.x, the monitor item shows the camera stream as well as the monitor sidebar
-            self._monitor_view_qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "MonitorItem4x.qml")
+            self._monitor_view_qml_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "qml", "MonitorItem4x.qml"
+            )
 
         name = self._id
         matches = re.search(r"^\"(.*)\"\._octoprint\._tcp.local$", name)
         if matches:
             name = matches.group(1)
 
-        self.setPriority(2) # Make sure the output device gets selected above local file output
+        self.setPriority(
+            2
+        )  # Make sure the output device gets selected above local file output
         self.setName(name)
-        self.setShortDescription(i18n_catalog.i18nc("@action:button", "Print with OctoPrint"))
-        self.setDescription(i18n_catalog.i18nc("@properties:tooltip", "Print with OctoPrint"))
+        self.setShortDescription(
+            i18n_catalog.i18nc("@action:button", "Print with OctoPrint")
+        )
+        self.setDescription(
+            i18n_catalog.i18nc("@properties:tooltip", "Print with OctoPrint")
+        )
         self.setIconName("print")
-        self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._id))
+        self.setConnectionText(
+            i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(
+                self._id
+            )
+        )
 
         self._post_gcode_reply = None
 
-        self._progress_message = None # type: Optional[Message]
-        self._error_message = None # type: Optional[Message]
-        self._waiting_message = None # type: Optional[Message]
+        self._progress_message = None  # type: Optional[Message]
+        self._error_message = None  # type: Optional[Message]
+        self._waiting_message = None  # type: Optional[Message]
 
-        self._queued_gcode_commands = [] # type: List[str]
+        self._queued_gcode_commands = []  # type: List[str]
 
         # TODO; Add preference for update intervals
         self._update_fast_interval = 2000
@@ -179,17 +229,27 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
-        self._webcams_model = WebcamsModel(self._protocol, self._address, self.port, self._basic_auth_string)
+        self._webcams_model = WebcamsModel(
+            self._protocol, self._address, self.port, self._basic_auth_string
+        )
 
         self._show_camera = True
 
         self._power_plugins_manager = PowerPlugins()
 
-        self._store_on_sd_supported = False # store gcode on sd card in printer instead of locally
-        self._ufp_transfer_supported = False # transfer gcode as .ufp files including thumbnail image
-        self._gcode_analysis_supported = False # wait for analysis to complete before starting a print
+        self._store_on_sd_supported = (
+            False  # store gcode on sd card in printer instead of locally
+        )
+        self._ufp_transfer_supported = (
+            False  # transfer gcode as .ufp files including thumbnail image
+        )
+        self._gcode_analysis_supported = (
+            False  # wait for analysis to complete before starting a print
+        )
 
-        self._ufp_plugin_version = Version(0) # used to determine how gcode files are extracted from .ufp
+        self._ufp_plugin_version = Version(
+            0
+        )  # used to determine how gcode files are extracted from .ufp
 
         self._waiting_for_analysis = False
         self._waiting_for_printer = False
@@ -202,7 +262,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def _store_on_sd(self) -> bool:
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
         if global_container_stack:
-            return self._store_on_sd_supported and parseBool(global_container_stack.getMetaDataEntry("octoprint_store_sd", False))
+            return self._store_on_sd_supported and parseBool(
+                global_container_stack.getMetaDataEntry("octoprint_store_sd", False)
+            )
         return False
 
     @property
@@ -216,7 +278,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def getProperties(self) -> Dict[bytes, bytes]:
         return self._properties
 
-    @pyqtSlot(str, result = str)
+    @pyqtSlot(str, result=str)
     def getProperty(self, key: str) -> str:
         key_b = key.encode("utf-8")
         if key_b in self._properties:
@@ -226,7 +288,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     ##  Get the unique key of this machine
     #   \return key String containing the key of the machine.
-    @pyqtSlot(result = str)
+    @pyqtSlot(result=str)
     def getId(self) -> str:
         return self._id
 
@@ -235,7 +297,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._api_key = api_key.encode()
 
     ##  Name of the instance (as returned from the zeroConf properties)
-    @pyqtProperty(str, constant = True)
+    @pyqtProperty(str, constant=True)
     def name(self) -> str:
         return self._name
 
@@ -319,31 +381,46 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Closed))
         if self._progress_message:
             self._progress_message.hide()
-            self._progress_message = None #type: Optional[Message]
+            self._progress_message = None  # type: Optional[Message]
         if self._error_message:
             self._error_message.hide()
-            self._error_message = None #type: Optional[Message]
+            self._error_message = None  # type: Optional[Message]
         if self._waiting_message:
             self._waiting_message.hide()
-            self._waiting_message = None #type: Optional[Message]
+            self._waiting_message = None  # type: Optional[Message]
 
         self._waiting_for_printer = False
         self._waiting_for_analysis = False
-        self._polling_end_points = [point for point in self._polling_end_points if not point.startswith("files/")]
+        self._polling_end_points = [
+            point
+            for point in self._polling_end_points
+            if not point.startswith("files/")
+        ]
 
     ##  Start requesting data from the instance
     def connect(self) -> None:
         self._createNetworkManager()
 
-        self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Connecting))
+        self.setConnectionState(
+            cast(ConnectionState, UnifiedConnectionState.Connecting)
+        )
         self._update()  # Manually trigger the first update, as we don't want to wait a few secs before it starts.
 
-        Logger.log("d", "Connection with instance %s with url %s started", self._id, self._base_url)
+        Logger.log(
+            "d",
+            "Connection with instance %s with url %s started",
+            self._id,
+            self._base_url,
+        )
         self._update_timer.start()
 
         self._last_response_time = None  # type: Optional[float]
         self._setAcceptsCommands(False)
-        self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(self._id))
+        self.setConnectionText(
+            i18n_catalog.i18nc("@info:status", "Connecting to OctoPrint on {0}").format(
+                self._id
+            )
+        )
 
         ## Request 'settings' dump
         self.get("settings", self._onRequestFinished)
@@ -358,13 +435,18 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self.get("version", self._onRequestFinished)
 
         if not self._octoprint_user_name and self._api_key:
-            self._sendCommandToApi("login", {"passive":True})
+            self._sendCommandToApi("login", {"passive": True})
 
         self.get("printerprofiles", self._onRequestFinished)
 
     ##  Stop requesting data from the instance
     def disconnect(self) -> None:
-        Logger.log("d", "Connection with instance %s with url %s stopped", self._id, self._base_url)
+        Logger.log(
+            "d",
+            "Connection with instance %s with url %s stopped",
+            self._id,
+            self._base_url,
+        )
         self.close()
 
     def pausePrint(self) -> None:
@@ -383,8 +465,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def cancelPrint(self) -> None:
         self._sendJobCommand("cancel")
 
-    def requestWrite(self, nodes: List["SceneNode"], file_name: Optional[str] = None, limit_mimetypes: bool = False,
-                     file_handler: Optional["FileHandler"] = None, filter_by_machine: bool = False, **kwargs) -> None:
+    def requestWrite(
+        self,
+        nodes: List["SceneNode"],
+        file_name: Optional[str] = None,
+        limit_mimetypes: bool = False,
+        file_handler: Optional["FileHandler"] = None,
+        filter_by_machine: bool = False,
+        **kwargs
+    ) -> None:
         global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
         if not global_container_stack or not self.activePrinter:
             Logger.log("e", "There is no active printer to send the print")
@@ -398,10 +487,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         # The presliced print should always be send using `GCodeWriter`
         print_info = CuraApplication.getInstance().getPrintInformation()
         if not self._transfer_as_ufp or not print_info or print_info.preSliced:
-            gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter"))
+            gcode_writer = cast(
+                MeshWriter, PluginRegistry.getInstance().getPluginObject("GCodeWriter")
+            )
             self._gcode_stream = StringIO()
         else:
-            gcode_writer = cast(MeshWriter, PluginRegistry.getInstance().getPluginObject("UFPWriter"))
+            gcode_writer = cast(
+                MeshWriter, PluginRegistry.getInstance().getPluginObject("UFPWriter")
+            )
             self._gcode_stream = BytesIO()
 
         if not gcode_writer.write(self._gcode_stream, None):
@@ -410,82 +503,142 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if self._error_message:
             self._error_message.hide()
-            self._error_message = None # type: Optional[Message]
+            self._error_message = None  # type: Optional[Message]
 
         if self._progress_message:
             self._progress_message.hide()
-            self._progress_message = None # type: Optional[Message]
+            self._progress_message = None  # type: Optional[Message]
 
-        self._auto_print = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_print", True))
-        self._auto_select = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_select", False))
+        self._auto_print = parseBool(
+            global_container_stack.getMetaDataEntry("octoprint_auto_print", True)
+        )
+        self._auto_select = parseBool(
+            global_container_stack.getMetaDataEntry("octoprint_auto_select", False)
+        )
         self._forced_queue = False
 
-        use_power_plugin = parseBool(global_container_stack.getMetaDataEntry("octoprint_power_control", False))
-        auto_connect = parseBool(global_container_stack.getMetaDataEntry("octoprint_auto_connect", False))
-        if self.activePrinter.state == "offline" and self._auto_print and (use_power_plugin or auto_connect):
+        use_power_plugin = parseBool(
+            global_container_stack.getMetaDataEntry("octoprint_power_control", False)
+        )
+        auto_connect = parseBool(
+            global_container_stack.getMetaDataEntry("octoprint_auto_connect", False)
+        )
+        if (
+            self.activePrinter.state == "offline"
+            and self._auto_print
+            and (use_power_plugin or auto_connect)
+        ):
             wait_for_printer = False
             if use_power_plugin:
                 available_plugs = self._power_plugins_manager.getAvailablePowerPlugs()
-                power_plug_id = global_container_stack.getMetaDataEntry("octoprint_power_plug", "")
+                power_plug_id = global_container_stack.getMetaDataEntry(
+                    "octoprint_power_plug", ""
+                )
                 if power_plug_id == "" and len(available_plugs) > 0:
-                    power_plug_id = list(self._power_plugins_manager.getAvailablePowerPlugs().keys())[0]
+                    power_plug_id = list(
+                        self._power_plugins_manager.getAvailablePowerPlugs().keys()
+                    )[0]
 
                 if power_plug_id in available_plugs:
-                    (end_point, command) = self._power_plugins_manager.getSetStateCommand(power_plug_id, True)
+                    (
+                        end_point,
+                        command,
+                    ) = self._power_plugins_manager.getSetStateCommand(
+                        power_plug_id, True
+                    )
                     if end_point and command:
                         self._sendCommandToApi(end_point, command)
-                        Logger.log("d", "Sent %s command to endpoint %s" % (command["command"], end_point))
+                        Logger.log(
+                            "d",
+                            "Sent %s command to endpoint %s"
+                            % (command["command"], end_point),
+                        )
                         wait_for_printer = True
                     else:
                         Logger.log("e", "No command to power on plug %s", power_plug_id)
                 else:
-                    Logger.log("e", "Specified power plug %s is not available", power_plug_id)
+                    Logger.log(
+                        "e", "Specified power plug %s is not available", power_plug_id
+                    )
 
-            else: # auto_connect
+            else:  # auto_connect
                 self._sendCommandToApi("connection", "connect")
-                Logger.log("d", "Sent command to connect printer to OctoPrint with current settings")
+                Logger.log(
+                    "d",
+                    "Sent command to connect printer to OctoPrint with current settings",
+                )
 
                 wait_for_printer = True
 
             if wait_for_printer:
                 self._waiting_message = Message(
-                    i18n_catalog.i18nc("@info:status", "Waiting for OctoPrint to connect to the printer..."),
+                    i18n_catalog.i18nc(
+                        "@info:status",
+                        "Waiting for OctoPrint to connect to the printer...",
+                    ),
                     title=i18n_catalog.i18nc("@label", "OctoPrint"),
-                    progress=-1, lifetime=0, dismissable=False, use_inactivity_timer=False
+                    progress=-1,
+                    lifetime=0,
+                    dismissable=False,
+                    use_inactivity_timer=False,
                 )
                 self._waiting_message.addAction(
-                    "queue", i18n_catalog.i18nc("@action:button", "Queue"), "",
-                    i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the printer and queue the printjob instead"),
-                    button_style=Message.ActionButtonStyle.SECONDARY
+                    "queue",
+                    i18n_catalog.i18nc("@action:button", "Queue"),
+                    "",
+                    i18n_catalog.i18nc(
+                        "@action:tooltip",
+                        "Stop waiting for the printer and queue the printjob instead",
+                    ),
+                    button_style=Message.ActionButtonStyle.SECONDARY,
                 )
                 self._waiting_message.addAction(
-                    "cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
-                    i18n_catalog.i18nc("@action:tooltip", "Abort the printjob")
+                    "cancel",
+                    i18n_catalog.i18nc("@action:button", "Cancel"),
+                    "",
+                    i18n_catalog.i18nc("@action:tooltip", "Abort the printjob"),
                 )
-                self._waiting_message.actionTriggered.connect(self._stopWaitingForPrinter)
+                self._waiting_message.actionTriggered.connect(
+                    self._stopWaitingForPrinter
+                )
 
                 self._waiting_message.show()
                 self._waiting_for_printer = True
                 return
 
         elif self.activePrinter.state not in ["idle", ""]:
-            Logger.log("d", "Tried starting a print, but current state is %s" % self.activePrinter.state)
+            Logger.log(
+                "d",
+                "Tried starting a print, but current state is %s"
+                % self.activePrinter.state,
+            )
             error_string = ""
             if not self._auto_print:
                 # Allow queueing the job even if OctoPrint is currently busy if autoprinting is disabled
                 pass
             elif self.activePrinter.state == "offline":
-                error_string = i18n_catalog.i18nc("@info:status", "The printer is offline. Unable to start a new job.")
+                error_string = i18n_catalog.i18nc(
+                    "@info:status", "The printer is offline. Unable to start a new job."
+                )
             else:
-                error_string = i18n_catalog.i18nc("@info:status", "OctoPrint is busy. Unable to start a new job.")
+                error_string = i18n_catalog.i18nc(
+                    "@info:status", "OctoPrint is busy. Unable to start a new job."
+                )
 
             if error_string:
                 if self._error_message:
                     self._error_message.hide()
-                self._error_message = Message(error_string, title=i18n_catalog.i18nc("@label", "OctoPrint error"))
+                self._error_message = Message(
+                    error_string, title=i18n_catalog.i18nc("@label", "OctoPrint error")
+                )
                 self._error_message.addAction(
-                    "queue", i18n_catalog.i18nc("@action:button", "Queue job"), "",
-                    i18n_catalog.i18nc("@action:tooltip", "Queue this print job so it can be printed later")
+                    "queue",
+                    i18n_catalog.i18nc("@action:button", "Queue job"),
+                    "",
+                    i18n_catalog.i18nc(
+                        "@action:tooltip",
+                        "Queue this print job so it can be printed later",
+                    ),
                 )
                 self._error_message.actionTriggered.connect(self._queuePrintJob)
                 self._error_message.show()
@@ -494,7 +647,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._sendPrintJob()
 
     def _stopWaitingForAnalysis(self, message: Message, action_id: str) -> None:
-        self._waiting_message = None # type:Optional[Message]
+        self._waiting_message = None  # type:Optional[Message]
         if message:
             message.hide()
         self._waiting_for_analysis = False
@@ -506,7 +659,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             Logger.log("e", "Could not find files/ endpoint")
             return
 
-        self._polling_end_points = [point for point in self._polling_end_points if not point.startswith("files/")]
+        self._polling_end_points = [
+            point
+            for point in self._polling_end_points
+            if not point.startswith("files/")
+        ]
 
         if action_id == "print":
             self._selectAndPrint(end_point)
@@ -514,7 +671,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             pass
 
     def _stopWaitingForPrinter(self, message: Message, action_id: str) -> None:
-        self._waiting_message = None # type:Optional[Message]
+        self._waiting_message = None  # type:Optional[Message]
         if message:
             message.hide()
         self._waiting_for_printer = False
@@ -526,10 +683,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
     def _queuePrintJob(self, message: Message, action_id: str) -> None:
-        self._error_message = None # type:Optional[Message]
+        self._error_message = None  # type:Optional[Message]
         if message:
             message.hide()
-
 
         self._forced_queue = True
         self._sendPrintJob()
@@ -552,11 +708,16 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._progress_message = Message(
             i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"),
             title=i18n_catalog.i18nc("@label", "OctoPrint"),
-            progress=-1, lifetime=0, dismissable=False, use_inactivity_timer=False
+            progress=-1,
+            lifetime=0,
+            dismissable=False,
+            use_inactivity_timer=False,
         )
         self._progress_message.addAction(
-            "cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
-            i18n_catalog.i18nc("@action:tooltip", "Abort the printjob")
+            "cancel",
+            i18n_catalog.i18nc("@action:button", "Cancel"),
+            "",
+            i18n_catalog.i18nc("@action:tooltip", "Abort the printjob"),
         )
 
         self._progress_message.actionTriggered.connect(self._cancelSendGcode)
@@ -567,11 +728,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if job_name == "":
             job_name = "untitled_print"
         ##  Presliced print is always send as gcode
-        extension = "gcode" if not self._transfer_as_ufp or print_info.preSliced else "ufp"
+        extension = (
+            "gcode" if not self._transfer_as_ufp or print_info.preSliced else "ufp"
+        )
         file_name = "%s.%s" % (os.path.basename(job_name), extension)
 
         ##  Create multi_part request
-        post_parts = [] # type: List[QHttpPart]
+        post_parts = []  # type: List[QHttpPart]
 
         ##  Create parts (to be placed inside multipart)
         gcode_body = self._gcode_stream.getvalue()
@@ -579,18 +742,34 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             # encode StringIO result to bytes
             gcode_body = gcode_body.encode()
 
-        post_parts.append(self._createFormPart("name=\"path\"", os.path.dirname(job_name).encode(), "text/plain"))
-        post_parts.append(self._createFormPart("name=\"file\"; filename=\"%s\"" % file_name, gcode_body, "application/octet-stream"))
+        post_parts.append(
+            self._createFormPart(
+                'name="path"', os.path.dirname(job_name).encode(), "text/plain"
+            )
+        )
+        post_parts.append(
+            self._createFormPart(
+                'name="file"; filename="%s"' % file_name,
+                gcode_body,
+                "application/octet-stream",
+            )
+        )
 
-        if self._store_on_sd or (not self._wait_for_analysis and not self._transfer_as_ufp):
+        if self._store_on_sd or (
+            not self._wait_for_analysis and not self._transfer_as_ufp
+        ):
             self._select_and_print_handled_in_upload = True
 
             if not self._forced_queue:
                 # tell OctoPrint to start the print when there is no reason to delay doing so
                 if self._auto_select or self._auto_print:
-                    post_parts.append(self._createFormPart("name=\"select\"", b"true", "text/plain"))
+                    post_parts.append(
+                        self._createFormPart('name="select"', b"true", "text/plain")
+                    )
                 if self._auto_print:
-                    post_parts.append(self._createFormPart("name=\"print\"", b"true", "text/plain"))
+                    post_parts.append(
+                        self._createFormPart('name="print"', b"true", "text/plain")
+                    )
         else:
             # otherwise selecting and printing the job is delayed until after the upload
             # see self._onUploadFinished
@@ -602,19 +781,21 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         try:
             ##  Post request + data
-            post_gcode_request = self._createEmptyRequest("files/" + destination, content_type="application/x-www-form-urlencoded")
+            post_gcode_request = self._createEmptyRequest(
+                "files/" + destination, content_type="application/x-www-form-urlencoded"
+            )
             self._post_gcode_reply = self.postFormWithParts(
                 "files/" + destination,
                 post_parts,
                 on_finished=self._onUploadFinished,
-                on_progress=self._onUploadProgress
+                on_progress=self._onUploadProgress,
             )
 
         except Exception as e:
             self._progress_message.hide()
             self._error_message = Message(
                 i18n_catalog.i18nc("@info:status", "Unable to send data to OctoPrint."),
-                title=i18n_catalog.i18nc("@label", "OctoPrint error")
+                title=i18n_catalog.i18nc("@label", "OctoPrint error"),
             )
             self._error_message.show()
             Logger.log("e", "An exception occurred in network connection: %s" % str(e))
@@ -622,7 +803,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
     def _cancelSendGcode(self, message: Message, action_id: str) -> None:
-        self._progress_message = None # type:Optional[Message]
+        self._progress_message = None  # type:Optional[Message]
         if message:
             message.hide()
 
@@ -634,7 +815,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 pass  # The disconnection can fail on mac in some cases. Ignore that.
 
             self._post_gcode_reply.abort()
-            self._post_gcode_reply = None # type:Optional[QNetworkReply]
+            self._post_gcode_reply = None  # type:Optional[QNetworkReply]
+
     def sendCommand(self, command: str) -> None:
         self._queued_gcode_commands.append(command)
         CuraApplication.getInstance().callLater(self._sendQueuedGcode)
@@ -643,14 +825,20 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def _sendQueuedGcode(self) -> None:
         if self._queued_gcode_commands:
             self._sendCommandToApi("printer/command", self._queued_gcode_commands)
-            Logger.log("d", "Sent gcode command to OctoPrint instance: %s", self._queued_gcode_commands)
-            self._queued_gcode_commands = [] # type: List[str]
+            Logger.log(
+                "d",
+                "Sent gcode command to OctoPrint instance: %s",
+                self._queued_gcode_commands,
+            )
+            self._queued_gcode_commands = []  # type: List[str]
 
     def _sendJobCommand(self, command: str) -> None:
         self._sendCommandToApi("job", command)
         Logger.log("d", "Sent job command to OctoPrint instance: %s", command)
 
-    def _sendCommandToApi(self, end_point: str, commands: Union[Dict[str, Any], str, List[str]]) -> None:
+    def _sendCommandToApi(
+        self, end_point: str, commands: Union[Dict[str, Any], str, List[str]]
+    ) -> None:
         if isinstance(commands, dict):
             data = json.dumps(commands)
         elif isinstance(commands, list):
@@ -667,10 +855,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Error))
             return
 
-        if self._connection_state_before_timeout and reply.error() == QNetworkReply.NoError:
+        if (
+            self._connection_state_before_timeout
+            and reply.error() == QNetworkReply.NoError
+        ):
             #  There was a timeout, but we got a correct answer again.
             if self._last_response_time:
-                Logger.log("d", "We got a response from the instance after %s of silence", time() - self._last_response_time)
+                Logger.log(
+                    "d",
+                    "We got a response from the instance after %s of silence",
+                    time() - self._last_response_time,
+                )
             self.setConnectionState(self._connection_state_before_timeout)
             self._connection_state_before_timeout = None
 
@@ -688,7 +883,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
-                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        Logger.log(
+                            "w", "Received invalid JSON from octoprint instance."
+                        )
                         json_data = {}
 
                     for profile_id in json_data["profiles"]:
@@ -700,16 +897,21 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             for axis in ["x", "y", "z", "e"]:
                                 self._axis_information[axis] = AxisInformation(
                                     speed=printer_profile["axes"][axis]["speed"],
-                                    inverted=printer_profile["axes"][axis]["inverted"]
-                            )
+                                    inverted=printer_profile["axes"][axis]["inverted"],
+                                )
 
                             self.additionalDataChanged.emit()
                             return
                 else:
-                    Logger.log("w", "Instance does not report printerprofiles with provided API key")
+                    Logger.log(
+                        "w",
+                        "Instance does not report printerprofiles with provided API key",
+                    )
                     return
 
-            elif self._api_prefix + "printer" in reply.url().toString():  # Status update from /printer.
+            elif (
+                self._api_prefix + "printer" in reply.url().toString()
+            ):  # Status update from /printer.
                 if not self._printers:
                     self._createPrinterList()
 
@@ -725,20 +927,31 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     if not self.acceptsCommands:
                         self._setAcceptsCommands(True)
-                        self.setConnectionText(i18n_catalog.i18nc("@info:status", "Connected to OctoPrint on {0}").format(self._id))
+                        self.setConnectionText(
+                            i18n_catalog.i18nc(
+                                "@info:status", "Connected to OctoPrint on {0}"
+                            ).format(self._id)
+                        )
 
                     if self._connection_state == UnifiedConnectionState.Connecting:
-                        self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Connected))
+                        self.setConnectionState(
+                            cast(ConnectionState, UnifiedConnectionState.Connected)
+                        )
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
-                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        Logger.log(
+                            "w", "Received invalid JSON from octoprint instance."
+                        )
                         json_data = {}
 
                     if "temperature" in json_data:
                         if not self._number_of_extruders_set:
                             self._number_of_extruders = 0
-                            while "tool%d" % self._number_of_extruders in json_data["temperature"]:
+                            while (
+                                "tool%d" % self._number_of_extruders
+                                in json_data["temperature"]
+                            ):
                                 self._number_of_extruders += 1
 
                             if self._number_of_extruders > 1:
@@ -753,10 +966,22 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         for index in range(0, self._number_of_extruders):
                             extruder = printer.extruders[index]
                             if ("tool%d" % index) in json_data["temperature"]:
-                                hotend_temperatures = json_data["temperature"]["tool%d" % index]
-                                target_temperature = hotend_temperatures["target"] if hotend_temperatures["target"] is not None else -1
-                                actual_temperature = hotend_temperatures["actual"] if hotend_temperatures["actual"] is not None else -1
-                                extruder.updateTargetHotendTemperature(target_temperature)
+                                hotend_temperatures = json_data["temperature"][
+                                    "tool%d" % index
+                                ]
+                                target_temperature = (
+                                    hotend_temperatures["target"]
+                                    if hotend_temperatures["target"] is not None
+                                    else -1
+                                )
+                                actual_temperature = (
+                                    hotend_temperatures["actual"]
+                                    if hotend_temperatures["actual"] is not None
+                                    else -1
+                                )
+                                extruder.updateTargetHotendTemperature(
+                                    target_temperature
+                                )
                                 extruder.updateHotendTemperature(actual_temperature)
                             else:
                                 extruder.updateTargetHotendTemperature(0)
@@ -764,9 +989,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                         if "bed" in json_data["temperature"]:
                             bed_temperatures = json_data["temperature"]["bed"]
-                            actual_temperature = bed_temperatures["actual"] if bed_temperatures["actual"] is not None else -1
+                            actual_temperature = (
+                                bed_temperatures["actual"]
+                                if bed_temperatures["actual"] is not None
+                                else -1
+                            )
                             printer.updateBedTemperature(actual_temperature)
-                            target_temperature = bed_temperatures["target"] if bed_temperatures["target"] is not None else -1
+                            target_temperature = (
+                                bed_temperatures["target"]
+                                if bed_temperatures["target"] is not None
+                                else -1
+                            )
                             printer.updateTargetBedTemperature(target_temperature)
                         else:
                             printer.updateBedTemperature(-1)
@@ -786,39 +1019,62 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         elif flags["ready"] or flags["operational"]:
                             printer_state = "idle"
                         else:
-                            Logger.log("w", "Encountered unexpected printer state flags: %s" % flags)
+                            Logger.log(
+                                "w",
+                                "Encountered unexpected printer state flags: %s"
+                                % flags,
+                            )
                     printer.updateState(printer_state)
 
                 elif http_status_code == 401 or http_status_code == 403:
-                    self._setOffline(printer, i18n_catalog.i18nc(
-                        "@info:status", "OctoPrint on {0} does not allow access to the printer state").format(self._id)
+                    self._setOffline(
+                        printer,
+                        i18n_catalog.i18nc(
+                            "@info:status",
+                            "OctoPrint on {0} does not allow access to the printer state",
+                        ).format(self._id),
                     )
                     return
 
                 elif http_status_code == 409:
                     if self._connection_state == UnifiedConnectionState.Connecting:
-                        self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Connected))
+                        self.setConnectionState(
+                            cast(ConnectionState, UnifiedConnectionState.Connected)
+                        )
 
-                    self._setOffline(printer, i18n_catalog.i18nc(
-                        "@info:status", "The printer connected to OctoPrint on {0} is not operational").format(self._id)
+                    self._setOffline(
+                        printer,
+                        i18n_catalog.i18nc(
+                            "@info:status",
+                            "The printer connected to OctoPrint on {0} is not operational",
+                        ).format(self._id),
                     )
                     return
 
                 elif http_status_code == 502 or http_status_code == 503:
-                    Logger.log("w", "Received an error status code: %d", http_status_code)
-                    self._setOffline(printer, i18n_catalog.i18nc(
-                        "@info:status", "OctoPrint on {0} is not running").format(self._id)
+                    Logger.log(
+                        "w", "Received an error status code: %d", http_status_code
+                    )
+                    self._setOffline(
+                        printer,
+                        i18n_catalog.i18nc(
+                            "@info:status", "OctoPrint on {0} is not running"
+                        ).format(self._id),
                     )
                     return
 
                 else:
                     self._setOffline(printer)
-                    Logger.log("w", "Received an unexpected status code: %d", http_status_code)
+                    Logger.log(
+                        "w", "Received an unexpected status code: %d", http_status_code
+                    )
 
                 if update_pace != self._update_timer.interval():
                     self._update_timer.setInterval(update_pace)
 
-            elif self._api_prefix + "job" in reply.url().toString():  # Status update from /job:
+            elif (
+                self._api_prefix + "job" in reply.url().toString()
+            ):  # Status update from /job:
                 if not self._printers or not self._printers[0]:
                     return  # Ignore the data for now, we don't have info about a printer yet.
                 printer = self._printers[0]
@@ -827,11 +1083,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
-                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        Logger.log(
+                            "w", "Received invalid JSON from octoprint instance."
+                        )
                         json_data = {}
 
                     if printer.activePrintJob is None:
-                        print_job = PrintJobOutputModel(output_controller=self._output_controller)
+                        print_job = PrintJobOutputModel(
+                            output_controller=self._output_controller
+                        )
                         printer.updateActivePrintJob(print_job)
                     else:
                         print_job = printer.activePrintJob
@@ -840,7 +1100,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     if "state" in json_data:
                         state = json_data["state"]
                         if not isinstance(state, str):
-                            Logger.log("e", "Encountered non-string printjob state: %s" % state)
+                            Logger.log(
+                                "e", "Encountered non-string printjob state: %s" % state
+                            )
                         elif state.startswith("Error"):
                             print_job_state = "error"
                         elif state == "Pausing":
@@ -854,12 +1116,18 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         elif state == "Operational":
                             print_job_state = "ready"
                             printer.updateState("idle")
-                        elif state.startswith("Starting") or state == "Connecting" or state == "Sending file to SD":
+                        elif (
+                            state.startswith("Starting")
+                            or state == "Connecting"
+                            or state == "Sending file to SD"
+                        ):
                             print_job_state = "pre_print"
                         elif state.startswith("Offline"):
                             print_job_state = "offline"
                         else:
-                            Logger.log("w", "Encountered unexpected printjob state: %s" % state)
+                            Logger.log(
+                                "w", "Encountered unexpected printjob state: %s" % state
+                            )
                     print_job.updateState(print_job_state)
 
                     if "progress" in json_data:
@@ -870,31 +1138,47 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             print_job.updateTimeElapsed(print_time)
 
                             print_time_left = json_data["progress"]["printTimeLeft"]
-                            if print_time_left: # not 0 or None or ""
+                            if print_time_left:  # not 0 or None or ""
                                 print_job.updateTimeTotal(print_time + print_time_left)
-                            elif completion: # not 0 or None or ""
-                                print_job.updateTimeTotal(print_time / (completion / 100))
+                            elif completion:  # not 0 or None or ""
+                                print_job.updateTimeTotal(
+                                    print_time / (completion / 100)
+                                )
                             else:
                                 print_job.updateTimeTotal(0)
                         else:
                             print_job.updateTimeElapsed(0)
                             print_job.updateTimeTotal(0)
 
-                    if completion and print_job_state == "pre_print": # completion not not 0 or None or "", state "Sending file to SD"
+                    if (
+                        completion and print_job_state == "pre_print"
+                    ):  # completion not not 0 or None or "", state "Sending file to SD"
                         if not self._progress_message:
                             self._progress_message = Message(
-                                i18n_catalog.i18nc("@info:status", "Streaming file to the printer SD card"),
-                                0, False, -1, title=i18n_catalog.i18nc("@label", "OctoPrint")
+                                i18n_catalog.i18nc(
+                                    "@info:status",
+                                    "Streaming file to the printer SD card",
+                                ),
+                                0,
+                                False,
+                                -1,
+                                title=i18n_catalog.i18nc("@label", "OctoPrint"),
                             )
                             self._progress_message.show()
                         if completion < 100:
                             self._progress_message.setProgress(completion)
                     else:
-                        if self._progress_message and self._progress_message.getText().startswith(
-                            i18n_catalog.i18nc("@info:status", "Streaming file to the printer SD card")
+                        if (
+                            self._progress_message
+                            and self._progress_message.getText().startswith(
+                                i18n_catalog.i18nc(
+                                    "@info:status",
+                                    "Streaming file to the printer SD card",
+                                )
+                            )
                         ):
                             self._progress_message.hide()
-                            self._progress_message = None # type:Optional[Message]
+                            self._progress_message = None  # type:Optional[Message]
 
                     print_job.updateName(json_data["job"]["file"]["name"])
 
@@ -906,37 +1190,54 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         self._sendPrintJob()
 
                 elif http_status_code == 401 or http_status_code == 403:
-                    self._setOffline(printer, i18n_catalog.i18nc(
-                        "@info:status", "OctoPrint on {0} does not allow access to the job state").format(self._id)
+                    self._setOffline(
+                        printer,
+                        i18n_catalog.i18nc(
+                            "@info:status",
+                            "OctoPrint on {0} does not allow access to the job state",
+                        ).format(self._id),
                     )
                     return
 
                 elif http_status_code == 502 or http_status_code == 503:
-                    Logger.log("w", "Received an error status code: %d", http_status_code)
-                    self._setOffline(printer, i18n_catalog.i18nc(
-                        "@info:status", "OctoPrint on {0} is not running").format(self._id)
+                    Logger.log(
+                        "w", "Received an error status code: %d", http_status_code
+                    )
+                    self._setOffline(
+                        printer,
+                        i18n_catalog.i18nc(
+                            "@info:status", "OctoPrint on {0} is not running"
+                        ).format(self._id),
                     )
                     return
 
                 else:
                     pass  # See generic error handler below
 
-            elif self._api_prefix + "settings" in reply.url().toString():  # OctoPrint settings dump from /settings:
+            elif (
+                self._api_prefix + "settings" in reply.url().toString()
+            ):  # OctoPrint settings dump from /settings:
                 if http_status_code == 200:
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
-                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        Logger.log(
+                            "w", "Received invalid JSON from octoprint instance."
+                        )
                         json_data = {}
 
                     self.parseSettingsData(json_data)
 
-            elif self._api_prefix + "version" in reply.url().toString():  # OctoPrint & API version
+            elif (
+                self._api_prefix + "version" in reply.url().toString()
+            ):  # OctoPrint & API version
                 if http_status_code == 200:
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
-                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        Logger.log(
+                            "w", "Received invalid JSON from octoprint instance."
+                        )
                         json_data = {}
 
                     if "server" in json_data:
@@ -947,7 +1248,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     Logger.log("w", "Instance does not support reporting its version")
                     return
 
-            elif self._api_prefix + "files/" in reply.url().toString():  # Information about a file
+            elif (
+                self._api_prefix + "files/" in reply.url().toString()
+            ):  # Information about a file
                 if http_status_code == 200:
                     if not self._waiting_for_analysis:
                         return
@@ -957,11 +1260,18 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
-                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        Logger.log(
+                            "w", "Received invalid JSON from octoprint instance."
+                        )
                         json_data = {}
 
-                    if "gcodeAnalysis" in json_data and "progress" in json_data["gcodeAnalysis"]:
-                        Logger.log("d", "PrintTimeGenius analysis of %s is done" % end_point)
+                    if (
+                        "gcodeAnalysis" in json_data
+                        and "progress" in json_data["gcodeAnalysis"]
+                    ):
+                        Logger.log(
+                            "d", "PrintTimeGenius analysis of %s is done" % end_point
+                        )
 
                         self._waiting_for_analysis = False
 
@@ -969,47 +1279,76 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             self._waiting_message.hide()
                             self._waiting_message = None
 
-                        self._polling_end_points = [point for point in self._polling_end_points if not point.startswith("files/")]
+                        self._polling_end_points = [
+                            point
+                            for point in self._polling_end_points
+                            if not point.startswith("files/")
+                        ]
 
                         self._selectAndPrint(end_point)
                     else:
-                        Logger.log("d", "Still waiting for PrintTimeGenius analysis of %s" % end_point)
+                        Logger.log(
+                            "d",
+                            "Still waiting for PrintTimeGenius analysis of %s"
+                            % end_point,
+                        )
 
         elif reply.operation() == QNetworkAccessManager.PostOperation:
-            if self._api_prefix + "files" in reply.url().toString():  # Result from /files command to start a printjob:
+            if (
+                self._api_prefix + "files" in reply.url().toString()
+            ):  # Result from /files command to start a printjob:
                 if http_status_code == 204:
                     Logger.log("d", "OctoPrint file command accepted")
 
                 elif http_status_code == 401 or http_status_code == 403:
-                    error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to start print jobs on OctoPrint with the configured API key.")
+                    error_string = i18n_catalog.i18nc(
+                        "@info:error",
+                        "You are not allowed to start print jobs on OctoPrint with the configured API key.",
+                    )
                     self._showErrorMessage(error_string)
                     return
 
-                elif http_status_code == 404 and "files/sdcard/" in reply.url().toString():
-                    Logger.log("d", "OctoPrint reports an 404 not found error after uploading to SD-card, but we ignore that")
+                elif (
+                    http_status_code == 404
+                    and "files/sdcard/" in reply.url().toString()
+                ):
+                    Logger.log(
+                        "d",
+                        "OctoPrint reports an 404 not found error after uploading to SD-card, but we ignore that",
+                    )
                     return
 
                 else:
                     pass  # See generic error handler below
 
-            elif self._api_prefix + "job" in reply.url().toString():  # Result from /job command (eg start/pause):
+            elif (
+                self._api_prefix + "job" in reply.url().toString()
+            ):  # Result from /job command (eg start/pause):
                 if http_status_code == 204:
                     Logger.log("d", "OctoPrint job command accepted")
 
                 elif http_status_code == 401 or http_status_code == 403:
-                    error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to control print jobs on OctoPrint with the configured API key.")
+                    error_string = i18n_catalog.i18nc(
+                        "@info:error",
+                        "You are not allowed to control print jobs on OctoPrint with the configured API key.",
+                    )
                     self._showErrorMessage(error_string)
                     return
 
                 else:
                     pass  # See generic error handler below
 
-            elif self._api_prefix + "printer/command" in reply.url().toString():  # Result from /printer/command (gcode statements):
+            elif (
+                self._api_prefix + "printer/command" in reply.url().toString()
+            ):  # Result from /printer/command (gcode statements):
                 if http_status_code == 204:
                     Logger.log("d", "OctoPrint gcode command(s) accepted")
 
                 elif http_status_code == 401 or http_status_code == 403:
-                    error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to send gcode commands to OctoPrint with the configured API key.")
+                    error_string = i18n_catalog.i18nc(
+                        "@info:error",
+                        "You are not allowed to send gcode commands to OctoPrint with the configured API key.",
+                    )
                     self._showErrorMessage(error_string)
                     return
 
@@ -1021,35 +1360,51 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     try:
                         json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
                     except json.decoder.JSONDecodeError:
-                        Logger.log("w", "Received invalid JSON from octoprint instance.")
+                        Logger.log(
+                            "w", "Received invalid JSON from octoprint instance."
+                        )
                         json_data = {}
 
                     if "name" in json_data:
                         self._octoprint_user_name = json_data["name"]
                     else:
-                        self._octoprint_user_name = i18n_catalog.i18nc("@label", "Anonymous user")
+                        self._octoprint_user_name = i18n_catalog.i18nc(
+                            "@label", "Anonymous user"
+                        )
                     self.additionalDataChanged.emit()
 
                 elif http_status_code == 404:
                     Logger.log("w", "Instance does not support user authorization")
-                    self._octoprint_user_name = i18n_catalog.i18nc("@label", "Anonymous user")
+                    self._octoprint_user_name = i18n_catalog.i18nc(
+                        "@label", "Anonymous user"
+                    )
                     self.additionalDataChanged.emit()
                     return
 
                 elif http_status_code == 401 or http_status_code == 403:
-                    self._octoprint_user_name = i18n_catalog.i18nc("@label", "Unknown user")
+                    self._octoprint_user_name = i18n_catalog.i18nc(
+                        "@label", "Unknown user"
+                    )
                     self.additionalDataChanged.emit()
 
-                    error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to access to OctoPrint with the configured API key.")
+                    error_string = i18n_catalog.i18nc(
+                        "@info:error",
+                        "You are not allowed to access to OctoPrint with the configured API key.",
+                    )
                     self._showErrorMessage(error_string)
                     return
 
-            elif self._api_prefix + "connection/connect" in reply.url().toString():  # Result from /connection/connect command (eg start/pause):
+            elif (
+                self._api_prefix + "connection/connect" in reply.url().toString()
+            ):  # Result from /connection/connect command (eg start/pause):
                 if http_status_code == 204:
                     Logger.log("d", "OctoPrint connection command accepted")
 
                 elif http_status_code == 401 or http_status_code == 403:
-                    error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to control printer connections on OctoPrint with the configured API key.")
+                    error_string = i18n_catalog.i18nc(
+                        "@info:error",
+                        "You are not allowed to control printer connections on OctoPrint with the configured API key.",
+                    )
                     self._showErrorMessage(error_string)
                     return
 
@@ -1057,19 +1412,32 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     pass  # See generic error handler below
 
         else:
-            Logger.log("d", "OctoPrintOutputDevice got an unhandled operation %s", reply.operation())
+            Logger.log(
+                "d",
+                "OctoPrintOutputDevice got an unhandled operation %s",
+                reply.operation(),
+            )
 
         if http_status_code >= 400:
             if http_status_code == 401 or http_status_code == 403:
-                error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to access OctoPrint with the configured API key.")
+                error_string = i18n_catalog.i18nc(
+                    "@info:error",
+                    "You are not allowed to access OctoPrint with the configured API key.",
+                )
             else:
                 # Received another error reply
                 error_string = bytes(reply.readAll()).decode("utf-8")
                 if not error_string:
-                    error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+                    error_string = reply.attribute(
+                        QNetworkRequest.HttpReasonPhraseAttribute
+                    )
 
             self._showErrorMessage(error_string)
-            Logger.log("e", "OctoPrintOutputDevice got an error while accessing %s", reply.url().toString())
+            Logger.log(
+                "e",
+                "OctoPrintOutputDevice got an error while accessing %s",
+                reply.url().toString(),
+            )
             Logger.log("e", error_string)
 
     def _onUploadProgress(self, bytes_sent: int, bytes_total: int) -> None:
@@ -1090,7 +1458,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 self._progress_message.hide()
                 self._progress_message = Message(
                     i18n_catalog.i18nc("@info:status", "Storing data on OctoPrint"),
-                    0, False, -1, title=i18n_catalog.i18nc("@label", "OctoPrint")
+                    0,
+                    False,
+                    -1,
+                    title=i18n_catalog.i18nc("@label", "OctoPrint"),
                 )
                 self._progress_message.show()
         else:
@@ -1106,31 +1477,50 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
         error_string = ""
         if http_status_code == 401 or http_status_code == 403:
-            error_string = i18n_catalog.i18nc("@info:error", "You are not allowed to upload files to OctoPrint with the configured API key.")
+            error_string = i18n_catalog.i18nc(
+                "@info:error",
+                "You are not allowed to upload files to OctoPrint with the configured API key.",
+            )
 
         elif http_status_code == 409:
             if "files/sdcard" in reply.url().toString():
-                error_string = i18n_catalog.i18nc("@info:error", "Can't store the printjob on the printer sd card.")
+                error_string = i18n_catalog.i18nc(
+                    "@info:error", "Can't store the printjob on the printer sd card."
+                )
             else:
-                error_string = i18n_catalog.i18nc("@info:error", "Can't store the printjob with the same name as the one that is currently printing.")
+                error_string = i18n_catalog.i18nc(
+                    "@info:error",
+                    "Can't store the printjob with the same name as the one that is currently printing.",
+                )
 
         elif http_status_code >= 400:
             error_string = bytes(reply.readAll()).decode("utf-8")
             if not error_string:
-                error_string = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+                error_string = reply.attribute(
+                    QNetworkRequest.HttpReasonPhraseAttribute
+                )
 
         if error_string:
             self._showErrorMessage(error_string)
-            Logger.log("e", "OctoPrintOutputDevice got an %d error uploading to %s", http_status_code, reply.url().toString())
+            Logger.log(
+                "e",
+                "OctoPrintOutputDevice got an %d error uploading to %s",
+                http_status_code,
+                reply.url().toString(),
+            )
             Logger.log("e", error_string)
             return
 
         location_url = reply.header(QNetworkRequest.LocationHeader)
-        Logger.log("d", "Resource created on OctoPrint instance: %s", location_url.toString())
+        Logger.log(
+            "d", "Resource created on OctoPrint instance: %s", location_url.toString()
+        )
 
         end_point = location_url.toString().split(self._api_prefix, 1)[1]
         if self._transfer_as_ufp and end_point.endswith(".ufp"):
-            if self._ufp_plugin_version < Version("0.1.7"): # unfortunately, version 0.1.6 can not be detected
+            if self._ufp_plugin_version < Version(
+                "0.1.7"
+            ):  # unfortunately, version 0.1.6 can not be detected
                 # before 0.1.6, the plugin extracts gcode from *.ufp files as *.ufp.gcode
                 end_point += ".gcode"
             else:
@@ -1140,13 +1530,21 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if self._forced_queue or not self._auto_print:
             if location_url:
                 file_name = location_url.fileName()
-                message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint as {0}").format(file_name))
+                message = Message(
+                    i18n_catalog.i18nc(
+                        "@info:status", "Saved to OctoPrint as {0}"
+                    ).format(file_name)
+                )
             else:
-                message = Message(i18n_catalog.i18nc("@info:status", "Saved to OctoPrint"))
+                message = Message(
+                    i18n_catalog.i18nc("@info:status", "Saved to OctoPrint")
+                )
             message.setTitle(i18n_catalog.i18nc("@label", "OctoPrint"))
             message.addAction(
-                "open_browser", i18n_catalog.i18nc("@action:button", "OctoPrint..."), "globe",
-                i18n_catalog.i18nc("@info:tooltip", "Open the OctoPrint web interface")
+                "open_browser",
+                i18n_catalog.i18nc("@action:button", "OctoPrint..."),
+                "globe",
+                i18n_catalog.i18nc("@info:tooltip", "Open the OctoPrint web interface"),
             )
             message.actionTriggered.connect(self._openOctoPrint)
             message.show()
@@ -1155,29 +1553,46 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 self._selectAndPrint(end_point)
         elif self._auto_print or self._auto_select or self._wait_for_analysis:
             if not self._wait_for_analysis or not self._auto_print:
-                if not self._select_and_print_handled_in_upload and (self._auto_print or self._auto_select):
+                if not self._select_and_print_handled_in_upload and (
+                    self._auto_print or self._auto_select
+                ):
                     self._selectAndPrint(end_point)
                 return
 
             self._waiting_message = Message(
-                i18n_catalog.i18nc("@info:status", "Waiting for OctoPrint to complete Gcode analysis..."),
+                i18n_catalog.i18nc(
+                    "@info:status",
+                    "Waiting for OctoPrint to complete Gcode analysis...",
+                ),
                 title=i18n_catalog.i18nc("@label", "OctoPrint"),
-                progress=-1, lifetime=0, dismissable=False, use_inactivity_timer=False
+                progress=-1,
+                lifetime=0,
+                dismissable=False,
+                use_inactivity_timer=False,
             )
             self._waiting_message.addAction(
-                "print", i18n_catalog.i18nc("@action:button", "Print now"), "",
-                i18n_catalog.i18nc("@action:tooltip", "Stop waiting for the Gcode analysis and start printing immediately"),
-                button_style=Message.ActionButtonStyle.SECONDARY
+                "print",
+                i18n_catalog.i18nc("@action:button", "Print now"),
+                "",
+                i18n_catalog.i18nc(
+                    "@action:tooltip",
+                    "Stop waiting for the Gcode analysis and start printing immediately",
+                ),
+                button_style=Message.ActionButtonStyle.SECONDARY,
             )
             self._waiting_message.addAction(
-                "cancel", i18n_catalog.i18nc("@action:button", "Cancel"), "",
-                i18n_catalog.i18nc("@action:tooltip", "Abort the printjob")
+                "cancel",
+                i18n_catalog.i18nc("@action:button", "Cancel"),
+                "",
+                i18n_catalog.i18nc("@action:tooltip", "Abort the printjob"),
             )
             self._waiting_message.actionTriggered.connect(self._stopWaitingForAnalysis)
             self._waiting_message.show()
 
             self._waiting_for_analysis = True
-            self._polling_end_points.append(end_point)  # start polling the API for information about this file
+            self._polling_end_points.append(
+                end_point
+            )  # start polling the API for information about this file
 
     def parseSettingsData(self, json_data: Dict[str, Any]) -> None:
         self._store_on_sd_supported = False
@@ -1192,30 +1607,50 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             plugin_data = json_data["plugins"]
             self._power_plugins_manager.parsePluginData(plugin_data)
 
-            if "PrintTimeGenius" in plugin_data and "analyzers" in plugin_data["PrintTimeGenius"]:
+            if (
+                "PrintTimeGenius" in plugin_data
+                and "analyzers" in plugin_data["PrintTimeGenius"]
+            ):
                 for analyzer in plugin_data["PrintTimeGenius"]["analyzers"]:
                     if analyzer.get("enabled", False):
                         self._gcode_analysis_supported = True
-                        Logger.log("d", "Instance needs time after uploading to analyse gcode")
+                        Logger.log(
+                            "d", "Instance needs time after uploading to analyse gcode"
+                        )
                         break
 
                 if not self._gcode_analysis_supported:
-                    Logger.log("w", "PrintTimeGenius is installed on the instance, but no analyzers are enabled")
+                    Logger.log(
+                        "w",
+                        "PrintTimeGenius is installed on the instance, but no analyzers are enabled",
+                    )
 
             if "UltimakerFormatPackage" in plugin_data:
                 self._ufp_transfer_supported = False
                 try:
-                    ufp_writer_plugin = PluginRegistry.getInstance().getPluginObject("UFPWriter")
+                    ufp_writer_plugin = PluginRegistry.getInstance().getPluginObject(
+                        "UFPWriter"
+                    )
                     self._ufp_transfer_supported = True
-                    Logger.log("d", "Instance supports uploading .ufp instead of .gcode")
+                    Logger.log(
+                        "d", "Instance supports uploading .ufp instead of .gcode"
+                    )
                 except PluginNotFoundError:
-                    Logger.log("w", "Instance supports .ufp files but UFPWriter is not available")
+                    Logger.log(
+                        "w",
+                        "Instance supports .ufp files but UFPWriter is not available",
+                    )
                 if self._ufp_transfer_supported:
                     try:
-                        self._ufp_plugin_version = Version(plugin_data["UltimakerFormatPackage"]["installed_version"])
+                        self._ufp_plugin_version = Version(
+                            plugin_data["UltimakerFormatPackage"]["installed_version"]
+                        )
                     except KeyError:
                         self._ufp_plugin_version = Version(0)
-                        Logger.log("d", "OctoPrint-UltimakerFormatPackage plugin version < 0.1.7")
+                        Logger.log(
+                            "d",
+                            "OctoPrint-UltimakerFormatPackage plugin version < 0.1.7",
+                        )
 
             if "multicam" in plugin_data:
                 webcam_data = plugin_data["multicam"]["multicam_profiles"]
@@ -1223,21 +1658,22 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._webcams_model.deserialise(webcam_data)
 
     def _createPrinterList(self) -> None:
-        printer = PrinterOutputModel(output_controller=self._output_controller, number_of_extruders=self._number_of_extruders)
+        printer = PrinterOutputModel(
+            output_controller=self._output_controller,
+            number_of_extruders=self._number_of_extruders,
+        )
         printer.updateName(self.name)
         self._printers = [printer]
         self.printersChanged.emit()
 
     def _selectAndPrint(self, end_point: str) -> None:
-        command = {
-            "command": "select"
-        }  # type: Dict[str, Any]
+        command = {"command": "select"}  # type: Dict[str, Any]
         if self._auto_print and not self._forced_queue:
             command["print"] = True
 
         self._sendCommandToApi(end_point, command)
 
-    def _setOffline(self, printer:PrinterOutputModel, reason: str = "") -> None:
+    def _setOffline(self, printer: PrinterOutputModel, reason: str = "") -> None:
         if not printer:
             Logger.log("e", "There is no active printer")
             return
@@ -1251,13 +1687,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def _showErrorMessage(self, error_string: str) -> None:
         if self._error_message:
             self._error_message.hide()
-        self._error_message = Message(error_string, title=i18n_catalog.i18nc("@label", "OctoPrint error"))
+        self._error_message = Message(
+            error_string, title=i18n_catalog.i18nc("@label", "OctoPrint error")
+        )
         self._error_message.show()
 
     def _openOctoPrint(self, message: Message, action_id: str) -> None:
         QDesktopServices.openUrl(QUrl(self._base_url))
 
-    def _createEmptyRequest(self, target: str, content_type: Optional[str] = "application/json") -> QNetworkRequest:
+    def _createEmptyRequest(
+        self, target: str, content_type: Optional[str] = "application/json"
+    ) -> QNetworkRequest:
         request = QNetworkRequest(QUrl(self._api_url + target))
         request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
 
@@ -1278,7 +1718,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         return request
 
     # This is a patched version from NetworkedPrinterOutputdevice, which adds "form_data" instead of "form-data"
-    def _createFormPart(self, content_header: str, data: bytes, content_type: Optional[str] = None) -> QHttpPart:
+    def _createFormPart(
+        self, content_header: str, data: bytes, content_type: Optional[str] = None
+    ) -> QHttpPart:
         part = QHttpPart()
 
         if not content_header.startswith("form-data;"):
@@ -1292,14 +1734,18 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     ## Overloaded from NetworkedPrinterOutputDevice.get() to be permissive of
     #  self-signed certificates
-    def get(self, url: str, on_finished: Optional[Callable[[QNetworkReply], None]]) -> None:
+    def get(
+        self, url: str, on_finished: Optional[Callable[[QNetworkReply], None]]
+    ) -> None:
         self._validateManager()
 
         request = self._createEmptyRequest(url)
         self._last_request_time = time()
 
         if not self._manager:
-            Logger.log("e", "No network manager was created to execute the GET call with.")
+            Logger.log(
+                "e", "No network manager was created to execute the GET call with."
+            )
             return
 
         reply = self._manager.get(request)
@@ -1307,9 +1753,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     ## Overloaded from NetworkedPrinterOutputDevice.post() to backport https://github.com/Ultimaker/Cura/pull/4678
     #  and allow self-signed certificates
-    def post(self, url: str, data: Union[str, bytes],
-             on_finished: Optional[Callable[[QNetworkReply], None]],
-             on_progress: Optional[Callable[[int, int], None]] = None) -> None:
+    def post(
+        self,
+        url: str,
+        data: Union[str, bytes],
+        on_finished: Optional[Callable[[QNetworkReply], None]],
+        on_progress: Optional[Callable[[int, int], None]] = None,
+    ) -> None:
         self._validateManager()
 
         request = self._createEmptyRequest(url)

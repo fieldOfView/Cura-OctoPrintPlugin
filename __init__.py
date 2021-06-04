@@ -13,13 +13,17 @@ from UM.Logger import Logger
 
 from PyQt5.QtQml import qmlRegisterType
 
+
 def getMetaData():
     return {}
 
+
 def register(app):
-    qmlRegisterType(NetworkMJPGImage.NetworkMJPGImage, "OctoPrintPlugin", 1, 0, "NetworkMJPGImage")
+    qmlRegisterType(
+        NetworkMJPGImage.NetworkMJPGImage, "OctoPrintPlugin", 1, 0, "NetworkMJPGImage"
+    )
 
     return {
         "output_device": OctoPrintOutputDevicePlugin.OctoPrintOutputDevicePlugin(),
-        "machine_action": DiscoverOctoPrintAction.DiscoverOctoPrintAction()
+        "machine_action": DiscoverOctoPrintAction.DiscoverOctoPrintAction(),
     }
