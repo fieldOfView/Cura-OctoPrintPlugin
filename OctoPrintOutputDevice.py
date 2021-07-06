@@ -237,15 +237,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._power_plugins_manager = PowerPlugins()
 
-        self._store_on_sd_supported = (
-            False  # store gcode on sd card in printer instead of locally
-        )
-        self._ufp_transfer_supported = (
-            False  # transfer gcode as .ufp files including thumbnail image
-        )
-        self._gcode_analysis_supported = (
-            False  # wait for analysis to complete before starting a print
-        )
+        # store gcode on sd card in printer instead of locally
+        self._store_on_sd_supported = False
+
+        # transfer gcode as .ufp files including thumbnail image
+        self._ufp_transfer_supported = False
+
+        # wait for analysis to complete before starting a print
+        self._gcode_analysis_requires_wait = False
+        self._gcode_analysis_supported = False
 
         self._ufp_plugin_version = Version(
             0
@@ -273,7 +273,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     @property
     def _wait_for_analysis(self) -> bool:
-        return self._gcode_analysis_supported and not self._store_on_sd
+        return (
+            self._gcode_analysis_requires_wait
+            and self._gcode_analysis_supported
+            and not self._store_on_sd
+        )
 
     def getProperties(self) -> Dict[bytes, bytes]:
         return self._properties
@@ -1602,6 +1606,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         webcam_data = []
         if "webcam" in json_data and "streamUrl" in json_data["webcam"]:
             webcam_data = [json_data["webcam"]]
+
+        if "gcodeAnalysis" in json_data and "runAt" in json_data["gcodeAnalysis"]:
+            self._gcode_analysis_requires_wait = (
+                json_data["gcodeAnalysis"]["runAt"] == "idle"
+            )
 
         if "plugins" in json_data:
             plugin_data = json_data["plugins"]
