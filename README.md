@@ -16,13 +16,18 @@ Installation
 The plugin is available through the Cura Marketplace as the OctoPrint Connection plugin
 #### Manually:
 Download or clone the repository into `[Cura configuration folder]/plugins/OctoPrintPlugin`.
+When cloning the repository, make sure to use the `--recursive` flag to include the submodules.
 
 The configuration folder can be found via Help -> Show Configuration Folder inside Cura.
+This opens the following folder:
+* Windows: `%APPDATA%\cura\<Cura version>\, (usually `C:\Users\<your username>\AppData\Roaming\cura\<Cura version>\`)
+* Mac OS: `$HOME/Library/Application Support/cura/<Cura version>/`
+* Linux: `$HOME/.local/share/cura/<Cura version>/`
 
 How to use
 ----
 - Make sure OctoPrint is up and running, and the discovery plugin is not disabled
-- In Cura, add a Printer matching the 3d printer you have connected to OctoPrint
+- In Cura, add a local printer matching the 3d printer you have connected to OctoPrint
 - Select "Connect to OctoPrint" on the Printers pane of the preferences.
 - Select your OctoPrint instance from the list and enter the API key which is
   available in the OctoPrint settings, or push the "Request..." button to request an
