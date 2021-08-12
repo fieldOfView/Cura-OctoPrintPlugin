@@ -61,7 +61,7 @@ Cura.MachineAction
         width: parent.width
 
         SystemPalette { id: palette }
-        UM.I18nCatalog { id: catalog; name:"cura" }
+        UM.I18nCatalog { id: catalog; name:"octoprint" }
 
         Item
         {
