@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Aldo Hoeben / fieldOfView
+# Copyright (c) 2021 Aldo Hoeben / fieldOfView
 # OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
 from UM.i18n import i18nCatalog
