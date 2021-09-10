@@ -20,12 +20,10 @@ class PowerPlugins:
         ]  # type: List[Tuple[str, str, List[str]]]
         for (plugin_id, plugin_name, additional_data) in simple_plugins:
             if plugin_id in plugin_data:
+                plug_data = plugin_data[plugin_id]
                 all_config_set = True
                 for config_item in additional_data:
-                    if (
-                        config_item not in plugin_data[plugin_id]
-                        or not plugin_data[plugin_id][config_item]
-                    ):
+                    if not plug_data.get(config_item, None):
                         all_config_set = False
                         break
                 if all_config_set:
@@ -52,17 +50,18 @@ class PowerPlugins:
         for (plugin_id, plugin_name, additional_data) in common_api_plugins:
             if plugin_id in plugin_data and "arrSmartplugs" in plugin_data[plugin_id]:
                 for plug_data in plugin_data[plugin_id]["arrSmartplugs"]:
-                    if plug_data["ip"]:
+                    if plug_data.get("ip", ""):
+                        plug_label = plug_data.get("label", "")
                         plug = OrderedDict(
                             [
                                 ("plugin", plugin_id),
                                 (
                                     "name",
-                                    "%s (%s)" % (plug_data["label"], plugin_name)
-                                    if plug_data["label"]
+                                    "%s (%s)" % (plug_label, plugin_name)
+                                    if plug_label
                                     else plugin_name,
                                 ),
-                                ("label", plug_data["label"]),
+                                ("label", plug_label),
                                 ("ip", plug_data["ip"]),
                             ]
                         )
@@ -75,7 +74,7 @@ class PowerPlugins:
             plugin_id = "tasmota_mqtt"
             plugin_name = "Tasmota MQTT"
             for plug_data in plugin_data[plugin_id]["arrRelays"]:
-                if plug_data["topic"] and plug_data["relayN"] != "":
+                if plug_data.get("topic", "") and plug_data.get("relayN", ""):
                     plug = OrderedDict(
                         [
                             ("plugin", plugin_id),
