@@ -204,6 +204,22 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         userName: str = "",
         password: str = "",
     ) -> None:
+
+        # OctoEverywhere.com is a reverse proxy service that allows users to access their OctoPrint instances with a secure
+        # connection from anywhere. To assist the user in setting up a printer instance via OctoEverywhere, if the hostname
+        # is detected, force the settings to what OctoEverywhere requires.
+        if "octoeverywhere.com" in address.lower():
+            # Force https, this is the only thing OctoEverywhere will accept.
+            port = 443
+            useHttps = True
+            path = "/"
+            # Check if the user put the entire https://.. in the hostname box, if so, remove the http:// or https://
+            if address.lower().startswith("http"):
+                protocolEnd = address.index("://")
+                if protocolEnd != -1:
+                    protocolEnd += 3
+                    address = address[protocolEnd:]             
+
         self._manual_instances[name] = {
             "address": address,
             "port": port,
