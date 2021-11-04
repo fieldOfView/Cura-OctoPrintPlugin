@@ -12,6 +12,10 @@ import QtQuick.Window 2.1
 Cura.MachineAction
 {
     id: base
+
+    readonly property string defaultHTTP: "80"
+    readonly property string defaultHTTPS: "443"
+
     anchors.fill: parent;
     property var selectedInstance: null
     property string activeMachineId:
@@ -105,7 +109,7 @@ Cura.MachineAction
                 text: catalog.i18nc("@action:button", "Add");
                 onClicked:
                 {
-                    manualPrinterDialog.showDialog("", "", "80", "/", false, "", "");
+                    manualPrinterDialog.showDialog("", "", base.defaultHTTP, "/", false, "", "");
                 }
             }
 
@@ -557,17 +561,6 @@ Cura.MachineAction
                     }
                     CheckBox
                     {
-                        id: showCameraCheckBox
-                        text: catalog.i18nc("@label", "Show webcam image")
-                        enabled: manager.instanceSupportsCamera
-                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_show_camera") != "false"
-                        onClicked:
-                        {
-                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_show_camera", String(checked))
-                        }
-                    }
-                    CheckBox
-                    {
                         id: storeOnSdCheckBox
                         text: catalog.i18nc("@label", "Store G-code on the printer SD card")
                         enabled: manager.instanceSupportsSd
@@ -583,6 +576,17 @@ Cura.MachineAction
                         wrapMode: Text.WordWrap
                         width: parent.width
                         text: catalog.i18nc("@label", "Note: Transfering files to the printer SD card takes very long. Using this option is not recommended.")
+                    }
+                    CheckBox
+                    {
+                        id: showCameraCheckBox
+                        text: catalog.i18nc("@label", "Show webcam image")
+                        enabled: manager.instanceSupportsCamera
+                        checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_show_camera") != "false"
+                        onClicked:
+                        {
+                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_show_camera", String(checked))
+                        }
                     }
                     CheckBox
                     {
@@ -669,10 +673,12 @@ Cura.MachineAction
         property alias userNameText: userNameField.text
         property alias passwordText: passwordField.text
 
+        property string lastAddress
+
         title: catalog.i18nc("@title:window", "Manually added OctoPrint instance")
 
         minimumWidth: 400 * screenScaleFactor
-        minimumHeight: (showAdvancedOptions.checked ? 280 : 160) * screenScaleFactor
+        minimumHeight: 280 * screenScaleFactor
         width: minimumWidth
         height: minimumHeight
 
@@ -681,10 +687,8 @@ Cura.MachineAction
         {
             oldName = name;
             nameText = name;
-            nameField.selectAll();
-            nameField.focus = true;
-
             addressText = address;
+            manualPrinterDialog.lastAddress = address;
             portText = port;
             pathText = path_;
             httpsCheckbox.checked = useHttps;
@@ -692,6 +696,14 @@ Cura.MachineAction
             passwordText = password;
 
             manualPrinterDialog.show();
+            if (nameText != "")
+            {
+                nameField.forceActiveFocus();
+            }
+            else
+            {
+                addressField.forceActiveFocus();
+            }
         }
 
         onAccepted:
@@ -702,7 +714,7 @@ Cura.MachineAction
             }
             if(portText == "")
             {
-                portText = "80"; // default http port
+                portText = (!httpsCheckbox.checked) ? base.defaultHTTP : base.defaultHTTPS; // default http or https port
             }
             if(pathText.substr(0,1) != "/")
             {
@@ -760,7 +772,36 @@ Cura.MachineAction
                     width: Math.floor(parent.width * 0.6)
                     validator: RegExpValidator
                     {
-                        regExp: /[a-zA-Z0-9\.\-\_]*/
+                        regExp: /[a-zA-Z0-9\.\-\_\:\/]*/
+                    }
+                    onTextChanged:
+                    {
+                        if (nameField.text == manualPrinterDialog.lastAddress || nameField.text == "")
+                        {
+                            nameField.text = text
+                        }
+                        manualPrinterDialog.lastAddress = text
+
+                        var index = text.indexOf("://")
+                        if(index > 0)
+                        {
+                            var protocol = text.substr(0,index)
+                            if(protocol.toLowerCase() == "http" && httpsCheckbox.checked) {
+                                httpsCheckbox.checked = false
+                                if(portField.text == defaultHTTPS)
+                                {
+                                    portField.text = defaultHTTP
+                                }
+                            }
+                            else if(protocol.toLowerCase() == "https" && !httpsCheckbox.checked) {
+                                httpsCheckbox.checked = true
+                                if(portField.text == defaultHTTP)
+                                {
+                                    portField.text = defaultHTTPS
+                                }
+                            }
+                            text = text.substr(index + 3)
+                        }
                     }
                 }
 
@@ -778,6 +819,17 @@ Cura.MachineAction
                     validator: RegExpValidator
                     {
                         regExp: /[0-9]*/
+                    }
+                    onTextChanged:
+                    {
+                        if(httpsCheckbox.checked && text == base.defaultHTTP)
+                        {
+                            httpsCheckbox.checked = false
+                        }
+                        else if(!httpsCheckbox.checked && text == base.defaultHTTPS)
+                        {
+                            httpsCheckbox.checked = true
+                        }
                     }
                 }
 
@@ -797,21 +849,31 @@ Cura.MachineAction
                         regExp: /[a-zA-Z0-9\.\-\_\/]*/
                     }
                 }
-            }
 
-            CheckBox
-            {
-                id: showAdvancedOptions
-                text: catalog.i18nc("@label","Show reverse proxy options (advanced)")
-            }
+                Item
+                {
+                    width: 1
+                    height: UM.Theme.getSize("default_margin").height
+                }
 
-            Grid
-            {
-                columns: 2
-                visible: showAdvancedOptions.checked
-                width: parent.width
-                verticalItemAlignment: Grid.AlignVCenter
-                rowSpacing: UM.Theme.getSize("default_lining").height
+                Item
+                {
+                    width: 1
+                    height: UM.Theme.getSize("default_margin").height
+                }
+
+                Item
+                {
+                    width: 1
+                    height: 1
+                }
+
+                Label
+                {
+                    wrapMode: Text.WordWrap
+                    width: Math.floor(parent.width * 0.6)
+                    text: catalog.i18nc("@label","In order to use HTTPS or a HTTP username and password, you need to configure a reverse proxy or another service.")
+                }
 
                 Label
                 {
@@ -824,6 +886,17 @@ Cura.MachineAction
                     id: httpsCheckbox
                     width: height
                     height: userNameField.height
+                    onClicked:
+                    {
+                        if(checked && portField.text == base.defaultHTTP)
+                        {
+                            portField.text = base.defaultHTTPS
+                        }
+                        else if(!checked && portField.text == base.defaultHTTPS)
+                        {
+                            portField.text = base.defaultHTTP
+                        }
+                    }
                 }
 
                 Label
@@ -852,16 +925,6 @@ Cura.MachineAction
                     width: Math.floor(parent.width * 0.6)
                     echoMode: TextInput.PasswordEchoOnEdit
                 }
-
-
-            }
-
-            Label
-            {
-                visible: showAdvancedOptions.checked
-                wrapMode: Text.WordWrap
-                width: parent.width
-                text: catalog.i18nc("@label","NB: Only use these options if you access OctoPrint through a reverse proxy.")
             }
         }
 
