@@ -36,5 +36,5 @@ Item
         visible: octoPrintConnected
     }
 
-    UM.I18nCatalog{id: catalog; name:"cura"}
+    UM.I18nCatalog{id: catalog; name:"octoprint"}
 }
