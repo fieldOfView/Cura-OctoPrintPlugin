@@ -761,6 +761,18 @@ Cura.MachineAction
                 addressText = addressText.substr(index + 3)
             }
 
+            index = addressText.indexOf("@")
+            if(index >= 0)
+            {
+                var auth = addressText.substr(0,index).split(":")
+                userNameText = auth[0]
+                if(auth.length>1)
+                {
+                    passwordText = auth[1]
+                }
+                addressText = addressText.substr(index+1)
+            }
+
             index = addressText.indexOf("/")
             if(index >= 0)
             {
@@ -828,7 +840,7 @@ Cura.MachineAction
                 width: Math.floor(parent.width * 0.6)
                 validator: RegExpValidator
                 {
-                    regExp: /[a-zA-Z0-9\.\-\_\:\/]*/
+                    regExp: /[a-zA-Z0-9\.\-\_\:\/\@]*/
                 }
                 onTextChanged: parseAddressFieldTimer.restart()
             }
