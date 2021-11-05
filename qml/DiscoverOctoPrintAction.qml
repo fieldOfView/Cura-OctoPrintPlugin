@@ -109,7 +109,7 @@ Cura.MachineAction
                 text: catalog.i18nc("@action:button", "Add");
                 onClicked:
                 {
-                    manualPrinterDialog.showDialog("", "", base.defaultHTTP, "/", false, "", "");
+                    manualInstanceDialog.showDialog("", "", base.defaultHTTP, "/", false, "", "");
                 }
             }
 
@@ -120,7 +120,7 @@ Cura.MachineAction
                 enabled: base.selectedInstance != null && base.selectedInstance.getProperty("manual") == "true"
                 onClicked:
                 {
-                    manualPrinterDialog.showDialog(
+                    manualInstanceDialog.showDialog(
                         base.selectedInstance.name, base.selectedInstance.ipAddress,
                         base.selectedInstance.port, base.selectedInstance.path,
                         base.selectedInstance.getProperty("useHttps") == "true",
@@ -664,7 +664,7 @@ Cura.MachineAction
 
     UM.Dialog
     {
-        id: manualPrinterDialog
+        id: manualInstanceDialog
         property string oldName
         property alias nameText: nameField.text
         property alias addressText: addressField.text
@@ -688,14 +688,14 @@ Cura.MachineAction
             oldName = name;
             nameText = name;
             addressText = address;
-            manualPrinterDialog.lastAddress = address;
+            manualInstanceDialog.lastAddress = address;
             portText = port;
             pathText = path_;
             httpsCheckbox.checked = useHttps;
             userNameText = userName;
             passwordText = password;
 
-            manualPrinterDialog.show();
+            manualInstanceDialog.show();
             if (nameText != "")
             {
                 nameField.forceActiveFocus();
@@ -731,200 +731,227 @@ Cura.MachineAction
             );
         }
 
-        Column {
-            anchors.fill: parent
-            spacing: UM.Theme.getSize("default_margin").height
-
-            Grid
+        function parseAddressField()
+        {
+            var useAddressForName = false
+            if (nameText == manualInstanceDialog.lastAddress || nameText == "")
             {
-                columns: 2
-                width: parent.width
-                verticalItemAlignment: Grid.AlignVCenter
-                rowSpacing: UM.Theme.getSize("default_lining").height
+                useAddressForName = true
+            }
+            manualInstanceDialog.lastAddress = addressText
 
-                Label
-                {
-                    text: catalog.i18nc("@label","Instance Name")
-                    width: Math.floor(parent.width * 0.4)
-                }
-
-                TextField
-                {
-                    id: nameField
-                    maximumLength: 20
-                    width: Math.floor(parent.width * 0.6)
-                    validator: RegExpValidator
+            var index = addressText.indexOf("://")
+            if(index >= 0)
+            {
+                var protocol = addressText.substr(0,index)
+                if(protocol.toLowerCase() == "http" && httpsCheckbox.checked) {
+                    httpsCheckbox.checked = false
+                    if(portField.text == defaultHTTPS)
                     {
-                        regExp: /[a-zA-Z0-9\.\-\_\:\[\]]*/
+                        portField.text = defaultHTTP
                     }
                 }
-
-                Label
-                {
-                    text: catalog.i18nc("@label","IP Address or Hostname")
-                    width: Math.floor(parent.width * 0.4)
-                }
-
-                TextField
-                {
-                    id: addressField
-                    maximumLength: 253
-                    width: Math.floor(parent.width * 0.6)
-                    validator: RegExpValidator
+                else if(protocol.toLowerCase() == "https" && !httpsCheckbox.checked) {
+                    httpsCheckbox.checked = true
+                    if(portField.text == defaultHTTP)
                     {
-                        regExp: /[a-zA-Z0-9\.\-\_\:\/]*/
-                    }
-                    onTextChanged:
-                    {
-                        if (nameField.text == manualPrinterDialog.lastAddress || nameField.text == "")
-                        {
-                            nameField.text = text
-                        }
-                        manualPrinterDialog.lastAddress = text
-
-                        var index = text.indexOf("://")
-                        if(index > 0)
-                        {
-                            var protocol = text.substr(0,index)
-                            if(protocol.toLowerCase() == "http" && httpsCheckbox.checked) {
-                                httpsCheckbox.checked = false
-                                if(portField.text == defaultHTTPS)
-                                {
-                                    portField.text = defaultHTTP
-                                }
-                            }
-                            else if(protocol.toLowerCase() == "https" && !httpsCheckbox.checked) {
-                                httpsCheckbox.checked = true
-                                if(portField.text == defaultHTTP)
-                                {
-                                    portField.text = defaultHTTPS
-                                }
-                            }
-                            text = text.substr(index + 3)
-                        }
+                        portField.text = defaultHTTPS
                     }
                 }
+                addressText = addressText.substr(index + 3)
+            }
 
-                Label
-                {
-                    text: catalog.i18nc("@label","Port Number")
-                    width: Math.floor(parent.width * 0.4)
+            index = addressText.indexOf("/")
+            if(index >= 0)
+            {
+                pathField.text = addressText.substr(index)
+                addressText = addressText.substr(0,index)
+            }
+
+            index = addressText.indexOf(":")
+            if(index >= 0)
+            {
+                var port = parseInt(addressText.substr(index+1))
+                if (!isNaN(port)) {
+                    portField.text = port.toString()
                 }
+                addressText = addressText.substr(0,index)
+            }
 
-                TextField
+            if(useAddressForName)
+            {
+                nameText = addressText
+            }
+        }
+
+        Grid
+        {
+            Timer
+            {
+                id: parseAddressFieldTimer
+                interval: 1000
+                onTriggered: manualInstanceDialog.parseAddressField()
+            }
+
+            columns: 2
+            width: parent.width
+            verticalItemAlignment: Grid.AlignVCenter
+            rowSpacing: UM.Theme.getSize("default_lining").height
+
+            Label
+            {
+                text: catalog.i18nc("@label","Instance Name")
+                width: Math.floor(parent.width * 0.4)
+            }
+
+            TextField
+            {
+                id: nameField
+                maximumLength: 20
+                width: Math.floor(parent.width * 0.6)
+                validator: RegExpValidator
                 {
-                    id: portField
-                    maximumLength: 5
-                    width: Math.floor(parent.width * 0.6)
-                    validator: RegExpValidator
+                    regExp: /[a-zA-Z0-9\.\-\_\:\[\]]*/
+                }
+            }
+
+            Label
+            {
+                text: catalog.i18nc("@label","IP Address or Hostname")
+                width: Math.floor(parent.width * 0.4)
+            }
+
+            TextField
+            {
+                id: addressField
+                maximumLength: 253
+                width: Math.floor(parent.width * 0.6)
+                validator: RegExpValidator
+                {
+                    regExp: /[a-zA-Z0-9\.\-\_\:\/]*/
+                }
+                onTextChanged: parseAddressFieldTimer.restart()
+            }
+
+            Label
+            {
+                text: catalog.i18nc("@label","Port Number")
+                width: Math.floor(parent.width * 0.4)
+            }
+
+            TextField
+            {
+                id: portField
+                maximumLength: 5
+                width: Math.floor(parent.width * 0.6)
+                validator: RegExpValidator
+                {
+                    regExp: /[0-9]*/
+                }
+                onTextChanged:
+                {
+                    if(httpsCheckbox.checked && text == base.defaultHTTP)
                     {
-                        regExp: /[0-9]*/
+                        httpsCheckbox.checked = false
                     }
-                    onTextChanged:
+                    else if(!httpsCheckbox.checked && text == base.defaultHTTPS)
                     {
-                        if(httpsCheckbox.checked && text == base.defaultHTTP)
-                        {
-                            httpsCheckbox.checked = false
-                        }
-                        else if(!httpsCheckbox.checked && text == base.defaultHTTPS)
-                        {
-                            httpsCheckbox.checked = true
-                        }
+                        httpsCheckbox.checked = true
                     }
                 }
+            }
 
-                Label
+            Label
+            {
+                text: catalog.i18nc("@label","Path")
+                width: Math.floor(parent.width * 0.4)
+            }
+
+            TextField
+            {
+                id: pathField
+                maximumLength: 30
+                width: Math.floor(parent.width * 0.6)
+                validator: RegExpValidator
                 {
-                    text: catalog.i18nc("@label","Path")
-                    width: Math.floor(parent.width * 0.4)
+                    regExp: /[a-zA-Z0-9\.\-\_\/]*/
                 }
+            }
 
-                TextField
+            Item
+            {
+                width: 1
+                height: UM.Theme.getSize("default_margin").height
+            }
+
+            Item
+            {
+                width: 1
+                height: UM.Theme.getSize("default_margin").height
+            }
+
+            Item
+            {
+                width: 1
+                height: 1
+            }
+
+            Label
+            {
+                wrapMode: Text.WordWrap
+                width: Math.floor(parent.width * 0.6)
+                text: catalog.i18nc("@label","In order to use HTTPS or a HTTP username and password, you need to configure a reverse proxy or another service.")
+            }
+
+            Label
+            {
+                text: catalog.i18nc("@label","Use HTTPS")
+                width: Math.floor(parent.width * 0.4)
+            }
+
+            CheckBox
+            {
+                id: httpsCheckbox
+                width: height
+                height: userNameField.height
+                onClicked:
                 {
-                    id: pathField
-                    maximumLength: 30
-                    width: Math.floor(parent.width * 0.6)
-                    validator: RegExpValidator
+                    if(checked && portField.text == base.defaultHTTP)
                     {
-                        regExp: /[a-zA-Z0-9\.\-\_\/]*/
+                        portField.text = base.defaultHTTPS
                     }
-                }
-
-                Item
-                {
-                    width: 1
-                    height: UM.Theme.getSize("default_margin").height
-                }
-
-                Item
-                {
-                    width: 1
-                    height: UM.Theme.getSize("default_margin").height
-                }
-
-                Item
-                {
-                    width: 1
-                    height: 1
-                }
-
-                Label
-                {
-                    wrapMode: Text.WordWrap
-                    width: Math.floor(parent.width * 0.6)
-                    text: catalog.i18nc("@label","In order to use HTTPS or a HTTP username and password, you need to configure a reverse proxy or another service.")
-                }
-
-                Label
-                {
-                    text: catalog.i18nc("@label","Use HTTPS")
-                    width: Math.floor(parent.width * 0.4)
-                }
-
-                CheckBox
-                {
-                    id: httpsCheckbox
-                    width: height
-                    height: userNameField.height
-                    onClicked:
+                    else if(!checked && portField.text == base.defaultHTTPS)
                     {
-                        if(checked && portField.text == base.defaultHTTP)
-                        {
-                            portField.text = base.defaultHTTPS
-                        }
-                        else if(!checked && portField.text == base.defaultHTTPS)
-                        {
-                            portField.text = base.defaultHTTP
-                        }
+                        portField.text = base.defaultHTTP
                     }
                 }
+            }
 
-                Label
-                {
-                    text: catalog.i18nc("@label","HTTP user name")
-                    width: Math.floor(parent.width * 0.4)
-                }
+            Label
+            {
+                text: catalog.i18nc("@label","HTTP user name")
+                width: Math.floor(parent.width * 0.4)
+            }
 
-                TextField
-                {
-                    id: userNameField
-                    maximumLength: 64
-                    width: Math.floor(parent.width * 0.6)
-                }
+            TextField
+            {
+                id: userNameField
+                maximumLength: 64
+                width: Math.floor(parent.width * 0.6)
+            }
 
-                Label
-                {
-                    text: catalog.i18nc("@label","HTTP password")
-                    width: Math.floor(parent.width * 0.4)
-                }
+            Label
+            {
+                text: catalog.i18nc("@label","HTTP password")
+                width: Math.floor(parent.width * 0.4)
+            }
 
-                TextField
-                {
-                    id: passwordField
-                    maximumLength: 64
-                    width: Math.floor(parent.width * 0.6)
-                    echoMode: TextInput.PasswordEchoOnEdit
-                }
+            TextField
+            {
+                id: passwordField
+                maximumLength: 64
+                width: Math.floor(parent.width * 0.6)
+                echoMode: TextInput.PasswordEchoOnEdit
             }
         }
 
@@ -933,18 +960,23 @@ Cura.MachineAction
                 text: catalog.i18nc("@action:button","Cancel")
                 onClicked:
                 {
-                    manualPrinterDialog.reject()
-                    manualPrinterDialog.hide()
+                    manualInstanceDialog.reject()
+                    manualInstanceDialog.hide()
                 }
             },
             Button {
                 text: catalog.i18nc("@action:button", "Ok")
                 onClicked:
                 {
-                    manualPrinterDialog.accept()
-                    manualPrinterDialog.hide()
+                    if (parseAddressFieldTimer.running)
+                    {
+                        parseAddressFieldTimer.stop()
+                        manualInstanceDialog.parseAddressField()
+                    }
+                    manualInstanceDialog.accept()
+                    manualInstanceDialog.hide()
                 }
-                enabled: manualPrinterDialog.nameText.trim() != "" && manualPrinterDialog.addressText.trim() != ""
+                enabled: manualInstanceDialog.nameText.trim() != "" && manualInstanceDialog.addressText.trim() != ""
                 isDefault: true
             }
         ]
