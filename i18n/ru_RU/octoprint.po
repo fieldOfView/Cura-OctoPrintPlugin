@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OctoPrint Plugin\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-01-25 08:32+0300\n"
-"PO-Revision-Date: 2021-01-25 09:28+0300\n"
+"POT-Creation-Date: 2021-11-05 03:58-0700\n"
+"PO-Revision-Date: 2021-11-05 21:55+0300\n"
 "Last-Translator: Elkin Vasily <elkin.vasily@gmail.com>\n"
 "Language-Team: Russian <gnu@d07.ru>\n"
 "Language: ru\n"
@@ -18,145 +18,140 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Poedit 2.4.2\n"
+"X-Generator: Poedit 3.0\n"
 
-#: DiscoverOctoPrintAction.py:36
-msgctxt "@action"
-msgid "Connect OctoPrint"
-msgstr "Подключение OctoPrint"
-
-#: OctoPrintOutputDevice.py:161
+#: OctoPrintOutputDevice.py:212
 msgctxt "@action:button"
 msgid "Print with OctoPrint"
 msgstr "Печать через OctoPrint"
 
-#: OctoPrintOutputDevice.py:162
+#: OctoPrintOutputDevice.py:215
 msgctxt "@properties:tooltip"
 msgid "Print with OctoPrint"
 msgstr "Печать с помощью OctoPrint"
 
-#: OctoPrintOutputDevice.py:164 OctoPrintOutputDevice.py:728
+#: OctoPrintOutputDevice.py:219 OctoPrintOutputDevice.py:944
 #, python-brace-format
 msgctxt "@info:status"
 msgid "Connected to OctoPrint on {0}"
 msgstr "Соединиться с OctoPrint {0}"
 
-#: OctoPrintOutputDevice.py:346
+#: OctoPrintOutputDevice.py:432
 #, python-brace-format
 msgctxt "@info:status"
 msgid "Connecting to OctoPrint on {0}"
 msgstr "Соединение с OctoPrint {0}"
 
-#: OctoPrintOutputDevice.py:452
+#: OctoPrintOutputDevice.py:589
 msgctxt "@info:status"
 msgid "Waiting for OctoPrint to connect to the printer..."
 msgstr "Ожидайте пока OctoPrint соединиться с принтером…"
 
-#: OctoPrintOutputDevice.py:453 OctoPrintOutputDevice.py:554
-#: OctoPrintOutputDevice.py:885 OctoPrintOutputDevice.py:1091
-#: OctoPrintOutputDevice.py:1144 OctoPrintOutputDevice.py:1162
+#: OctoPrintOutputDevice.py:591 OctoPrintOutputDevice.py:722
+#: OctoPrintOutputDevice.py:1177 OctoPrintOutputDevice.py:1476
+#: OctoPrintOutputDevice.py:1554 OctoPrintOutputDevice.py:1579
 msgctxt "@label"
 msgid "OctoPrint"
 msgstr "OctoPrint"
 
-#: OctoPrintOutputDevice.py:457
+#: OctoPrintOutputDevice.py:599
 msgctxt "@action:button"
 msgid "Queue"
 msgstr "Очередь"
 
-#: OctoPrintOutputDevice.py:458
+#: OctoPrintOutputDevice.py:603
 msgctxt "@action:tooltip"
 msgid "Stop waiting for the printer and queue the printjob instead"
 msgstr ""
 "Перестать ожидать ответа от принтера и поставить в очередь задание на печать"
 
-#: OctoPrintOutputDevice.py:462 OctoPrintOutputDevice.py:558
-#: OctoPrintOutputDevice.py:1171 qml/DiscoverOctoPrintAction.qml:870
+#: OctoPrintOutputDevice.py:609 OctoPrintOutputDevice.py:730
+#: OctoPrintOutputDevice.py:1597 qml/ManualInstanceDialog.qml:318
 msgctxt "@action:button"
 msgid "Cancel"
 msgstr "Отмена"
 
-#: OctoPrintOutputDevice.py:463 OctoPrintOutputDevice.py:559
-#: OctoPrintOutputDevice.py:1172
+#: OctoPrintOutputDevice.py:611 OctoPrintOutputDevice.py:732
+#: OctoPrintOutputDevice.py:1599
 msgctxt "@action:tooltip"
 msgid "Abort the printjob"
 msgstr "Прервать печать"
 
-#: OctoPrintOutputDevice.py:478
+#: OctoPrintOutputDevice.py:633
 msgctxt "@info:status"
 msgid "The printer is offline. Unable to start a new job."
 msgstr "Принтер не в сети. Невозможно начать печать."
 
-#: OctoPrintOutputDevice.py:480
+#: OctoPrintOutputDevice.py:637
 msgctxt "@info:status"
 msgid "OctoPrint is busy. Unable to start a new job."
 msgstr "OctoPrint занят. Невозможно начать печать."
 
-#: OctoPrintOutputDevice.py:485 OctoPrintOutputDevice.py:617
-#: OctoPrintOutputDevice.py:1252
+#: OctoPrintOutputDevice.py:644 OctoPrintOutputDevice.py:810
+#: OctoPrintOutputDevice.py:1708
 msgctxt "@label"
 msgid "OctoPrint error"
 msgstr "Ошибка OctoPrint"
 
-#: OctoPrintOutputDevice.py:487
+#: OctoPrintOutputDevice.py:648
 msgctxt "@action:button"
 msgid "Queue job"
 msgstr "Поставить задание в очередь"
 
-#: OctoPrintOutputDevice.py:488
+#: OctoPrintOutputDevice.py:652
 msgctxt "@action:tooltip"
 msgid "Queue this print job so it can be printed later"
 msgstr ""
 "Поставить это задание на печать в очередь, чтобы оно было напечатано позднее"
 
-#: OctoPrintOutputDevice.py:553
+#: OctoPrintOutputDevice.py:721
 msgctxt "@info:status"
 msgid "Sending data to OctoPrint"
 msgstr "Отправка данных в OctoPrint"
 
-#: OctoPrintOutputDevice.py:616
+#: OctoPrintOutputDevice.py:809
 msgctxt "@info:status"
 msgid "Unable to send data to OctoPrint."
 msgstr "Невозможно отправить данные в OctoPrint."
 
-#: OctoPrintOutputDevice.py:794
+#: OctoPrintOutputDevice.py:1046
 #, python-brace-format
 msgctxt "@info:status"
 msgid "OctoPrint on {0} does not allow access to the printer state"
 msgstr "OctoPrint {0} не предоставляет доступ к состоянию принтера"
 
-#: OctoPrintOutputDevice.py:803
+#: OctoPrintOutputDevice.py:1061
 #, python-brace-format
 msgctxt "@info:status"
 msgid "The printer connected to OctoPrint on {0} is not operational"
 msgstr "Принтер, подключенный к OctoPrint {0}, неработоспособен"
 
-#: OctoPrintOutputDevice.py:810 OctoPrintOutputDevice.py:915
+#: OctoPrintOutputDevice.py:1073 OctoPrintOutputDevice.py:1221
 #, python-brace-format
 msgctxt "@info:status"
 msgid "OctoPrint on {0} is not running"
 msgstr "OctoPrint {0} не запущен"
 
-#: OctoPrintOutputDevice.py:884 OctoPrintOutputDevice.py:892
+#: OctoPrintOutputDevice.py:1172 OctoPrintOutputDevice.py:1188
 msgctxt "@info:status"
 msgid "Streaming file to the printer SD card"
 msgstr "Передача файла на SD карту принтера"
 
-#: OctoPrintOutputDevice.py:908
+#: OctoPrintOutputDevice.py:1209
 #, python-brace-format
 msgctxt "@info:status"
 msgid "OctoPrint on {0} does not allow access to the job state"
 msgstr ""
 "OctoPrint {0} не предоставляет доступ к состоянию текущего задания на печать"
 
-#: OctoPrintOutputDevice.py:982
+#: OctoPrintOutputDevice.py:1318
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to start print jobs on OctoPrint with the configured API "
 "key."
 msgstr "Вы не можете начать печать через OctoPrint с заданным ключём API."
 
-#: OctoPrintOutputDevice.py:998
+#: OctoPrintOutputDevice.py:1345
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to control print jobs on OctoPrint with the configured "
@@ -165,7 +160,7 @@ msgstr ""
 "Вы не можете контролировать задания на печать на OctoPrint с заданным ключём "
 "API."
 
-#: OctoPrintOutputDevice.py:1010
+#: OctoPrintOutputDevice.py:1362
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to send gcode commands to OctoPrint with the configured "
@@ -173,22 +168,22 @@ msgid ""
 msgstr ""
 "Вы не можете отправлять команды gcode на OctoPrint с заданным ключём API."
 
-#: OctoPrintOutputDevice.py:1028 OctoPrintOutputDevice.py:1033
+#: OctoPrintOutputDevice.py:1384 OctoPrintOutputDevice.py:1391
 msgctxt "@label"
 msgid "Anonymous user"
 msgstr "Анонимный пользователь"
 
-#: OctoPrintOutputDevice.py:1038
+#: OctoPrintOutputDevice.py:1398
 msgctxt "@label"
 msgid "Unknown user"
 msgstr "Неизвестный пользователь"
 
-#: OctoPrintOutputDevice.py:1041
+#: OctoPrintOutputDevice.py:1404
 msgctxt "@info:error"
 msgid "You are not allowed to access to OctoPrint with the configured API key."
 msgstr "Вы не можете получить доступ к OctoPrint с заданным ключём API."
 
-#: OctoPrintOutputDevice.py:1050
+#: OctoPrintOutputDevice.py:1418
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to control printer connections on OctoPrint with the "
@@ -197,28 +192,28 @@ msgstr ""
 "Вы не можете управлять подключениями принтера в OctoPrint с заданным ключём "
 "API."
 
-#: OctoPrintOutputDevice.py:1062
+#: OctoPrintOutputDevice.py:1437
 msgctxt "@info:error"
 msgid "You are not allowed to access OctoPrint with the configured API key."
 msgstr "Вы не можете получить доступ к OctoPrint с заданным ключём API."
 
-#: OctoPrintOutputDevice.py:1090
+#: OctoPrintOutputDevice.py:1472
 msgctxt "@info:status"
 msgid "Storing data on OctoPrint"
 msgstr "Хранение данных на OctoPrint"
 
-#: OctoPrintOutputDevice.py:1107
+#: OctoPrintOutputDevice.py:1494
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to upload files to OctoPrint with the configured API key."
 msgstr "Вы не можете загружать файлы на OctoPrint с заданным ключём API."
 
-#: OctoPrintOutputDevice.py:1111
+#: OctoPrintOutputDevice.py:1500
 msgctxt "@info:error"
 msgid "Can't store the printjob on the printer sd card."
 msgstr "Не удалось сохранить задание на печать на SD карте принтера."
 
-#: OctoPrintOutputDevice.py:1113
+#: OctoPrintOutputDevice.py:1505
 msgctxt "@info:error"
 msgid ""
 "Can't store the printjob with the same name as the one that is currently "
@@ -227,163 +222,163 @@ msgstr ""
 "Не удалось сохранить задание на печать с тем же именем, что и находящееся в "
 "состоянии печати."
 
-#: OctoPrintOutputDevice.py:1141
+#: OctoPrintOutputDevice.py:1547
 #, python-brace-format
 msgctxt "@info:status"
 msgid "Saved to OctoPrint as {0}"
 msgstr "Сохранено на OctoPrint как {0}"
 
-#: OctoPrintOutputDevice.py:1143
+#: OctoPrintOutputDevice.py:1552
 msgctxt "@info:status"
 msgid "Saved to OctoPrint"
 msgstr "Сохранено на OctoPrint"
 
-#: OctoPrintOutputDevice.py:1146 qml/OctoPrintComponents.qml:24
+#: OctoPrintOutputDevice.py:1557 qml/OctoPrintComponents.qml:24
 msgctxt "@action:button"
 msgid "OctoPrint..."
 msgstr "OctoPrint…"
 
-#: OctoPrintOutputDevice.py:1147 qml/OctoPrintComponents.qml:23
+#: OctoPrintOutputDevice.py:1559 qml/OctoPrintComponents.qml:23
 msgctxt "@info:tooltip"
 msgid "Open the OctoPrint web interface"
 msgstr "Открыть веб-интерфейс OctoPrint"
 
-#: OctoPrintOutputDevice.py:1161
+#: OctoPrintOutputDevice.py:1577
 msgctxt "@info:status"
 msgid "Waiting for OctoPrint to complete Gcode analysis..."
 msgstr "Ожидайте пока OctoPrint выполнит анализ Gcode…"
 
-#: OctoPrintOutputDevice.py:1166
+#: OctoPrintOutputDevice.py:1587
 msgctxt "@action:button"
 msgid "Print now"
 msgstr "Начать печать"
 
-#: OctoPrintOutputDevice.py:1167
+#: OctoPrintOutputDevice.py:1591
 msgctxt "@action:tooltip"
 msgid "Stop waiting for the Gcode analysis and start printing immediately"
 msgstr "Прервать анализ Gcode и начать печать немедленно"
 
-#: qml/DiscoverOctoPrintAction.qml:74
+#: DiscoverOctoPrintAction.py:45
+msgctxt "@action"
+msgid "Connect OctoPrint"
+msgstr "Подключение OctoPrint"
+
+#: qml/DiscoverOctoPrintAction.qml:77
 msgctxt "@title"
 msgid "Connect to OctoPrint"
 msgstr "Подключиться к OctoPrint"
 
-#: qml/DiscoverOctoPrintAction.qml:95
+#: qml/DiscoverOctoPrintAction.qml:98
 msgctxt "@label"
 msgid "Select your OctoPrint instance from the list below."
 msgstr "Выберите ваше подключение OctoPrint из списка ниже."
 
-#: qml/DiscoverOctoPrintAction.qml:105
+#: qml/DiscoverOctoPrintAction.qml:108
 msgctxt "@action:button"
 msgid "Add"
 msgstr "Добавить"
 
-#: qml/DiscoverOctoPrintAction.qml:115
+#: qml/DiscoverOctoPrintAction.qml:118
 msgctxt "@action:button"
 msgid "Edit"
 msgstr "Править"
 
-#: qml/DiscoverOctoPrintAction.qml:131
+#: qml/DiscoverOctoPrintAction.qml:134
 msgctxt "@action:button"
 msgid "Remove"
 msgstr "Удалить"
 
-#: qml/DiscoverOctoPrintAction.qml:139
+#: qml/DiscoverOctoPrintAction.qml:142
 msgctxt "@action:button"
 msgid "Refresh"
 msgstr "Обновить"
 
-#: qml/DiscoverOctoPrintAction.qml:236
+#: qml/DiscoverOctoPrintAction.qml:239
 msgctxt "@label"
 msgid "Automatically discover local OctoPrint instances"
 msgstr "Автоматически обнаруживать локальные подключения OctoPrint"
 
-#: qml/DiscoverOctoPrintAction.qml:274
+#: qml/DiscoverOctoPrintAction.qml:277
 msgctxt "@label"
 msgid "Address"
 msgstr "Адрес"
 
-#: qml/DiscoverOctoPrintAction.qml:286
+#: qml/DiscoverOctoPrintAction.qml:289
 msgctxt "@label"
 msgid "Version"
 msgstr "Версия"
 
-#: qml/DiscoverOctoPrintAction.qml:298
+#: qml/DiscoverOctoPrintAction.qml:301
 msgctxt "@label"
 msgid "API Key"
 msgstr "Ключ API"
 
-#: qml/DiscoverOctoPrintAction.qml:316
+#: qml/DiscoverOctoPrintAction.qml:319
 msgctxt "@action"
 msgid "Request..."
 msgstr "Запрос…"
 
-#: qml/DiscoverOctoPrintAction.qml:329
+#: qml/DiscoverOctoPrintAction.qml:332
 msgctxt "@label"
 msgid "User name"
 msgstr "Имя пользователя"
 
-#: qml/DiscoverOctoPrintAction.qml:403
+#: qml/DiscoverOctoPrintAction.qml:406
 msgctxt "@label"
 msgid "Please enter the API key to access OctoPrint."
 msgstr "Пожалуйста, введите ключ API для доступа к OctoPrint."
 
-#: qml/DiscoverOctoPrintAction.qml:409
+#: qml/DiscoverOctoPrintAction.qml:412
 msgctxt "@label"
 msgid "OctoPrint is not available."
 msgstr "OctoPrint недоступен."
 
-#: qml/DiscoverOctoPrintAction.qml:419
+#: qml/DiscoverOctoPrintAction.qml:422
 msgctxt "@label"
 msgid "The API key is not valid."
 msgstr "Ключ API недействителен."
 
-#: qml/DiscoverOctoPrintAction.qml:424
+#: qml/DiscoverOctoPrintAction.qml:427
 msgctxt "@label"
 msgid "Checking the API key..."
 msgstr "Проверка ключа API…"
 
-#: qml/DiscoverOctoPrintAction.qml:427
+#: qml/DiscoverOctoPrintAction.qml:430
 msgctxt "@label"
 msgid "You can get the API key through the OctoPrint web page."
 msgstr "Вы можете получить ключ API через веб-страницу OctoPrint."
 
-#: qml/DiscoverOctoPrintAction.qml:443
+#: qml/DiscoverOctoPrintAction.qml:446
 msgctxt "@label"
 msgid "Start print job after uploading"
 msgstr "Начать печать после загрузки задания"
 
-#: qml/DiscoverOctoPrintAction.qml:454
+#: qml/DiscoverOctoPrintAction.qml:457
 msgctxt "@label"
 msgid "Select print job after uploading"
 msgstr "Выбрать принтер после загрузки задания"
 
-#: qml/DiscoverOctoPrintAction.qml:469
+#: qml/DiscoverOctoPrintAction.qml:472
 msgctxt "@label"
 msgid "Turn on printer with"
 msgstr "Включить принтер с помощью"
 
-#: qml/DiscoverOctoPrintAction.qml:528
+#: qml/DiscoverOctoPrintAction.qml:531
 msgctxt "@label"
 msgid "Unknown plug"
 msgstr "Неизвестная розетка"
 
-#: qml/DiscoverOctoPrintAction.qml:550
+#: qml/DiscoverOctoPrintAction.qml:553
 msgctxt "@label"
 msgid "Connect to printer before sending printjob"
 msgstr "Соединиться с принтером перед отправкой задания"
 
-#: qml/DiscoverOctoPrintAction.qml:561
-msgctxt "@label"
-msgid "Show webcam image"
-msgstr "Показывать видео с камеры"
-
-#: qml/DiscoverOctoPrintAction.qml:572
+#: qml/DiscoverOctoPrintAction.qml:564
 msgctxt "@label"
 msgid "Store G-code on the printer SD card"
 msgstr "Хранить G-code на SD карте принтера"
 
-#: qml/DiscoverOctoPrintAction.qml:585
+#: qml/DiscoverOctoPrintAction.qml:577
 msgctxt "@label"
 msgid ""
 "Note: Transfering files to the printer SD card takes very long. Using this "
@@ -392,12 +387,17 @@ msgstr ""
 "Обратите внимание: Передача файлов на SD карту принтера занимает много "
 "времени. Использование этой опции не рекомендовано."
 
-#: qml/DiscoverOctoPrintAction.qml:590
+#: qml/DiscoverOctoPrintAction.qml:582
+msgctxt "@label"
+msgid "Show webcam image"
+msgstr "Показывать видео с камеры"
+
+#: qml/DiscoverOctoPrintAction.qml:593
 msgctxt "@label"
 msgid "Set Gcode flavor to \"Marlin\""
 msgstr "Установить “Marlin” в качестве Gcode flavor"
 
-#: qml/DiscoverOctoPrintAction.qml:596
+#: qml/DiscoverOctoPrintAction.qml:599
 msgctxt "@label"
 msgid ""
 "Note: Printing UltiGCode using OctoPrint does not work. Setting Gcode flavor "
@@ -407,75 +407,71 @@ msgstr ""
 "Использование “Marlin” в качестве Gcode flavor исправляет это, но "
 "переписывает настройки материала на вашем принтере."
 
-#: qml/DiscoverOctoPrintAction.qml:610
+#: qml/DiscoverOctoPrintAction.qml:613
 msgctxt "@action"
 msgid "Open in browser..."
 msgstr "Открыть в браузере…"
 
-#: qml/DiscoverOctoPrintAction.qml:622
+#: qml/DiscoverOctoPrintAction.qml:625
 msgctxt "@action:button"
 msgid "Disconnect"
 msgstr "Отсоединиться"
 
-#: qml/DiscoverOctoPrintAction.qml:625
+#: qml/DiscoverOctoPrintAction.qml:628
 msgctxt "@action:button"
 msgid "Connect"
 msgstr "Соединиться"
 
-#: qml/DiscoverOctoPrintAction.qml:672
+#: qml/ManualInstanceDialog.qml:24
 msgctxt "@title:window"
 msgid "Manually added OctoPrint instance"
 msgstr "Подключения OctoPrint, добавленные вручную"
 
-#: qml/DiscoverOctoPrintAction.qml:735
+#: qml/ManualInstanceDialog.qml:161
 msgctxt "@label"
 msgid "Instance Name"
 msgstr "Имя подключения"
 
-#: qml/DiscoverOctoPrintAction.qml:752
+#: qml/ManualInstanceDialog.qml:178
 msgctxt "@label"
 msgid "IP Address or Hostname"
 msgstr "IP адрес или имя хоста"
 
-#: qml/DiscoverOctoPrintAction.qml:769
+#: qml/ManualInstanceDialog.qml:196
 msgctxt "@label"
 msgid "Port Number"
 msgstr "Номер порта"
 
-#: qml/DiscoverOctoPrintAction.qml:786
+#: qml/ManualInstanceDialog.qml:224
 msgctxt "@label"
 msgid "Path"
 msgstr "Путь"
 
-#: qml/DiscoverOctoPrintAction.qml:805
+#: qml/ManualInstanceDialog.qml:261
 msgctxt "@label"
-msgid "Show reverse proxy options (advanced)"
-msgstr "Показать опции резервного proxy (расширенные)"
+msgid ""
+"In order to use HTTPS or a HTTP username and password, you need to configure "
+"a reverse proxy or another service."
+msgstr ""
+"Для того чтобы использовать HTTPS или имя пользователя и пароль HTTP, "
+"необходимо настроить обратный прокси или иной сервис."
 
-#: qml/DiscoverOctoPrintAction.qml:818
+#: qml/ManualInstanceDialog.qml:266
 msgctxt "@label"
 msgid "Use HTTPS"
 msgstr "Использовать HTTPS"
 
-#: qml/DiscoverOctoPrintAction.qml:831
+#: qml/ManualInstanceDialog.qml:290
 msgctxt "@label"
 msgid "HTTP user name"
 msgstr "HTTP имя пользователя"
 
-#: qml/DiscoverOctoPrintAction.qml:844
+#: qml/ManualInstanceDialog.qml:303
 msgctxt "@label"
 msgid "HTTP password"
 msgstr "HTTP пароль"
 
-#: qml/DiscoverOctoPrintAction.qml:864
-msgctxt "@label"
-msgid ""
-"NB: Only use these options if you access OctoPrint through a reverse proxy."
-msgstr ""
-"Внимание: Используйте эту опцию только если доступ к OctoPrint "
-"осуществляется через резервный proxy."
-
-#: qml/DiscoverOctoPrintAction.qml:878
+#: qml/ManualInstanceDialog.qml:326
 msgctxt "@action:button"
 msgid "Ok"
 msgstr "Ок"
