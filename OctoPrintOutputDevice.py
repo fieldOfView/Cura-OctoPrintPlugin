@@ -388,7 +388,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self.get(end_point, self._onRequestFinished)
 
     def close(self) -> None:
-        self._update_timer.stop()
+        if self._update_timer:
+            self._update_timer.stop()
 
         self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Closed))
         if self._progress_message:
