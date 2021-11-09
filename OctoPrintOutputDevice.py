@@ -16,6 +16,7 @@ from cura.CuraApplication import CuraApplication
 from .OctoPrintOutputController import OctoPrintOutputController
 from .PowerPlugins import PowerPlugins
 from .WebcamsModel import WebcamsModel
+from .UploadOptions import UploadOptions
 
 try:
     # Cura 4.1 and newer
@@ -67,7 +68,9 @@ if TYPE_CHECKING:
 
 from UM.Resources import Resources
 
-Resources.addSearchPath(os.path.join(os.path.abspath(os.path.dirname(__file__)))) # Plugin translation file import
+Resources.addSearchPath(
+    os.path.join(os.path.abspath(os.path.dirname(__file__)))
+)  # Plugin translation file import
 
 i18n_catalog = i18nCatalog("octoprint")
 
@@ -126,8 +129,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         self._gcode_stream = StringIO()  # type: Union[StringIO, BytesIO]
 
-        self._auto_print = True
-        self._auto_select = False
         self._forced_queue = False
         self._select_and_print_handled_in_upload = False
 
@@ -237,13 +238,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._update_timer.setSingleShot(False)
         self._update_timer.timeout.connect(self._update)
 
+        self._show_camera = True
         self._webcams_model = WebcamsModel(
             self._protocol, self._address, self.port, self._basic_auth_string
         )
 
-        self._show_camera = True
-
         self._power_plugins_manager = PowerPlugins()
+        self._upload_options = UploadOptions()
+        # confirm name, path, autostart etc before print
+        self._confirm_upload_options = False
 
         # store gcode on sd card in printer instead of locally
         self._store_on_sd_supported = False
@@ -251,13 +254,13 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         # transfer gcode as .ufp files including thumbnail image
         self._ufp_transfer_supported = False
 
-        # wait for analysis to complete before starting a print
-        self._gcode_analysis_requires_wait = False
-        self._gcode_analysis_supported = False
-
         self._ufp_plugin_version = Version(
             0
         )  # used to determine how gcode files are extracted from .ufp
+
+        # wait for analysis to complete before starting a print
+        self._gcode_analysis_requires_wait = False
+        self._gcode_analysis_supported = False
 
         self._waiting_for_analysis = False
         self._waiting_for_printer = False
@@ -383,6 +386,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     def showCamera(self) -> bool:
         return self._show_camera
 
+    def setConfirmUploadOptions(self, confirm_upload_options: bool) -> None:
+        if confirm_upload_options != self._confirm_upload_options:
+            self._confirm_upload_options = confirm_upload_options
+            self.confirmUploadOptionsChanged.emit()
+
+    confirmUploadOptionsChanged = pyqtSignal()
+
+    @pyqtProperty(bool, notify=confirmUploadOptionsChanged)
+    def confirmUploadOptions(self) -> bool:
+        return self._confirm_upload_options
+
     def _update(self) -> None:
         for end_point in self._polling_end_points:
             self.get(end_point, self._onRequestFinished)
@@ -492,6 +506,19 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             Logger.log("e", "There is no active printer to send the print")
             return
 
+        self._upload_options.configure(global_container_stack, file_name)
+
+        if self._confirm_upload_options:
+            self._upload_options.setProceedCallback(self.proceedRequestWrite)
+            self._upload_options.showOptionsDialog()
+        else:
+            self.proceedRequestWrite()
+
+    def proceedRequestWrite(self) -> None:
+        global_container_stack = CuraApplication.getInstance().getGlobalContainerStack()
+        if not global_container_stack:
+            return
+
         # Make sure post-processing plugin are run on the gcode
         self.writeStarted.emit(self)
 
@@ -522,12 +549,6 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
             self._progress_message = None  # type: Optional[Message]
 
-        self._auto_print = parseBool(
-            global_container_stack.getMetaDataEntry("octoprint_auto_print", True)
-        )
-        self._auto_select = parseBool(
-            global_container_stack.getMetaDataEntry("octoprint_auto_select", False)
-        )
         self._forced_queue = False
 
         use_power_plugin = parseBool(
@@ -538,7 +559,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         )
         if (
             self.activePrinter.state == "offline"
-            and self._auto_print
+            and self._upload_options.autoPrint
             and (use_power_plugin or auto_connect)
         ):
             wait_for_printer = False
@@ -626,7 +647,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 % self.activePrinter.state,
             )
             error_string = ""
-            if not self._auto_print:
+            if not self._upload_options.autoPrint:
                 # Allow queueing the job even if OctoPrint is currently busy if autoprinting is disabled
                 pass
             elif self.activePrinter.state == "offline":
@@ -708,7 +729,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if not global_container_stack:
             return
 
-        if self._auto_print and not self._forced_queue:
+        if self._upload_options.autoPrint and not self._forced_queue:
             CuraApplication.getInstance().getController().setActiveStage("MonitorStage")
 
             # cancel any ongoing preheat timer before starting a print
@@ -736,10 +757,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self._progress_message.actionTriggered.connect(self._cancelSendGcode)
         self._progress_message.show()
 
-        print_info = CuraApplication.getInstance().getPrintInformation()
-        job_name = print_info.jobName.strip()
+        job_name = self._upload_options.fileName.lstrip(" ").rstrip(" ")
         if job_name == "":
             job_name = "untitled_print"
+        path = self._upload_options.filePath.lstrip("/ ").rstrip("/ ")
+        if path != "":
+            job_name = "%s/%s" % (path, job_name)
+
+        print_info = CuraApplication.getInstance().getPrintInformation()
+
         ##  Presliced print is always send as gcode
         extension = (
             "gcode" if not self._transfer_as_ufp or print_info.preSliced else "ufp"
@@ -775,11 +801,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
             if not self._forced_queue:
                 # tell OctoPrint to start the print when there is no reason to delay doing so
-                if self._auto_select or self._auto_print:
+                if self._upload_options.autoSelect or self._upload_options.autoPrint:
                     post_parts.append(
                         self._createFormPart('name="select"', b"true", "text/plain")
                     )
-                if self._auto_print:
+                if self._upload_options.autoPrint:
                     post_parts.append(
                         self._createFormPart('name="print"', b"true", "text/plain")
                     )
@@ -1540,7 +1566,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 # since 0.1.6, the plugin extracts gcode from *.ufp files as *.gcode
                 end_point = end_point[:-3] + "gcode"
 
-        if self._forced_queue or not self._auto_print:
+        if self._forced_queue or not self._upload_options.autoPrint:
             if location_url:
                 file_name = location_url.fileName()
                 message = Message(
@@ -1562,12 +1588,16 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             message.actionTriggered.connect(self._openOctoPrint)
             message.show()
 
-            if self._auto_print or self._auto_select:
+            if self._upload_options.autoPrint or self._upload_options.autoSelect:
                 self._selectAndPrint(end_point)
-        elif self._auto_print or self._auto_select or self._wait_for_analysis:
-            if not self._wait_for_analysis or not self._auto_print:
+        elif (
+            self._upload_options.autoPrint
+            or self._upload_options.autoSelect
+            or self._wait_for_analysis
+        ):
+            if not self._wait_for_analysis or not self._upload_options.autoPrint:
                 if not self._select_and_print_handled_in_upload and (
-                    self._auto_print or self._auto_select
+                    self._upload_options.autoPrint or self._upload_options.autoSelect
                 ):
                     self._selectAndPrint(end_point)
                 return
@@ -1686,7 +1716,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def _selectAndPrint(self, end_point: str) -> None:
         command = {"command": "select"}  # type: Dict[str, Any]
-        if self._auto_print and not self._forced_queue:
+        if self._upload_options.autoPrint and not self._forced_queue:
             command["print"] = True
 
         self._sendCommandToApi(end_point, command)

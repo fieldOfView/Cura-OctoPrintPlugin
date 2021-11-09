@@ -155,6 +155,7 @@ UM.Dialog
         width: parent.width
         verticalItemAlignment: Grid.AlignVCenter
         rowSpacing: UM.Theme.getSize("default_lining").height
+        columnSpacing: UM.Theme.getSize("default_margin").width
 
         Label
         {
