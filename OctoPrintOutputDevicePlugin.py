@@ -99,7 +99,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         if not isinstance(self._manual_instances, dict):
             self._manual_instances = {}  # type: Dict[str, Any]
 
-        self._name_regex = re.compile('OctoPrint instance (".*"\.|on )(.*)\.')
+        self._name_regex = re.compile(r"OctoPrint instance (\".*\"\.|on )(.*)\.")
 
         self._keep_alive_timer = QTimer()
         self._keep_alive_timer.setInterval(2000)
