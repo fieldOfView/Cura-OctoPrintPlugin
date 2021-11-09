@@ -8,6 +8,7 @@ from UM.Signal import Signal, signalemitter
 from UM.Application import Application
 from UM.Logger import Logger
 from UM.Util import parseBool
+from UM.Settings.ContainerStack import ContainerStack
 
 from PyQt5.QtCore import QTimer
 
@@ -45,7 +46,6 @@ else:
             ServiceStateChange,
             ServiceInfo,
             DNSAddress,
-            IPVersion,
             __version__ as zeroconf_version,
         )
 
@@ -65,7 +65,6 @@ else:
             DNSAddress,
             __version__ as zeroconf_version,
         )
-        IPVersion = None
 
         Logger.log(
             "w", "Falling back to default Zeroconf module version %s" % zeroconf_version
@@ -277,21 +276,9 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
         for key in self._instances:
             if key == global_container_stack.getMetaDataEntry("octoprint_id"):
-                api_key = global_container_stack.getMetaDataEntry(
-                    "octoprint_api_key", ""
+                self._configureAndConnectInstance(
+                    self._instances[key], global_container_stack
                 )
-                self._instances[key].setApiKey(self._deobfuscateString(api_key))
-                self._instances[key].setShowCamera(
-                    parseBool(
-                        global_container_stack.getMetaDataEntry(
-                            "octoprint_show_camera", "true"
-                        )
-                    )
-                )
-                self._instances[key].connectionStateChanged.connect(
-                    self._onInstanceConnectionStateChanged
-                )
-                self._instances[key].connect()
             else:
                 if self._instances[key].isConnected():
                     self._instances[key].close()
@@ -300,27 +287,35 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     def addInstance(
         self, name: str, address: str, port: int, properties: Dict[bytes, bytes]
     ) -> None:
+        global_container_stack = Application.getInstance().getGlobalContainerStack()
+        if not global_container_stack:
+            return
+
         instance = OctoPrintOutputDevice(name, address, port, properties)
         self._instances[instance.getId()] = instance
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
-        if (
-            global_container_stack
-            and instance.getId()
-            == global_container_stack.getMetaDataEntry("octoprint_id")
-        ):
-            api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
-            instance.setApiKey(self._deobfuscateString(api_key))
-            instance.setShowCamera(
-                parseBool(
-                    global_container_stack.getMetaDataEntry(
-                        "octoprint_show_camera", "true"
-                    )
+        if instance.getId() == global_container_stack.getMetaDataEntry("octoprint_id"):
+            self._configureAndConnectInstance(instance, global_container_stack)
+
+    def _configureAndConnectInstance(
+        self, instance: OctoPrintOutputDevice, global_container_stack: ContainerStack
+    ) -> None:
+        api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
+
+        instance.setApiKey(self._deobfuscateString(api_key))
+        instance.setShowCamera(
+            parseBool(
+                global_container_stack.getMetaDataEntry("octoprint_show_camera", "true")
+            )
+        )
+        instance.setConfirmUploadOptions(
+            parseBool(
+                global_container_stack.getMetaDataEntry(
+                    "octoprint_confirm_upload_options", "false"
                 )
             )
-            instance.connectionStateChanged.connect(
-                self._onInstanceConnectionStateChanged
-            )
-            instance.connect()
+        )
+        instance.connectionStateChanged.connect(self._onInstanceConnectionStateChanged)
+        instance.connect()
 
     def removeInstance(self, name: str) -> None:
         instance = self._instances.pop(name, None)
@@ -396,25 +391,29 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
                 requested_info = zeroconf.get_service_info(service_type, name)
 
                 if not requested_info:
-                    Logger.log("w", "Could not get information about %s" % instance_name)
+                    Logger.log(
+                        "w", "Could not get information about %s" % instance_name
+                    )
                     return
 
                 info = requested_info
 
             if address and info.port:
-                self.addInstanceSignal.emit(instance_name, address, info.port, info.properties)
+                self.addInstanceSignal.emit(
+                    instance_name, address, info.port, info.properties
+                )
             else:
                 Logger.log(
-                    "d", "Discovered instance named %s but received no address", instance_name
+                    "d",
+                    "Discovered instance named %s but received no address",
+                    instance_name,
                 )
 
         elif state_change == ServiceStateChange.Removed:
             self.removeInstanceSignal.emit(str(name))
 
-    def _validateIP(self, address:str) -> str:
-        ip = (
-            None
-        )  # type: Optional[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]
+    def _validateIP(self, address: str) -> str:
+        ip = None  # type: Optional[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]
         try:
             ip = ipaddress.IPv4Address(address)  # IPv4
         except ipaddress.AddressValueError:
