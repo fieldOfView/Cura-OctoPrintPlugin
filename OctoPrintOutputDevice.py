@@ -1568,7 +1568,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if self._forced_queue or not self._upload_options.autoPrint:
             if location_url:
-                file_name = location_url.fileName()
+                location_path = "/".join(
+                    end_point.split("/")[2:]
+                )  # remove files/[local or sdcard]
+                file_name = location_path + location_url.fileName()
                 message = Message(
                     i18n_catalog.i18nc(
                         "@info:status", "Saved to OctoPrint as {0}"
