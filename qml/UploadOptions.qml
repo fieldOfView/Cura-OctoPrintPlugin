@@ -14,7 +14,7 @@ UM.Dialog
     title: catalog.i18nc("@action:button", "Upload to OctoPrint Options")
 
     minimumWidth: screenScaleFactor * 400
-    minimumHeight: screenScaleFactor * 180
+    minimumHeight: screenScaleFactor * 150
 
     onAccepted: manager.acceptOptionsDialog()
 
@@ -75,7 +75,7 @@ UM.Dialog
             }
             Label
             {
-                text: catalog.i18nc("@label", "Filename")
+                text: catalog.i18nc("@label", "An extenstion will be added automatically")
             }
         }
 
