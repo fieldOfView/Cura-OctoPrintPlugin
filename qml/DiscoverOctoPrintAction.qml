@@ -578,6 +578,16 @@ Cura.MachineAction
                     }
                     CheckBox
                     {
+                        id: confirmUploadOptionsCheckBox
+                        text: catalog.i18nc("@label", "Confirm print job options before sending")
+                        checked: Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_confirm_upload_options") == "true"
+                        onClicked:
+                        {
+                            manager.setContainerMetaDataEntry(activeMachineId, "octoprint_confirm_upload_options", String(checked))
+                        }
+                    }
+                    CheckBox
+                    {
                         id: showCameraCheckBox
                         text: catalog.i18nc("@label", "Show webcam image")
                         enabled: manager.instanceSupportsCamera

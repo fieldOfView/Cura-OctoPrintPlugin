@@ -8,6 +8,7 @@ from UM.Signal import Signal, signalemitter
 from UM.Application import Application
 from UM.Logger import Logger
 from UM.Util import parseBool
+from UM.Settings.ContainerStack import ContainerStack
 
 from PyQt5.QtCore import QTimer
 
@@ -32,36 +33,42 @@ if TYPE_CHECKING:
 else:
     try:
         # import the included version of python-zeroconf
+        # expand search path so local copies of zeroconf and ifaddr can be imported
         import sys
-        import importlib.util
 
-        # expand path so local copy of ifaddr can be imported by zeroconf
-        sys.path.append(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "ifaddr")
+        plugin_path = os.path.dirname(os.path.abspath(__file__))
+        sys.path.insert(0, os.path.join(plugin_path, "ifaddr"))
+        sys.path.insert(0, os.path.join(plugin_path, "python-zeroconf"))
+
+        from zeroconf import (
+            Zeroconf,
+            ServiceBrowser,
+            ServiceStateChange,
+            ServiceInfo,
+            DNSAddress,
+            __version__ as zeroconf_version,
         )
 
-        zeroconf_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "python-zeroconf",
-            "zeroconf",
-            "__init__.py",
-        )
-        spec = importlib.util.spec_from_file_location("zeroconf", zeroconf_path)
-        zeroconf = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(zeroconf)
+        # restore original path
+        del sys.path[0]  # python-zeroconf
+        del sys.path[0]  # ifaddr
 
-        del sys.path[-1]  # restore original path
-
-        Zeroconf = zeroconf.Zeroconf
-        ServiceBrowser = zeroconf.ServiceBrowser
-        ServiceStateChange = zeroconf.ServiceStateChange
-        ServiceInfo = zeroconf.ServiceInfo
-        DNSAddress = zeroconf.DNSAddress
-        Logger.log("w", "Supplied version of Zeroconf module imported")
-    except (FileNotFoundError, ImportError):
+        Logger.log("d", "Using included Zeroconf module version %s" % zeroconf_version)
+    except (FileNotFoundError, ImportError) as exception:
         # fall back to the system-installed version, or what comes with Cura
-        Logger.log("w", "Falling back to default zeroconf module")
-        from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
+        Logger.logException("e", "Failed to load included version of Zeroconf module")
+        from zeroconf import (
+            Zeroconf,
+            ServiceBrowser,
+            ServiceStateChange,
+            ServiceInfo,
+            DNSAddress,
+            __version__ as zeroconf_version,
+        )
+
+        Logger.log(
+            "w", "Falling back to default Zeroconf module version %s" % zeroconf_version
+        )
 
 if TYPE_CHECKING:
     from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
@@ -73,7 +80,7 @@ if TYPE_CHECKING:
 class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     def __init__(self) -> None:
         super().__init__()
-        self._zero_conf = None  # type: Optional[Zeroconf]
+        self._zeroconf = None  # type: Optional[Zeroconf]
         self._browser = None  # type: Optional[ServiceBrowser]
         self._instances = {}  # type: Dict[str, OctoPrintOutputDevice]
 
@@ -99,7 +106,7 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         if not isinstance(self._manual_instances, dict):
             self._manual_instances = {}  # type: Dict[str, Any]
 
-        self._name_regex = re.compile('OctoPrint instance (".*"\.|on )(.*)\.')
+        self._name_regex = re.compile(r"OctoPrint instance (\".*\"\.|on )(.*)\.")
 
         self._keep_alive_timer = QTimer()
         self._keep_alive_timer.setInterval(2000)
@@ -117,9 +124,9 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
     def startDiscovery(self) -> None:
         # Clean up previous discovery components and results
-        if self._zero_conf:
-            self._zero_conf.close()
-            self._zero_conf = None  # type: Optional[Zeroconf]
+        if self._zeroconf:
+            self._zeroconf.close()
+            self._zeroconf = None  # type: Optional[Zeroconf]
 
         if self._browser:
             self._browser.cancel()
@@ -151,17 +158,17 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             return
 
         try:
-            self._zero_conf = Zeroconf()
+            self._zeroconf = Zeroconf()
         except Exception:
-            self._zero_conf = None  # type: Optional[Zeroconf]
+            self._zeroconf = None  # type: Optional[Zeroconf]
             self._keep_alive_timer.stop()
             Logger.logException(
                 "e", "Failed to create Zeroconf instance. Auto-discovery will not work."
             )
 
-        if self._zero_conf:
+        if self._zeroconf:
             self._browser = ServiceBrowser(
-                self._zero_conf, u"_octoprint._tcp.local.", [self._onServiceChanged]
+                self._zeroconf, "_octoprint._tcp.local.", [self._onServiceChanged]
             )
             if self._browser and self._browser.is_alive():
                 self._keep_alive_timer.start()
@@ -182,9 +189,9 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
                 self._consecutive_zeroconf_restarts += 1
                 self.startDiscovery()
             else:
-                if self._zero_conf:
-                    self._zero_conf.close()
-                    self._zero_conf = None  # type: Optional[Zeroconf]
+                if self._zeroconf:
+                    self._zeroconf.close()
+                    self._zeroconf = None  # type: Optional[Zeroconf]
                 Logger.log(
                     "e",
                     "Giving up restarting Zeroconf browser after 5 consecutive attempts. Auto-discovery will not work.",
@@ -249,8 +256,8 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
             self._browser.cancel()
         self._browser = None  # type: Optional[ServiceBrowser]
 
-        if self._zero_conf:
-            self._zero_conf.close()
+        if self._zeroconf:
+            self._zeroconf.close()
 
     def getInstances(self) -> Dict[str, Any]:
         return self._instances
@@ -269,21 +276,9 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
 
         for key in self._instances:
             if key == global_container_stack.getMetaDataEntry("octoprint_id"):
-                api_key = global_container_stack.getMetaDataEntry(
-                    "octoprint_api_key", ""
+                self._configureAndConnectInstance(
+                    self._instances[key], global_container_stack
                 )
-                self._instances[key].setApiKey(self._deobfuscateString(api_key))
-                self._instances[key].setShowCamera(
-                    parseBool(
-                        global_container_stack.getMetaDataEntry(
-                            "octoprint_show_camera", "true"
-                        )
-                    )
-                )
-                self._instances[key].connectionStateChanged.connect(
-                    self._onInstanceConnectionStateChanged
-                )
-                self._instances[key].connect()
             else:
                 if self._instances[key].isConnected():
                     self._instances[key].close()
@@ -292,27 +287,35 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
     def addInstance(
         self, name: str, address: str, port: int, properties: Dict[bytes, bytes]
     ) -> None:
+        global_container_stack = Application.getInstance().getGlobalContainerStack()
+        if not global_container_stack:
+            return
+
         instance = OctoPrintOutputDevice(name, address, port, properties)
         self._instances[instance.getId()] = instance
-        global_container_stack = Application.getInstance().getGlobalContainerStack()
-        if (
-            global_container_stack
-            and instance.getId()
-            == global_container_stack.getMetaDataEntry("octoprint_id")
-        ):
-            api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
-            instance.setApiKey(self._deobfuscateString(api_key))
-            instance.setShowCamera(
-                parseBool(
-                    global_container_stack.getMetaDataEntry(
-                        "octoprint_show_camera", "true"
-                    )
+        if instance.getId() == global_container_stack.getMetaDataEntry("octoprint_id"):
+            self._configureAndConnectInstance(instance, global_container_stack)
+
+    def _configureAndConnectInstance(
+        self, instance: OctoPrintOutputDevice, global_container_stack: ContainerStack
+    ) -> None:
+        api_key = global_container_stack.getMetaDataEntry("octoprint_api_key", "")
+
+        instance.setApiKey(self._deobfuscateString(api_key))
+        instance.setShowCamera(
+            parseBool(
+                global_container_stack.getMetaDataEntry("octoprint_show_camera", "true")
+            )
+        )
+        instance.setConfirmUploadOptions(
+            parseBool(
+                global_container_stack.getMetaDataEntry(
+                    "octoprint_confirm_upload_options", "false"
                 )
             )
-            instance.connectionStateChanged.connect(
-                self._onInstanceConnectionStateChanged
-            )
-            instance.connect()
+        )
+        instance.connectionStateChanged.connect(self._onInstanceConnectionStateChanged)
+        instance.connect()
 
     def removeInstance(self, name: str) -> None:
         instance = self._instances.pop(name, None)
@@ -349,57 +352,76 @@ class OctoPrintOutputDevicePlugin(OutputDevicePlugin):
         state_change: ServiceStateChange,
     ) -> None:
         if state_change == ServiceStateChange.Added:
-            key = name
             result = self._name_regex.match(name)
             if result:
                 if result.group(1) == "on ":
-                    name = result.group(2)
+                    instance_name = result.group(2)
                 else:
-                    name = result.group(1) + result.group(2)
+                    instance_name = result.group(1) + result.group(2)
+            else:
+                instance_name = name
 
-            Logger.log("d", "Bonjour service added: %s" % name)
-
-            # First try getting info from zeroconf cache
-            info = ServiceInfo(service_type, key)
-            for record in zeroconf.cache.entries_with_name(key.lower()):
-                info.update_record(zeroconf, time.time(), record)
+            Logger.log("d", "Bonjour service added: %s" % instance_name)
 
             address = ""
-            for record in zeroconf.cache.entries_with_name(info.server):
-                info.update_record(zeroconf, time.time(), record)
-                if not isinstance(record, DNSAddress):
-                    return
-                ip = (
-                    None
-                )  # type: Optional[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]
-                try:
-                    ip = ipaddress.IPv4Address(record.address)  # IPv4
-                except ipaddress.AddressValueError:
-                    ip = ipaddress.IPv6Address(record.address)  # IPv6
-                except:
-                    continue
+            try:
+                info = zeroconf.get_service_info(service_type, name)
+                for scoped_address in info.parsed_scoped_addresses():
+                    address = self._validateIP(scoped_address)
+                    if address:
+                        break
 
-                if ip and not ip.is_link_local:  # don't accept 169.254.x.x address
-                    address = str(ip) if ip.version == 4 else "[%s]" % str(ip)
-                    break
+            except AttributeError:
+                info = ServiceInfo(service_type, name)
+                # First try getting info from zeroconf cache
+                for record in zeroconf.cache.entries_with_name(name.lower()):
+                    info.update_record(zeroconf, time.time(), record)
+
+                for record in zeroconf.cache.entries_with_name(info.server):
+                    info.update_record(zeroconf, time.time(), record)
+                    if not isinstance(record, DNSAddress):
+                        continue
+                    address = self._validateIP(record.address)
+                    if address:
+                        break
 
             # Request more data if info is not complete
             if not address or not info.port:
-                Logger.log("d", "Trying to get address of %s", name)
-                requested_info = zeroconf.get_service_info(service_type, key)
+                Logger.log("d", "Trying to get address of %s", instance_name)
+                requested_info = zeroconf.get_service_info(service_type, name)
 
                 if not requested_info:
-                    Logger.log("w", "Could not get information about %s" % name)
+                    Logger.log(
+                        "w", "Could not get information about %s" % instance_name
+                    )
                     return
 
                 info = requested_info
 
             if address and info.port:
-                self.addInstanceSignal.emit(name, address, info.port, info.properties)
+                self.addInstanceSignal.emit(
+                    instance_name, address, info.port, info.properties
+                )
             else:
                 Logger.log(
-                    "d", "Discovered instance named %s but received no address", name
+                    "d",
+                    "Discovered instance named %s but received no address",
+                    instance_name,
                 )
 
         elif state_change == ServiceStateChange.Removed:
             self.removeInstanceSignal.emit(str(name))
+
+    def _validateIP(self, address: str) -> str:
+        ip = None  # type: Optional[Union[ipaddress.IPv4Address, ipaddress.IPv6Address]]
+        try:
+            ip = ipaddress.IPv4Address(address)  # IPv4
+        except ipaddress.AddressValueError:
+            ip = ipaddress.IPv6Address(address)  # IPv6
+        except:
+            return ""
+
+        if ip and not ip.is_link_local:  # don't accept 169.254.x.x address
+            return str(ip) if ip.version == 4 else "[%s]" % str(ip)
+        else:
+            return ""
