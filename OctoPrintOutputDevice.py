@@ -1181,7 +1181,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                                 print_job.updateTimeTotal(print_time + print_time_left)
                             elif completion:  # not 0 or None or ""
                                 print_job.updateTimeTotal(
-                                    print_time / (completion / 100)
+                                    int(print_time / (completion / 100))
                                 )
                             else:
                                 print_job.updateTimeTotal(0)
