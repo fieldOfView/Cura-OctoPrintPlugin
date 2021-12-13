@@ -75,7 +75,7 @@ UM.Dialog
             }
             Label
             {
-                text: catalog.i18nc("@label", "An extenstion will be added automatically")
+                text: catalog.i18nc("@label", "An extenstion will be added automatically.")
             }
         }
 
