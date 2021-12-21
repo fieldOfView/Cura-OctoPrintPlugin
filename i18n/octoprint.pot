@@ -394,7 +394,7 @@ msgstr ""
 #: qml/DiscoverOctoPrintAction.qml:577
 msgctxt "@label"
 msgid ""
-"Note: Transfering files to the printer's SD card takes very long. Using this "
+"Note: Transferring files to the printer's SD card takes very long. Using this "
 "option is not recommended."
 msgstr ""
 
