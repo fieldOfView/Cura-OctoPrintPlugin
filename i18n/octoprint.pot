@@ -58,7 +58,7 @@ msgstr ""
 
 #: OctoPrintOutputDevice.py:625
 msgctxt "@action:tooltip"
-msgid "Stop waiting for the printer and queue the printjob instead"
+msgid "Stop waiting for the printer and queue the print job instead"
 msgstr ""
 
 #: OctoPrintOutputDevice.py:631 OctoPrintOutputDevice.py:752
@@ -71,7 +71,7 @@ msgstr ""
 #: OctoPrintOutputDevice.py:633 OctoPrintOutputDevice.py:754
 #: OctoPrintOutputDevice.py:1633
 msgctxt "@action:tooltip"
-msgid "Abort the printjob"
+msgid "Abort the print job"
 msgstr ""
 
 #: OctoPrintOutputDevice.py:655
@@ -130,7 +130,7 @@ msgstr ""
 
 #: OctoPrintOutputDevice.py:1199 OctoPrintOutputDevice.py:1215
 msgctxt "@info:status"
-msgid "Streaming file to the printer SD card"
+msgid "Streaming file to the printer SD card..."
 msgstr ""
 
 #: OctoPrintOutputDevice.py:1236
@@ -156,7 +156,7 @@ msgstr ""
 #: OctoPrintOutputDevice.py:1389
 msgctxt "@info:error"
 msgid ""
-"You are not allowed to send gcode commands to OctoPrint with the configured "
+"You are not allowed to send G-code commands to OctoPrint with the configured "
 "API key."
 msgstr ""
 
@@ -200,13 +200,13 @@ msgstr ""
 
 #: OctoPrintOutputDevice.py:1527
 msgctxt "@info:error"
-msgid "Can't store the printjob on the printer sd card."
+msgid "Can't store the print job on the printer SD card."
 msgstr ""
 
 #: OctoPrintOutputDevice.py:1532
 msgctxt "@info:error"
 msgid ""
-"Can't store the printjob with the same name as the one that is currently "
+"Can't store a print job with the same name as the one that is currently "
 "printing."
 msgstr ""
 
@@ -233,7 +233,7 @@ msgstr ""
 
 #: OctoPrintOutputDevice.py:1611
 msgctxt "@info:status"
-msgid "Waiting for OctoPrint to complete Gcode analysis..."
+msgid "Waiting for OctoPrint to complete G-code analysis..."
 msgstr ""
 
 #: OctoPrintOutputDevice.py:1621
@@ -243,7 +243,7 @@ msgstr ""
 
 #: OctoPrintOutputDevice.py:1625
 msgctxt "@action:tooltip"
-msgid "Stop waiting for the Gcode analysis and start printing immediately"
+msgid "Stop waiting for the G-code analysis and start printing immediately"
 msgstr ""
 
 #: DiscoverOctoPrintAction.py:45
@@ -268,7 +268,7 @@ msgstr ""
 
 #: qml/UploadOptions.qml:78
 msgctxt "@label"
-msgid "An extenstion will be added automatically."
+msgid "The file extension will be added automatically."
 msgstr ""
 
 #: qml/UploadOptions.qml:91 qml/DiscoverOctoPrintAction.qml:446
@@ -343,7 +343,7 @@ msgstr ""
 
 #: qml/DiscoverOctoPrintAction.qml:332
 msgctxt "@label"
-msgid "User name"
+msgid "Username"
 msgstr ""
 
 #: qml/DiscoverOctoPrintAction.qml:406
@@ -358,7 +358,7 @@ msgstr ""
 
 #: qml/DiscoverOctoPrintAction.qml:422
 msgctxt "@label"
-msgid "The API key is not valid."
+msgid "The API key is invalid."
 msgstr ""
 
 #: qml/DiscoverOctoPrintAction.qml:427
@@ -383,18 +383,18 @@ msgstr ""
 
 #: qml/DiscoverOctoPrintAction.qml:553
 msgctxt "@label"
-msgid "Connect to printer before sending printjob"
+msgid "Connect to printer before sending print job"
 msgstr ""
 
 #: qml/DiscoverOctoPrintAction.qml:564
 msgctxt "@label"
-msgid "Store G-code on the printer SD card"
+msgid "Store G-code on the printer's SD card"
 msgstr ""
 
 #: qml/DiscoverOctoPrintAction.qml:577
 msgctxt "@label"
 msgid ""
-"Note: Transfering files to the printer SD card takes very long. Using this "
+"Note: Transfering files to the printer's SD card takes very long. Using this "
 "option is not recommended."
 msgstr ""
 
@@ -410,13 +410,13 @@ msgstr ""
 
 #: qml/DiscoverOctoPrintAction.qml:603
 msgctxt "@label"
-msgid "Set Gcode flavor to \"Marlin\""
+msgid "Set G-code flavor to \"Marlin\""
 msgstr ""
 
 #: qml/DiscoverOctoPrintAction.qml:609
 msgctxt "@label"
 msgid ""
-"Note: Printing UltiGCode using OctoPrint does not work. Setting Gcode flavor "
+"Note: Printing UltiGCode using OctoPrint does not work. Setting G-code flavor "
 "to \"Marlin\" fixes this, but overrides material settings on your printer."
 msgstr ""
 
@@ -469,7 +469,7 @@ msgstr ""
 
 #: qml/ManualInstanceDialog.qml:291
 msgctxt "@label"
-msgid "HTTP user name"
+msgid "HTTP username"
 msgstr ""
 
 #: qml/ManualInstanceDialog.qml:304
