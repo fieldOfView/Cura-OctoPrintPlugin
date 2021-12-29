@@ -11,6 +11,7 @@ install(FILES
     NetworkReplyTimeout.py
     NetworkMJPGImage.py
     PowerPlugins.py
+    UploadOptions.py
     WebcamsModel.py
     LICENSE
     README.md
@@ -20,8 +21,10 @@ install(FILES
 install(FILES
     qml/DiscoverOctoPrintAction.qml
     qml/OctoPrintComponents.qml
+    qml/ManualInstanceDialog.qml
     qml/MonitorItem3x.qml
     qml/MonitorItem4x.qml
+    qml/UploadOptions.qml
     DESTINATION lib/cura/plugins/OctoPrintPlugin/qml
 )
 
@@ -32,8 +35,43 @@ install(FILES
 )
 
 install(FILES
+    python-zeroconf/zeroconf/asyncio.py
+    python-zeroconf/zeroconf/const.py
+    python-zeroconf/zeroconf/_cache.py
+    python-zeroconf/zeroconf/_core.py
+    python-zeroconf/zeroconf/_dns.py
+    python-zeroconf/zeroconf/_exceptions.py
+    python-zeroconf/zeroconf/_handlers.py
+    python-zeroconf/zeroconf/_history.py
+    python-zeroconf/zeroconf/_logger.py
+    python-zeroconf/zeroconf/_updates.py
     python-zeroconf/zeroconf/__init__.py
     DESTINATION lib/cura/plugins/OctoPrintPlugin/python-zeroconf/zeroconf
+)
+
+install(FILES
+    python-zeroconf/zeroconf/_protocol/incoming.py
+    python-zeroconf/zeroconf/_protocol/outgoing.py
+    python-zeroconf/zeroconf/_protocol/__init__.py
+    DESTINATION lib/cura/plugins/OctoPrintPlugin/python-zeroconf/zeroconf/_protocol
+)
+
+install(FILES
+    python-zeroconf/zeroconf/_services/browser.py
+    python-zeroconf/zeroconf/_services/info.py
+    python-zeroconf/zeroconf/_services/registry.py
+    python-zeroconf/zeroconf/_services/types.py
+    python-zeroconf/zeroconf/_services/__init__.py
+    DESTINATION lib/cura/plugins/OctoPrintPlugin/python-zeroconf/zeroconf/_services
+)
+
+install(FILES
+    python-zeroconf/zeroconf/_utils/asyncio.py
+    python-zeroconf/zeroconf/_utils/name.py
+    python-zeroconf/zeroconf/_utils/net.py
+    python-zeroconf/zeroconf/_utils/time.py
+    python-zeroconf/zeroconf/_utils/__init__.py
+    DESTINATION lib/cura/plugins/OctoPrintPlugin/python-zeroconf/zeroconf/_utils
 )
 
 install(FILES
