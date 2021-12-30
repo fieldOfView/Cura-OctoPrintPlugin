@@ -929,14 +929,19 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
                     for profile_id in json_data["profiles"]:
                         printer_profile = json_data["profiles"][profile_id]
-                        if printer_profile["current"]:
-                            self._printer_name = printer_profile["name"]
-                            self._printer_model = printer_profile["model"]
+                        if printer_profile.get("current", False):
+                            self._printer_name = printer_profile.get("name", "")
+                            self._printer_model = printer_profile.get("model", "")
 
-                            for axis in ["x", "y", "z", "e"]:
-                                self._axis_information[axis] = AxisInformation(
-                                    speed=printer_profile["axes"][axis]["speed"],
-                                    inverted=printer_profile["axes"][axis]["inverted"],
+                            try:
+                                for axis in ["x", "y", "z", "e"]:
+                                    self._axis_information[axis] = AxisInformation(
+                                        speed=printer_profile["axes"][axis]["speed"],
+                                        inverted=printer_profile["axes"][axis]["inverted"],
+                                    )
+                            except KeyError:
+                                Logger.log(
+                                    "w", "Unable to retreive axes information from OctoPrint printer profile."
                                 )
 
                             self.additionalDataChanged.emit()
