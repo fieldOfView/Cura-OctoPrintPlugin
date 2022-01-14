@@ -481,7 +481,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     def resumePrint(self) -> None:
         if not self._printers[0].activePrintJob:
-            Logger.log("e", "There is no active printjob to resume")
+            Logger.log("e", "There is no active print job to resume")
             return
 
         if self._printers[0].activePrintJob.state == "paused":
@@ -622,7 +622,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     "",
                     i18n_catalog.i18nc(
                         "@action:tooltip",
-                        "Stop waiting for the printer and queue the printjob instead",
+                        "Stop waiting for the printer and queue the print job instead",
                     ),
                     button_style=Message.ActionButtonStyle.SECONDARY,
                 )
@@ -630,7 +630,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                     "cancel",
                     i18n_catalog.i18nc("@action:button", "Cancel"),
                     "",
-                    i18n_catalog.i18nc("@action:tooltip", "Abort the printjob"),
+                    i18n_catalog.i18nc("@action:tooltip", "Abort the print job"),
                 )
                 self._waiting_message.actionTriggered.connect(
                     self._stopWaitingForPrinter
@@ -740,7 +740,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 pass
 
         self._progress_message = Message(
-            i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint"),
+            i18n_catalog.i18nc("@info:status", "Sending data to OctoPrint..."),
             title=i18n_catalog.i18nc("@label", "OctoPrint"),
             progress=-1,
             lifetime=0,
@@ -751,7 +751,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             "cancel",
             i18n_catalog.i18nc("@action:button", "Cancel"),
             "",
-            i18n_catalog.i18nc("@action:tooltip", "Abort the printjob"),
+            i18n_catalog.i18nc("@action:tooltip", "Abort the print job"),
         )
 
         self._progress_message.actionTriggered.connect(self._cancelSendGcode)
@@ -1145,7 +1145,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         state = json_data["state"]
                         if not isinstance(state, str):
                             Logger.log(
-                                "e", "Encountered non-string printjob state: %s" % state
+                                "e", "Encountered non-string print job state: %s" % state
                             )
                         elif state.startswith("Error"):
                             print_job_state = "error"
@@ -1170,7 +1170,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             print_job_state = "offline"
                         else:
                             Logger.log(
-                                "w", "Encountered unexpected printjob state: %s" % state
+                                "w", "Encountered unexpected print job state: %s" % state
                             )
                     print_job.updateState(print_job_state)
 
@@ -1201,7 +1201,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             self._progress_message = Message(
                                 i18n_catalog.i18nc(
                                     "@info:status",
-                                    "Streaming file to the printer SD card",
+                                    "Streaming file to the SD card of the printer...",
                                 ),
                                 0,
                                 False,
@@ -1217,7 +1217,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             and self._progress_message.getText().startswith(
                                 i18n_catalog.i18nc(
                                     "@info:status",
-                                    "Streaming file to the printer SD card",
+                                    "Streaming file to the SD card of the printer...",
                                 )
                             )
                         ):
@@ -1340,7 +1340,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         elif reply.operation() == QNetworkAccessManager.PostOperation:
             if (
                 self._api_prefix + "files" in reply.url().toString()
-            ):  # Result from /files command to start a printjob:
+            ):  # Result from /files command to start a print job:
                 if http_status_code == 204:
                     Logger.log("d", "OctoPrint file command accepted")
 
@@ -1358,7 +1358,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 ):
                     Logger.log(
                         "d",
-                        "OctoPrint reports an 404 not found error after uploading to SD-card, but we ignore that",
+                        "OctoPrint reports an 404 not found error after uploading to SD card, but we ignore that",
                     )
                     return
 
@@ -1529,12 +1529,12 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         elif http_status_code == 409:
             if "files/sdcard" in reply.url().toString():
                 error_string = i18n_catalog.i18nc(
-                    "@info:error", "Can't store the printjob on the printer sd card."
+                    "@info:error", "Can't store a print job on SD card of the printer at this time."
                 )
             else:
                 error_string = i18n_catalog.i18nc(
                     "@info:error",
-                    "Can't store the printjob with the same name as the one that is currently printing.",
+                    "Can't store the print job with the same name as the one that is currently printing.",
                 )
 
         elif http_status_code >= 400:
@@ -1613,7 +1613,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._waiting_message = Message(
                 i18n_catalog.i18nc(
                     "@info:status",
-                    "Waiting for OctoPrint to complete Gcode analysis...",
+                    "Waiting for OctoPrint to complete G-code analysis...",
                 ),
                 title=i18n_catalog.i18nc("@label", "OctoPrint"),
                 progress=-1,
@@ -1627,7 +1627,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 "",
                 i18n_catalog.i18nc(
                     "@action:tooltip",
-                    "Stop waiting for the Gcode analysis and start printing immediately",
+                    "Stop waiting for the G-code analysis and start printing immediately",
                 ),
                 button_style=Message.ActionButtonStyle.SECONDARY,
             )
@@ -1635,7 +1635,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 "cancel",
                 i18n_catalog.i18nc("@action:button", "Cancel"),
                 "",
-                i18n_catalog.i18nc("@action:tooltip", "Abort the printjob"),
+                i18n_catalog.i18nc("@action:tooltip", "Abort the print job"),
             )
             self._waiting_message.actionTriggered.connect(self._stopWaitingForAnalysis)
             self._waiting_message.show()

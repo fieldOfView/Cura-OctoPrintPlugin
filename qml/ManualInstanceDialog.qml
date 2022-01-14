@@ -288,7 +288,7 @@ UM.Dialog
 
         Label
         {
-            text: catalog.i18nc("@label","HTTP user name")
+            text: catalog.i18nc("@label","HTTP username")
             width: Math.floor(parent.width * 0.4)
         }
 

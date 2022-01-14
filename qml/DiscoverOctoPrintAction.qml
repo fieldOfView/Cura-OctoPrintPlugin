@@ -329,7 +329,7 @@ Cura.MachineAction
                     {
                         width: Math.floor(parent.width * 0.2)
                         wrapMode: Text.WordWrap
-                        text: catalog.i18nc("@label", "User name")
+                        text: catalog.i18nc("@label", "Username")
                     }
                     Label
                     {
@@ -419,7 +419,7 @@ Cura.MachineAction
                                 }
                                 else
                                 {
-                                    result = catalog.i18nc("@label", "The API key is not valid.");
+                                    result = catalog.i18nc("@label", "The API key is invalid.");
                                 }
                             }
                             else
@@ -550,7 +550,7 @@ Cura.MachineAction
                     CheckBox
                     {
                         id: autoConnectCheckBox
-                        text: catalog.i18nc("@label", "Connect to printer before sending printjob")
+                        text: catalog.i18nc("@label", "Connect to printer before sending print job")
                         enabled: manager.instanceApiKeyAccepted && autoPrintCheckBox.checked && !autoPowerControlCheckBox.checked
                         checked: enabled && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_connect") == "true"
                         onClicked:
@@ -561,7 +561,7 @@ Cura.MachineAction
                     CheckBox
                     {
                         id: storeOnSdCheckBox
-                        text: catalog.i18nc("@label", "Store G-code on the printer SD card")
+                        text: catalog.i18nc("@label", "Store G-code on the SD card of the printer")
                         enabled: manager.instanceSupportsSd
                         checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_store_sd") == "true"
                         onClicked:
@@ -574,7 +574,7 @@ Cura.MachineAction
                         visible: storeOnSdCheckBox.checked
                         wrapMode: Text.WordWrap
                         width: parent.width
-                        text: catalog.i18nc("@label", "Note: Transfering files to the printer SD card takes very long. Using this option is not recommended.")
+                        text: catalog.i18nc("@label", "Note: Transferring files to the printer SD card takes very long. Using this option is not recommended.")
                     }
                     CheckBox
                     {
@@ -600,13 +600,13 @@ Cura.MachineAction
                     CheckBox
                     {
                         id: fixGcodeFlavor
-                        text: catalog.i18nc("@label", "Set Gcode flavor to \"Marlin\"")
+                        text: catalog.i18nc("@label", "Set G-code flavor to \"Marlin\"")
                         checked: true
                         visible: machineGCodeFlavorProvider.properties.value == "UltiGCode"
                     }
                     Label
                     {
-                        text: catalog.i18nc("@label", "Note: Printing UltiGCode using OctoPrint does not work. Setting Gcode flavor to \"Marlin\" fixes this, but overrides material settings on your printer.")
+                        text: catalog.i18nc("@label", "Note: Printing UltiGCode using OctoPrint does not work. Setting G-code flavor to \"Marlin\" fixes this, but overrides material settings on your printer.")
                         width: parent.width - UM.Theme.getSize("default_margin").width
                         wrapMode: Text.WordWrap
                         visible: fixGcodeFlavor.visible
