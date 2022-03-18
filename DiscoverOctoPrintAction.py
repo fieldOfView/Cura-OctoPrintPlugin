@@ -553,11 +553,36 @@ class DiscoverOctoPrintAction(MachineAction):
             self._onRequestFailed(reply)
             return
 
+        json_data = None
+
         if reply.operation() == QNetworkAccessManager.PostOperation:
             if (
                 "/plugin/appkeys/request" in reply.url().toString()
             ):  # Initial AppKey request
                 if http_status_code == 201 or http_status_code == 202:
+                    try:
+                        json_data = json.loads(bytes(reply.readAll()).decode("utf-8"))
+                    except json.decoder.JSONDecodeError:
+                        Logger.log(
+                            "w", "Received invalid JSON from octoprint instance."
+                        )
+
+                    if json_data:
+                        app_token = json_data["app_token"]  # unused; app_token is included in location header
+                        auth_dialog_url = json_data["auth_dialog"]
+                    else:
+                        (
+                            instance,
+                            base_url,
+                            basic_auth_username,
+                            basic_auth_password,
+                        ) = self._getInstanceInfo(self._appkey_instance_id)
+
+                        auth_dialog_url = base_url
+
+                    if auth_dialog_url:
+                        self.openWebPage(auth_dialog_url)
+
                     Logger.log("w", "Start polling for AppKeys decision")
                     if not self._appkey_request:
                         return

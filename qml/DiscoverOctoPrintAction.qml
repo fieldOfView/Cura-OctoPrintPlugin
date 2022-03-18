@@ -320,7 +320,6 @@ Cura.MachineAction
                             onClicked:
                             {
                                 manager.requestApiKey(base.selectedInstance.getId());
-                                manager.openWebPage(base.selectedInstance.baseURL);
                             }
                         }
 
