@@ -1,11 +1,11 @@
 // Copyright (c) 2021 Aldo Hoeben / fieldOfView
 // OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
-import QtQuick 2.1
-import QtQuick.Controls 2.0
-
-import UM 1.5 as UM
+import UM 1.2 as UM
 import Cura 1.0 as Cura
+
+import QtQuick 2.2
+import QtQuick.Controls 1.1
 
 
 Cura.MachineAction
@@ -63,6 +63,7 @@ Cura.MachineAction
         spacing: UM.Theme.getSize("default_margin").height
         width: parent.width
 
+        SystemPalette { id: palette }
         UM.I18nCatalog { id: catalog; name:"octoprint" }
 
         Item
@@ -70,27 +71,30 @@ Cura.MachineAction
             width: parent.width
             height: pageTitle.height
 
-            UM.Label
+            Label
             {
                 id: pageTitle
                 text: catalog.i18nc("@title", "Connect to OctoPrint")
-                font: UM.Theme.getFont("large_bold")
+                wrapMode: Text.WordWrap
+                font.pointSize: 18
             }
 
-            UM.Label
+            Label
             {
                 id: pluginVersion
                 anchors.bottom: pageTitle.bottom
                 anchors.right: parent.right
                 text: manager.pluginVersion
+                wrapMode: Text.WordWrap
                 font.pointSize: 8
             }
         }
 
-        UM.Label
+        Label
         {
             id: pageDescription
             width: parent.width
+            wrapMode: Text.WordWrap
             text: catalog.i18nc("@label", "Select your OctoPrint instance from the list below.")
         }
 
@@ -98,7 +102,7 @@ Cura.MachineAction
         {
             spacing: UM.Theme.getSize("default_lining").width
 
-            Cura.SecondaryButton
+            Button
             {
                 id: addButton
                 text: catalog.i18nc("@action:button", "Add");
@@ -108,7 +112,7 @@ Cura.MachineAction
                 }
             }
 
-            Cura.SecondaryButton
+            Button
             {
                 id: editButton
                 text: catalog.i18nc("@action:button", "Edit")
@@ -124,7 +128,7 @@ Cura.MachineAction
                 }
             }
 
-            Cura.SecondaryButton
+            Button
             {
                 id: removeButton
                 text: catalog.i18nc("@action:button", "Remove")
@@ -132,7 +136,7 @@ Cura.MachineAction
                 onClicked: manager.removeManualInstance(base.selectedInstance.name)
             }
 
-            Cura.SecondaryButton
+            Button
             {
                 id: rediscoverButton
                 text: catalog.i18nc("@action:button", "Refresh")
@@ -146,72 +150,76 @@ Cura.MachineAction
             width: parent.width
             spacing: UM.Theme.getSize("default_margin").width
 
-            Rectangle
+            Item
             {
                 width: Math.floor(parent.width * 0.4)
-                height: base.height - (parent.y + UM.Theme.getSize("default_margin").height)
+                height: base.height - parent.y
 
-                color: UM.Theme.getColor("main_background")
-                border.width: UM.Theme.getSize("default_lining").width
-                border.color: UM.Theme.getColor("thick_lining")
-
-                ListView
+                ScrollView
                 {
-                    id: listview
+                    id: objectListContainer
+                    frameVisible: true
+                    width: parent.width
+                    anchors.top: parent.top
+                    anchors.bottom: objectListFooter.top
+                    anchors.bottomMargin: UM.Theme.getSize("default_margin").height
 
-                    clip: true
-                    ScrollBar.vertical: UM.ScrollBar {}
-
-                    anchors.fill: parent
-                    anchors.margins: UM.Theme.getSize("default_lining").width
-
-                    model: manager.discoveredInstances
-                    onModelChanged:
+                    Rectangle
                     {
-                        var selectedId = manager.instanceId;
-                        for(var i = 0; i < model.length; i++) {
-                            if(model[i].getId() == selectedId)
-                            {
-                                currentIndex = i;
-                                return
-                            }
-                        }
-                        currentIndex = -1;
+                        parent: viewport
+                        anchors.fill: parent
+                        color: palette.light
                     }
 
-                    currentIndex: activeIndex
-                    onCurrentIndexChanged:
+                    ListView
                     {
-                        base.selectedInstance = listview.model[currentIndex];
-                        apiCheckDelay.throttledCheck();
-                    }
-
-                    Component.onCompleted: manager.startDiscovery()
-
-                    delegate: Rectangle
-                    {
-                        height: childrenRect.height
-                        color: ListView.isCurrentItem ? UM.Theme.getColor("text_selection") : UM.Theme.getColor("main_background")
-                        width: parent.width
-                        UM.Label
+                        id: listview
+                        model: manager.discoveredInstances
+                        onModelChanged:
                         {
-                            anchors.left: parent.left
-                            anchors.leftMargin: UM.Theme.getSize("default_margin").width
-                            anchors.right: parent.right
-                            text: listview.model[index].name
-                            elide: Text.ElideRight
-                            font.italic: listview.model[index].key == manager.instanceId
-                            wrapMode: Text.NoWrap
-                        }
-
-                        MouseArea
-                        {
-                            anchors.fill: parent;
-                            onClicked:
-                            {
-                                if(!parent.ListView.isCurrentItem)
+                            var selectedId = manager.instanceId;
+                            for(var i = 0; i < model.length; i++) {
+                                if(model[i].getId() == selectedId)
                                 {
-                                    parent.ListView.view.currentIndex = index;
+                                    currentIndex = i;
+                                    return
+                                }
+                            }
+                            currentIndex = -1;
+                        }
+                        width: parent.width
+                        currentIndex: activeIndex
+                        onCurrentIndexChanged:
+                        {
+                            base.selectedInstance = listview.model[currentIndex];
+                            apiCheckDelay.throttledCheck();
+                        }
+                        Component.onCompleted: manager.startDiscovery()
+                        delegate: Rectangle
+                        {
+                            height: childrenRect.height
+                            color: ListView.isCurrentItem ? palette.highlight : index % 2 ? palette.base : palette.alternateBase
+                            width: parent.width
+                            Label
+                            {
+                                anchors.left: parent.left
+                                anchors.leftMargin: UM.Theme.getSize("default_margin").width
+                                anchors.right: parent.right
+                                text: listview.model[index].name
+                                color: parent.ListView.isCurrentItem ? palette.highlightedText : palette.text
+                                elide: Text.ElideRight
+                                font.italic: listview.model[index].key == manager.instanceId
+                            }
+
+                            MouseArea
+                            {
+                                anchors.fill: parent;
+                                onClicked:
+                                {
+                                    if(!parent.ListView.isCurrentItem)
+                                    {
+                                        parent.ListView.view.currentIndex = index;
+                                    }
                                 }
                             }
                         }
@@ -225,7 +233,7 @@ Cura.MachineAction
                     width: parent.width
                     anchors.bottom: parent.bottom
 
-                    UM.CheckBox
+                    CheckBox
                     {
                         id: useZeroconf
                         text: catalog.i18nc("@label", "Automatically discover local OctoPrint instances")
@@ -246,12 +254,13 @@ Cura.MachineAction
             {
                 width: Math.floor(parent.width * 0.6)
                 spacing: UM.Theme.getSize("default_margin").height
-                UM.Label
+                Label
                 {
                     visible: base.selectedInstance != null
                     width: parent.width
+                    wrapMode: Text.WordWrap
                     text: base.selectedInstance ? base.selectedInstance.name : ""
-                    font: UM.Theme.getFont("large_bold")
+                    font.pointSize: 16
                     elide: Text.ElideRight
                 }
                 Grid
@@ -261,46 +270,48 @@ Cura.MachineAction
                     columns: 2
                     rowSpacing: UM.Theme.getSize("default_lining").height
                     verticalItemAlignment: Grid.AlignVCenter
-                    UM.Label
+                    Label
                     {
                         width: Math.floor(parent.width * 0.2)
+                        wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "Address")
                     }
-                    UM.Label
+                    Label
                     {
                         width: Math.floor(parent.width * 0.75)
                         wrapMode: Text.WordWrap
                         text: base.selectedInstance ? "%1:%2".arg(base.selectedInstance.ipAddress).arg(String(base.selectedInstance.port)) : ""
                     }
-                    UM.Label
+                    Label
                     {
                         width: Math.floor(parent.width * 0.2)
+                        wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "Version")
                     }
-                    UM.Label
+                    Label
                     {
                         width: Math.floor(parent.width * 0.75)
+                        wrapMode: Text.WordWrap
                         text: base.selectedInstance ? base.selectedInstance.octoPrintVersion : ""
                     }
-                    UM.Label
+                    Label
                     {
                         width: Math.floor(parent.width * 0.2)
+                        wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "API Key")
                     }
                     Row
                     {
-                        spacing: UM.Theme.getSize("default_margin").width
-                        Cura.TextField
+                        spacing: UM.Theme.getSize("default_lining").width
+                        TextField
                         {
                             id: apiKey
                             width: Math.floor(parent.parent.width * (requestApiKey.visible ? 0.5 : 0.8) - UM.Theme.getSize("default_margin").width)
-                            leftPadding: 0
-                            rightPadding: 0
                             echoMode: activeFocus ? TextInput.Normal : TextInput.Password
                             onTextChanged: apiCheckDelay.throttledCheck()
                         }
 
-                        Cura.SecondaryButton
+                        Button
                         {
                             id: requestApiKey
                             visible: manager.instanceSupportsAppKeys
@@ -313,14 +324,16 @@ Cura.MachineAction
                         }
 
                     }
-                    UM.Label
+                    Label
                     {
                         width: Math.floor(parent.width * 0.2)
+                        wrapMode: Text.WordWrap
                         text: catalog.i18nc("@label", "Username")
                     }
-                    UM.Label
+                    Label
                     {
                         width: Math.floor(parent.width * 0.75)
+                        wrapMode: Text.WordWrap
                         text: base.selectedInstance ? base.selectedInstance.octoPrintUserName : ""
                     }
 
@@ -381,7 +394,7 @@ Cura.MachineAction
                     }
                 }
 
-                UM.Label
+                Label
                 {
                     visible: base.selectedInstance != null && text != ""
                     text:
@@ -417,6 +430,7 @@ Cura.MachineAction
                         return result;
                     }
                     width: parent.width - UM.Theme.getSize("default_margin").width
+                    wrapMode: Text.WordWrap
                 }
 
                 Column
@@ -425,7 +439,7 @@ Cura.MachineAction
                     width: parent.width
                     spacing: UM.Theme.getSize("default_lining").height
 
-                    UM.CheckBox
+                    CheckBox
                     {
                         id: autoPrintCheckBox
                         text: catalog.i18nc("@label", "Start print job after uploading")
@@ -436,7 +450,7 @@ Cura.MachineAction
                             manager.setContainerMetaDataEntry(activeMachineId, "octoprint_auto_print", String(checked))
                         }
                     }
-                    UM.CheckBox
+                    CheckBox
                     {
                         id: autoSelectCheckBox
                         text: catalog.i18nc("@label", "Select print job after uploading")
@@ -451,7 +465,7 @@ Cura.MachineAction
                     {
                         spacing: UM.Theme.getSize("default_margin").width
 
-                        UM.CheckBox
+                        CheckBox
                         {
                             id: autoPowerControlCheckBox
                             text: catalog.i18nc("@label", "Turn on printer with")
@@ -470,7 +484,7 @@ Cura.MachineAction
                             onInstanceAvailablePowerPluginsChanged: autoPowerControlPlugsModel.populateModel()
                         }
 
-                        Cura.ComboBox
+                        ComboBox
                         {
                             id: autoPowerControlPlugs
                             visible: manager.instanceApiKeyAccepted && model.count > 0
@@ -532,7 +546,7 @@ Cura.MachineAction
 
                         }
                     }
-                    UM.CheckBox
+                    CheckBox
                     {
                         id: autoConnectCheckBox
                         text: catalog.i18nc("@label", "Connect to printer before sending print job")
@@ -543,7 +557,7 @@ Cura.MachineAction
                             manager.setContainerMetaDataEntry(activeMachineId, "octoprint_auto_connect", String(checked))
                         }
                     }
-                    UM.CheckBox
+                    CheckBox
                     {
                         id: storeOnSdCheckBox
                         text: catalog.i18nc("@label", "Store G-code on the SD card of the printer")
@@ -554,13 +568,14 @@ Cura.MachineAction
                             manager.setContainerMetaDataEntry(activeMachineId, "octoprint_store_sd", String(checked))
                         }
                     }
-                    UM.Label
+                    Label
                     {
                         visible: storeOnSdCheckBox.checked
+                        wrapMode: Text.WordWrap
                         width: parent.width
                         text: catalog.i18nc("@label", "Note: Transferring files to the printer SD card takes very long. Using this option is not recommended.")
                     }
-                    UM.CheckBox
+                    CheckBox
                     {
                         id: confirmUploadOptionsCheckBox
                         text: catalog.i18nc("@label", "Confirm print job options before sending")
@@ -570,7 +585,7 @@ Cura.MachineAction
                             manager.setContainerMetaDataEntry(activeMachineId, "octoprint_confirm_upload_options", String(checked))
                         }
                     }
-                    UM.CheckBox
+                    CheckBox
                     {
                         id: showCameraCheckBox
                         text: catalog.i18nc("@label", "Show webcam image")
@@ -581,17 +596,18 @@ Cura.MachineAction
                             manager.setContainerMetaDataEntry(activeMachineId, "octoprint_show_camera", String(checked))
                         }
                     }
-                    UM.CheckBox
+                    CheckBox
                     {
                         id: fixGcodeFlavor
                         text: catalog.i18nc("@label", "Set G-code flavor to \"Marlin\"")
                         checked: true
                         visible: machineGCodeFlavorProvider.properties.value == "UltiGCode"
                     }
-                    UM.Label
+                    Label
                     {
                         text: catalog.i18nc("@label", "Note: Printing UltiGCode using OctoPrint does not work. Setting G-code flavor to \"Marlin\" fixes this, but overrides material settings on your printer.")
                         width: parent.width - UM.Theme.getSize("default_margin").width
+                        wrapMode: Text.WordWrap
                         visible: fixGcodeFlavor.visible
                     }
                 }
@@ -601,13 +617,13 @@ Cura.MachineAction
                     visible: base.selectedInstance != null
                     spacing: UM.Theme.getSize("default_margin").width
 
-                    Cura.SecondaryButton
+                    Button
                     {
                         text: catalog.i18nc("@action", "Open in browser...")
                         onClicked: manager.openWebPage(base.selectedInstance.baseURL)
                     }
 
-                    Cura.SecondaryButton
+                    Button
                     {
                         text:
                         {

@@ -149,9 +149,10 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             plugin_version = "Unknown"
             Logger.logException("w", "Could not get version information for the plugin")
 
+        application = CuraApplication.getInstance()
         self._user_agent = "%s/%s %s/%s" % (
-            CuraApplication.getInstance().getApplicationName(),
-            CuraApplication.getInstance().getVersion(),
+            application.getApplicationName(),
+            application.getVersion(),
             "OctoPrintPlugin",
             plugin_version,
         )  # NetworkedPrinterOutputDevice defines this as string, so we encode this later
@@ -182,23 +183,32 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 basic_auth_password,
             )
 
+        use_controls1 = False
         try:
-            major_api_version = CuraApplication.getInstance().getAPIVersion().getMajor()
+            if application.getAPIVersion() < Version(8) and application.getVersion() != "master":
+                use_controls1 = True
+
+            major_api_version = application.getAPIVersion().getMajor()
         except AttributeError:
             # UM.Application.getAPIVersion was added for API > 6 (Cura 4)
             # Since this plugin version is only compatible with Cura 3.5 and newer, it is safe to assume API 5
             major_api_version = 5
+            use_controls1 = True
 
-        if major_api_version <= 5:
-            # In Cura 3.x, the monitor item only shows the camera stream
-            self._monitor_view_qml_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "qml", "MonitorItem3x.qml"
-            )
-        else:
+        qml_folder = "qml" if not use_controls1 else "qml_controls1"
+        if not use_controls1:
+            # In Cura 5.x, the monitor item can only contain QtQuick Controls 2 items
+            qml_file = "MonitorItem.qml"
+        elif major_api_version > 5:
             # In Cura 4.x, the monitor item shows the camera stream as well as the monitor sidebar
-            self._monitor_view_qml_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "qml", "MonitorItem4x.qml"
-            )
+            qml_file = "MonitorItem4x.qml"
+        else:
+            # In Cura 3.x, the monitor item only shows the camera stream
+            qml_file = "MonitorItem3x.qml"
+
+        self._monitor_view_qml_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), qml_folder, qml_file
+        )
 
         name = self._id
         matches = re.search(r"^\"(.*)\"\._octoprint\._tcp.local$", name)

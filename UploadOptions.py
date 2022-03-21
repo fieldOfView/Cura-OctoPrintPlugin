@@ -2,6 +2,7 @@
 # OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
 from UM.Application import Application
+from UM.Version import Version
 from UM.Util import parseBool
 
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot
@@ -24,6 +25,17 @@ class UploadOptions(QObject):
         self._auto_select = False
         self._auto_print = False
 
+        use_controls1 = False
+        try:
+            use_controls1 = False
+            if self._application.getAPIVersion() < Version(8) and self._application.getVersion() != "master":
+                use_controls1 = True
+        except AttributeError:
+             # UM.Application.getAPIVersion was added for API > 6 (Cura 4)
+            use_controls1 = True
+        self._qml_folder = "qml" if not use_controls1 else "qml_controls1"
+
+
     def configure(self, global_container_stack, file_name) -> None:
         self.setAutoPrint(
             parseBool(
@@ -45,7 +57,7 @@ class UploadOptions(QObject):
 
     def showOptionsDialog(self) -> None:
         path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "qml", "UploadOptions.qml"
+            os.path.dirname(os.path.abspath(__file__)), self._qml_folder, "UploadOptions.qml"
         )
 
         self._settings_dialog = self._application.createQmlComponent(
