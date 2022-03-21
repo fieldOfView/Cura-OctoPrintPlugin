@@ -1,11 +1,11 @@
 // Copyright (c) 2021 Aldo Hoeben / fieldOfView
 // OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
-import QtQuick 2.1
-import QtQuick.Controls 2.0
-
-import UM 1.5 as UM
+import UM 1.2 as UM
 import Cura 1.0 as Cura
+
+import QtQuick 2.2
+import QtQuick.Controls 1.1
 
 
 UM.Dialog
@@ -23,14 +23,10 @@ UM.Dialog
 
     title: catalog.i18nc("@title:window", "Manually added OctoPrint instance")
 
-    buttonSpacing: UM.Theme.getSize("default_margin").width
     minimumWidth: 400 * screenScaleFactor
-    minimumHeight: 300 * screenScaleFactor
+    minimumHeight: 280 * screenScaleFactor
     width: minimumWidth
     height: minimumHeight
-
-    property int firstColumnWidth: Math.floor(width * 0.4) - 2 * margin
-    property int secondColumnWidth: Math.floor(width * 0.6) - 2 * margin
 
     signal showDialog(string name, string address, string port, string path_, bool useHttps, string userName, string password)
     onShowDialog:
@@ -161,34 +157,34 @@ UM.Dialog
         rowSpacing: UM.Theme.getSize("default_lining").height
         columnSpacing: UM.Theme.getSize("default_margin").width
 
-        UM.Label
+        Label
         {
             text: catalog.i18nc("@label","Instance Name")
-            width: manualInstanceDialog.firstColumnWidth
+            width: Math.floor(parent.width * 0.4)
         }
 
-        Cura.TextField
+        TextField
         {
             id: nameField
             maximumLength: 20
-            width: manualInstanceDialog.secondColumnWidth
+            width: Math.floor(parent.width * 0.6)
             validator: RegExpValidator
             {
                 regExp: /[a-zA-Z0-9\.\-\_\:\[\]]*/
             }
         }
 
-        UM.Label
+        Label
         {
             text: catalog.i18nc("@label","IP Address or Hostname")
-            width: manualInstanceDialog.firstColumnWidth
+            width: Math.floor(parent.width * 0.4)
         }
 
-        Cura.TextField
+        TextField
         {
             id: addressField
             maximumLength: 253
-            width: manualInstanceDialog.secondColumnWidth
+            width: Math.floor(parent.width * 0.6)
             validator: RegExpValidator
             {
                 regExp: /[a-zA-Z0-9\.\-\_\:\/\@]*/
@@ -196,17 +192,17 @@ UM.Dialog
             onTextChanged: parseAddressFieldTimer.restart()
         }
 
-        UM.Label
+        Label
         {
             text: catalog.i18nc("@label","Port Number")
-            width: manualInstanceDialog.firstColumnWidth
+            width: Math.floor(parent.width * 0.4)
         }
 
-        Cura.TextField
+        TextField
         {
             id: portField
             maximumLength: 5
-            width: manualInstanceDialog.secondColumnWidth
+            width: Math.floor(parent.width * 0.6)
             validator: RegExpValidator
             {
                 regExp: /[0-9]*/
@@ -224,17 +220,17 @@ UM.Dialog
             }
         }
 
-        UM.Label
+        Label
         {
             text: catalog.i18nc("@label","Path")
-            width: manualInstanceDialog.firstColumnWidth
+            width: Math.floor(parent.width * 0.4)
         }
 
-        Cura.TextField
+        TextField
         {
             id: pathField
             maximumLength: 30
-            width: manualInstanceDialog.secondColumnWidth
+            width: Math.floor(parent.width * 0.6)
             validator: RegExpValidator
             {
                 regExp: /[a-zA-Z0-9\.\-\_\/]*/
@@ -259,20 +255,20 @@ UM.Dialog
             height: 1
         }
 
-        UM.Label
+        Label
         {
             wrapMode: Text.WordWrap
-            width: manualInstanceDialog.secondColumnWidth
+            width: Math.floor(parent.width * 0.6)
             text: catalog.i18nc("@label","In order to use HTTPS or a HTTP username and password, you need to configure a reverse proxy or another service.")
         }
 
-        UM.Label
+        Label
         {
             text: catalog.i18nc("@label","Use HTTPS")
-            width: manualInstanceDialog.firstColumnWidth
+            width: Math.floor(parent.width * 0.4)
         }
 
-        UM.CheckBox
+        CheckBox
         {
             id: httpsCheckbox
             width: height
@@ -290,36 +286,36 @@ UM.Dialog
             }
         }
 
-        UM.Label
+        Label
         {
             text: catalog.i18nc("@label","HTTP username")
-            width: manualInstanceDialog.firstColumnWidth
+            width: Math.floor(parent.width * 0.4)
         }
 
-        Cura.TextField
+        TextField
         {
             id: userNameField
             maximumLength: 64
-            width: manualInstanceDialog.secondColumnWidth
+            width: Math.floor(parent.width * 0.6)
         }
 
-        UM.Label
+        Label
         {
             text: catalog.i18nc("@label","HTTP password")
-            width: manualInstanceDialog.firstColumnWidth
+            width: Math.floor(parent.width * 0.4)
         }
 
-        Cura.TextField
+        TextField
         {
             id: passwordField
             maximumLength: 64
-            width: manualInstanceDialog.secondColumnWidth
+            width: Math.floor(parent.width * 0.6)
             echoMode: TextInput.PasswordEchoOnEdit
         }
     }
 
     rightButtons: [
-        Cura.SecondaryButton {
+        Button {
             text: catalog.i18nc("@action:button","Cancel")
             onClicked:
             {
@@ -327,7 +323,7 @@ UM.Dialog
                 manualInstanceDialog.hide()
             }
         },
-        Cura.PrimaryButton {
+        Button {
             text: catalog.i18nc("@action:button", "Ok")
             onClicked:
             {
@@ -340,6 +336,7 @@ UM.Dialog
                 manualInstanceDialog.hide()
             }
             enabled: manualInstanceDialog.nameText.trim() != "" && manualInstanceDialog.addressText.trim() != ""
+            isDefault: true
         }
     ]
 }

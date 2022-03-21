@@ -3,6 +3,7 @@
 
 from UM.i18n import i18nCatalog
 from UM.Logger import Logger
+from UM.Version import Version
 from UM.Settings.DefinitionContainer import DefinitionContainer
 from UM.OutputDevice.OutputDevicePlugin import OutputDevicePlugin
 from UM.Settings.ContainerRegistry import ContainerRegistry
@@ -12,7 +13,6 @@ from cura.MachineAction import MachineAction
 from cura.Settings.CuraStackBuilder import CuraStackBuilder
 
 from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
-from PyQt5.QtQml import QQmlComponent, QQmlContext
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtNetwork import (
     QNetworkRequest,
@@ -45,13 +45,22 @@ class DiscoverOctoPrintAction(MachineAction):
             "DiscoverOctoPrintAction", catalog.i18nc("@action", "Connect OctoPrint")
         )
 
-        self._qml_url = os.path.join("qml", "DiscoverOctoPrintAction.qml")
-
         self._application = CuraApplication.getInstance()
         self._network_plugin = None  # type: Optional[OctoPrintOutputDevicePlugin]
 
-        #   QNetwork manager needs to be created in advance. If we don't it can happen that it doesn't correctly
-        #   hook itself into the event loop, which results in events never being fired / done.
+        use_controls1 = False
+        try:
+            if self._application.getAPIVersion() < Version(8) and self._application.getVersion() != "master":
+                use_controls1 = True
+        except AttributeError:
+             # UM.Application.getAPIVersion was added for API > 6 (Cura 4)
+            use_controls1 = True
+        qml_folder = "qml" if not use_controls1 else "qml_controls1"
+
+        self._qml_url = os.path.join(qml_folder, "DiscoverOctoPrintAction.qml")
+
+        #  QNetwork manager needs to be created in advance. If we don't it can happen that it doesn't correctly
+        #  hook itself into the event loop, which results in events never being fired / done.
         self._network_manager = QNetworkAccessManager()
         self._network_manager.finished.connect(self._onRequestFinished)
 
