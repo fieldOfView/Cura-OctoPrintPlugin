@@ -1,0 +1,27 @@
+name: "Cura-plugin release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  create-curapackages:
+    name: "Tagged Release"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: "build"
+          submodules: "recursive"
+      - uses: fieldOfView/cura-plugin-packager-action@main
+        with:
+          source_folder: "build"
+          package_info_path: "build/.github/workflows/package.json"
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            *.curapackage

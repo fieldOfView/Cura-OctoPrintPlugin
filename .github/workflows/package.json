@@ -1,0 +1,16 @@
+{
+    "author": {
+        "author_id": "fieldofview",
+        "display_name": "fieldOfView",
+        "email": "aldo@fieldofview.com",
+        "website": "http://fieldofview.com"
+    },
+    "description": "Enables networked printing and monitoring with OctoPrint.\n\nOctoPrint is a registered trademark. For more information about OctoPrint, see octoprint.org\n\nThe development of this plugin can be sponsored via Github Sponsors (https://github.com/sponsors/fieldofview) or Paypal (https://www.paypal.me/fieldofview)",
+    "display_name": "OctoPrint Connection",
+    "package_id": "OctoPrintPlugin",
+    "package_type": "plugin",
+    "package_version": "0.0.0",
+    "sdk_version": 0,
+    "sdk_version_semver": "0.0.0",
+    "website": "https://github.com/fieldOfView/Cura-OctoPrintPlugin"
+}
