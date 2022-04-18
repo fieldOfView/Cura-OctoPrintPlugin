@@ -1,16 +1,28 @@
 # Copyright (c) 2021 Aldo Hoeben / fieldOfView
 # NetworkMJPGImage is released under the terms of the LGPLv3 or higher.
 
-from PyQt5.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QByteArray
-from PyQt5.QtGui import QImage, QPainter
-from PyQt5.QtQuick import QQuickPaintedItem
-from PyQt5.QtNetwork import (
-    QNetworkRequest,
-    QNetworkReply,
-    QNetworkAccessManager,
-    QSslConfiguration,
-    QSslSocket,
-)
+try:
+    from PyQt6.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QByteArray
+    from PyQt6.QtGui import QImage, QPainter
+    from PyQt6.QtQuick import QQuickPaintedItem
+    from PyQt6.QtNetwork import (
+        QNetworkRequest,
+        QNetworkReply,
+        QNetworkAccessManager,
+        QSslConfiguration,
+        QSslSocket,
+    )
+except ImportError:
+    from PyQt5.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QByteArray
+    from PyQt5.QtGui import QImage, QPainter
+    from PyQt5.QtQuick import QQuickPaintedItem
+    from PyQt5.QtNetwork import (
+        QNetworkRequest,
+        QNetworkReply,
+        QNetworkAccessManager,
+        QSslConfiguration,
+        QSslSocket,
+    )
 
 from UM.Logger import Logger
 

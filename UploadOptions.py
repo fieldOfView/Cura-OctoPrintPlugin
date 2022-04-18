@@ -5,7 +5,10 @@ from UM.Application import Application
 from UM.Version import Version
 from UM.Util import parseBool
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot
+try:
+    from PyQt6.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot
+except ImportError:
+    from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot
 
 import os.path
 

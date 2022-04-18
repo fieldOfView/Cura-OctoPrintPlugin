@@ -10,7 +10,10 @@ from UM.Logger import Logger
 from UM.Util import parseBool
 from UM.Settings.ContainerStack import ContainerStack
 
-from PyQt5.QtCore import QTimer
+try:
+    from PyQt6.QtCore import QTimer
+except ImportError:
+    from PyQt5.QtCore import QTimer
 
 import time
 import json

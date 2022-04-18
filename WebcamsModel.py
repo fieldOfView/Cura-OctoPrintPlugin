@@ -1,7 +1,10 @@
 # Copyright (c) 2021 Aldo Hoeben / fieldOfView
 # OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
-from PyQt5.QtCore import Qt
+try:
+    from PyQt6.QtCore import Qt
+except ImportError:
+    from PyQt5.QtCore import Qt
 
 from UM.Qt.ListModel import ListModel
 from UM.Logger import Logger

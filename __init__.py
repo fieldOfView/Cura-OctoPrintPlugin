@@ -11,8 +11,10 @@ from UM.Version import Version
 from UM.Application import Application
 from UM.Logger import Logger
 
-from PyQt5.QtQml import qmlRegisterType
-
+try:
+    from PyQt6.QtQml import qmlRegisterType
+except ImportError:
+    from PyQt5.QtQml import qmlRegisterType
 
 def getMetaData():
     return {}

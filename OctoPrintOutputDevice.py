@@ -34,22 +34,40 @@ except ImportError:
 
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 
-from PyQt5.QtNetwork import (
-    QHttpMultiPart,
-    QHttpPart,
-    QNetworkRequest,
-    QNetworkAccessManager,
-)
-from PyQt5.QtNetwork import QNetworkReply, QSslConfiguration, QSslSocket
-from PyQt5.QtCore import (
-    QUrl,
-    QTimer,
-    pyqtSignal,
-    pyqtProperty,
-    pyqtSlot,
-    QCoreApplication,
-)
-from PyQt5.QtGui import QImage, QDesktopServices
+try:
+    from PyQt6.QtNetwork import (
+        QHttpMultiPart,
+        QHttpPart,
+        QNetworkRequest,
+        QNetworkAccessManager,
+    )
+    from PyQt6.QtNetwork import QNetworkReply, QSslConfiguration, QSslSocket
+    from PyQt6.QtCore import (
+        QUrl,
+        QTimer,
+        pyqtSignal,
+        pyqtProperty,
+        pyqtSlot,
+        QCoreApplication,
+    )
+    from PyQt6.QtGui import QImage, QDesktopServices
+except ImportError:
+    from PyQt6.QtNetwork import (
+        QHttpMultiPart,
+        QHttpPart,
+        QNetworkRequest,
+        QNetworkAccessManager,
+    )
+    from PyQt6.QtNetwork import QNetworkReply, QSslConfiguration, QSslSocket
+    from PyQt6.QtCore import (
+        QUrl,
+        QTimer,
+        pyqtSignal,
+        pyqtProperty,
+        pyqtSlot,
+        QCoreApplication,
+    )
+    from PyQt6.QtGui import QImage, QDesktopServices
 
 import json
 import os.path

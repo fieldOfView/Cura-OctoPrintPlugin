@@ -12,15 +12,26 @@ from cura.CuraApplication import CuraApplication
 from cura.MachineAction import MachineAction
 from cura.Settings.CuraStackBuilder import CuraStackBuilder
 
-from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
-from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtNetwork import (
-    QNetworkRequest,
-    QNetworkAccessManager,
-    QNetworkReply,
-    QSslConfiguration,
-    QSslSocket,
-)
+try:
+    from PyQt6.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
+    from PyQt6.QtGui import QDesktopServices
+    from PyQt6.QtNetwork import (
+        QNetworkRequest,
+        QNetworkAccessManager,
+        QNetworkReply,
+        QSslConfiguration,
+        QSslSocket,
+    )
+except ImportError:
+    from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
+    from PyQt5.QtGui import QDesktopServices
+    from PyQt5.QtNetwork import (
+        QNetworkRequest,
+        QNetworkAccessManager,
+        QNetworkReply,
+        QSslConfiguration,
+        QSslSocket,
+    )
 
 from .NetworkReplyTimeout import NetworkReplyTimeout
 from .PowerPlugins import PowerPlugins
