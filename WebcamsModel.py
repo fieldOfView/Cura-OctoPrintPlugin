@@ -28,10 +28,15 @@ class WebcamsModel(ListModel):
         self._port = port
         self._basic_auth_string = basic_auth_string
 
-        self.addRoleName(Qt.UserRole + 1, "name")
-        self.addRoleName(Qt.UserRole + 2, "stream_url")
-        self.addRoleName(Qt.UserRole + 3, "rotation")
-        self.addRoleName(Qt.UserRole + 4, "mirror")
+        try:
+            user_role = Qt.ItemDataRole.UserRole
+        except AttributeError:
+            user_role = Qt.UserRole
+
+        self.addRoleName(user_role + 1, "name")
+        self.addRoleName(user_role + 2, "stream_url")
+        self.addRoleName(user_role + 3, "rotation")
+        self.addRoleName(user_role + 4, "mirror")
 
     def deserialise(self, data: List[Dict[str, Any]]) -> None:
         items = []
