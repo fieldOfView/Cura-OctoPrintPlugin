@@ -5,10 +5,12 @@ from UM.Application import Application
 from UM.Version import Version
 from UM.Util import parseBool
 
+USE_QT5 = False
 try:
     from PyQt6.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot
 except ImportError:
     from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot
+    USE_QT5 = True
 
 import os.path
 
@@ -28,14 +30,7 @@ class UploadOptions(QObject):
         self._auto_select = False
         self._auto_print = False
 
-        use_controls1 = False
-        try:
-            if self._application.getAPIVersion() < Version(8) and self._application.getVersion() != "master":
-                use_controls1 = True
-        except AttributeError:
-             # UM.Application.getAPIVersion was added for API > 6 (Cura 4)
-            use_controls1 = True
-        self._qml_folder = "qml" if not use_controls1 else "qml_controls1"
+        self._qml_folder = "qml" if not USE_QT5 else "qml_qt5"
 
 
     def configure(self, global_container_stack, file_name) -> None:

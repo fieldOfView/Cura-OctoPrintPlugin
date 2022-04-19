@@ -12,6 +12,7 @@ from cura.CuraApplication import CuraApplication
 from cura.MachineAction import MachineAction
 from cura.Settings.CuraStackBuilder import CuraStackBuilder
 
+USE_QT5 = False
 try:
     from PyQt6.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
     from PyQt6.QtGui import QDesktopServices
@@ -32,6 +33,7 @@ except ImportError:
         QSslConfiguration,
         QSslSocket,
     )
+    USE_QT5 = True
 
 from .NetworkReplyTimeout import NetworkReplyTimeout
 from .PowerPlugins import PowerPlugins
@@ -59,14 +61,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self._application = CuraApplication.getInstance()
         self._network_plugin = None  # type: Optional[OctoPrintOutputDevicePlugin]
 
-        use_controls1 = False
-        try:
-            if self._application.getAPIVersion() < Version(8) and self._application.getVersion() != "master":
-                use_controls1 = True
-        except AttributeError:
-             # UM.Application.getAPIVersion was added for API > 6 (Cura 4)
-            use_controls1 = True
-        qml_folder = "qml" if not use_controls1 else "qml_controls1"
+        qml_folder = "qml" if not USE_QT5 else "qml_qt5"
 
         self._qml_url = os.path.join(qml_folder, "DiscoverOctoPrintAction.qml")
 

@@ -34,6 +34,7 @@ except ImportError:
 
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 
+USE_QT5 = False
 try:
     from PyQt6.QtNetwork import (
         QHttpMultiPart,
@@ -68,6 +69,7 @@ except ImportError:
         QCoreApplication,
     )
     from PyQt6.QtGui import QImage, QDesktopServices
+    USE_QT5 = True
 
 import json
 import os.path
@@ -201,20 +203,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 basic_auth_password,
             )
 
-        use_controls1 = False
         try:
-            if application.getAPIVersion() < Version(8) and application.getVersion() != "master":
-                use_controls1 = True
-
             major_api_version = application.getAPIVersion().getMajor()
         except AttributeError:
             # UM.Application.getAPIVersion was added for API > 6 (Cura 4)
             # Since this plugin version is only compatible with Cura 3.5 and newer, it is safe to assume API 5
             major_api_version = 5
-            use_controls1 = True
 
-        qml_folder = "qml" if not use_controls1 else "qml_controls1"
-        if not use_controls1:
+        qml_folder = "qml" if not USE_QT5 else "qml_qt5"
+        if not USE_QT5:
             # In Cura 5.x, the monitor item can only contain QtQuick Controls 2 items
             qml_file = "MonitorItem.qml"
         elif major_api_version > 5:
