@@ -562,7 +562,7 @@ class DiscoverOctoPrintAction(MachineAction):
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply: QNetworkReply) -> None:
 
-        http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        http_status_code = reply.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
         if not http_status_code:
             # Received no or empty reply
             self._onRequestFailed(reply)
@@ -570,7 +570,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
         json_data = None
 
-        if reply.operation() == QNetworkAccessManager.PostOperation:
+        if reply.operation() == QNetworkAccessManager.Operation.PostOperation:
             if (
                 "/plugin/appkeys/request" in reply.url().toString()
             ):  # Initial AppKey request
@@ -620,7 +620,7 @@ class DiscoverOctoPrintAction(MachineAction):
                     )
                     self._appkey_request = None  # type: Optional[QNetworkRequest]
 
-        if reply.operation() == QNetworkAccessManager.GetOperation:
+        if reply.operation() == QNetworkAccessManager.Operation.GetOperation:
             if (
                 "/plugin/appkeys/probe" in reply.url().toString()
             ):  # Probe for AppKey support
@@ -730,7 +730,7 @@ class DiscoverOctoPrintAction(MachineAction):
         self, url: str, basic_auth_username: str = "", basic_auth_password: str = ""
     ) -> QNetworkRequest:
         request = QNetworkRequest(url)
-        request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+#        request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
         request.setRawHeader(b"User-Agent", self._user_agent)
 
         if basic_auth_username and basic_auth_password:
@@ -741,7 +741,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
         # ignore SSL errors (eg for self-signed certificates)
         ssl_configuration = QSslConfiguration.defaultConfiguration()
-        ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
+        ssl_configuration.setPeerVerifyMode(QSslSocket.PeerVerifyMode.VerifyNone)
         request.setSslConfiguration(ssl_configuration)
 
         return request

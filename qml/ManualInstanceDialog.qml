@@ -1,7 +1,7 @@
 // Copyright (c) 2022 Aldo Hoeben / fieldOfView
 // OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
-import QtQuick 2.1
+import QtQuick
 import QtQuick.Controls 2.0
 
 import UM 1.5 as UM
@@ -172,9 +172,9 @@ UM.Dialog
             id: nameField
             maximumLength: 20
             width: manualInstanceDialog.secondColumnWidth
-            validator: RegExpValidator
+            validator: RegularExpressionValidator
             {
-                regExp: /[a-zA-Z0-9\.\-\_\:\[\]]*/
+                regularExpression: /[a-zA-Z0-9\.\-\_\:\[\]]*/
             }
         }
 
@@ -189,9 +189,9 @@ UM.Dialog
             id: addressField
             maximumLength: 253
             width: manualInstanceDialog.secondColumnWidth
-            validator: RegExpValidator
+            validator: RegularExpressionValidator
             {
-                regExp: /[a-zA-Z0-9\.\-\_\:\/\@]*/
+                regularExpression: /[a-zA-Z0-9\.\-\_\:\/\@]*/
             }
             onTextChanged: parseAddressFieldTimer.restart()
         }
@@ -207,9 +207,9 @@ UM.Dialog
             id: portField
             maximumLength: 5
             width: manualInstanceDialog.secondColumnWidth
-            validator: RegExpValidator
+            validator: RegularExpressionValidator
             {
-                regExp: /[0-9]*/
+                regularExpression: /[0-9]*/
             }
             onTextChanged:
             {
@@ -235,9 +235,9 @@ UM.Dialog
             id: pathField
             maximumLength: 30
             width: manualInstanceDialog.secondColumnWidth
-            validator: RegExpValidator
+            validator: RegularExpressionValidator
             {
-                regExp: /[a-zA-Z0-9\.\-\_\/]*/
+                regularExpression: /[a-zA-Z0-9\.\-\_\/]*/
             }
         }
 
