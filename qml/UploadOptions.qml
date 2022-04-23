@@ -1,7 +1,7 @@
 // Copyright (c) 2022 Aldo Hoeben / fieldOfView
 // OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
-import QtQuick 2.1
+import QtQuick 2.15
 import QtQuick.Controls 2.0
 
 import UM 1.5 as UM
@@ -45,9 +45,9 @@ UM.Dialog
                 maximumLength: 256
                 width: parent.width - Math.max(pathLabel.width, fileLabel.width) - UM.Theme.getSize("default_margin").width
                 horizontalAlignment: TextInput.AlignLeft
-                validator: RegExpValidator
+                validator: RegularExpressionValidator
                 {
-                    regExp: /.*/
+                    regularExpression: /.*/
                 }
                 onTextChanged: manager.filePath = text
             }
@@ -64,9 +64,9 @@ UM.Dialog
                 maximumLength: 100
                 width: parent.width - Math.max(pathLabel.width, fileLabel.width) - UM.Theme.getSize("default_margin").width
                 horizontalAlignment: TextInput.AlignLeft
-                validator: RegExpValidator
+                validator: RegularExpressionValidator
                 {
-                    regExp: /[^\/]*/
+                    regularExpression: /[^\/]*/
                 }
                 onTextChanged: manager.fileName = text
             }

@@ -1,7 +1,7 @@
 // Copyright (c) 2022 Aldo Hoeben / fieldOfView
 // OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
-import QtQuick
+import QtQuick 2.15
 import QtQuick.Controls 2.0
 
 import UM 1.5 as UM
@@ -33,7 +33,7 @@ UM.Dialog
     property int secondColumnWidth: Math.floor(width * 0.6) - 2 * margin
 
     signal showDialog(string name, string address, string port, string path_, bool useHttps, string userName, string password)
-    onShowDialog:
+    onShowDialog: function(name, address, port, path_, useHttps, userName, password)
     {
         previousName = name;
         nameText = name;

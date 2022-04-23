@@ -547,7 +547,7 @@ class DiscoverOctoPrintAction(MachineAction):
         )
 
     def _onRequestFailed(self, reply: QNetworkReply) -> None:
-        if reply.operation() == QNetworkAccessManager.GetOperation:
+        if reply.operation() == QNetworkAccessManager.Operation.GetOperation:
             if (
                 "api/settings" in reply.url().toString()
             ):  # OctoPrint settings dump from /settings:
@@ -602,7 +602,7 @@ class DiscoverOctoPrintAction(MachineAction):
                     if not self._appkey_request:
                         return
                     self._appkey_request.setUrl(
-                        reply.header(QNetworkRequest.LocationHeader)
+                        reply.header(QNetworkRequest.KnownHeaders.LocationHeader)
                     )
                     self._appkey_request.setRawHeader(b"Content-Type", b"")
                     self._appkey_poll_timer.start()
@@ -730,7 +730,11 @@ class DiscoverOctoPrintAction(MachineAction):
         self, url: str, basic_auth_username: str = "", basic_auth_password: str = ""
     ) -> QNetworkRequest:
         request = QNetworkRequest(url)
-#        request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+        try:
+            request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+        except AttributeError:
+            # in Qt6, this is no longer possible (or required), see https://doc.qt.io/qt-6/network-changes-qt6.html#redirect-policies
+            pass
         request.setRawHeader(b"User-Agent", self._user_agent)
 
         if basic_auth_username and basic_auth_password:

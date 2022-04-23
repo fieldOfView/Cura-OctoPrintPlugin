@@ -327,7 +327,7 @@ Cura.MachineAction
                     Connections
                     {
                         target: base
-                        onSelectedInstanceChanged:
+                        function onSelectedInstanceChanged()
                         {
                             if(base.selectedInstance)
                             {
@@ -341,7 +341,7 @@ Cura.MachineAction
                     Connections
                     {
                         target: manager
-                        onAppKeyReceived:
+                        function onAppKeyReceived()
                         {
                             apiCheckDelay.lastKey = "\0";
                             apiKey.text = manager.getApiKey(base.selectedInstance.getId())
@@ -467,7 +467,10 @@ Cura.MachineAction
                         Connections
                         {
                             target: manager
-                            onInstanceAvailablePowerPluginsChanged: autoPowerControlPlugsModel.populateModel()
+                            function onInstanceAvailablePowerPluginsChanged()
+                            {
+                                autoPowerControlPlugsModel.populateModel()
+                            }
                         }
 
                         Cura.ComboBox

@@ -1362,7 +1362,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             % end_point,
                         )
 
-        elif reply.operation() == QNetworkAccessManager.PostOperation:
+        elif reply.operation() == QNetworkAccessManager.Operation.PostOperation:
             if (
                 self._api_prefix + "files" in reply.url().toString()
             ):  # Result from /files command to start a print job:
@@ -1498,7 +1498,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 error_string = bytes(reply.readAll()).decode("utf-8")
                 if not error_string:
                     error_string = reply.attribute(
-                        QNetworkRequest.HttpReasonPhraseAttribute
+                        QNetworkRequest.Attribute.HttpReasonPhraseAttribute
                     )
 
             self._showErrorMessage(error_string)
@@ -1566,7 +1566,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             error_string = bytes(reply.readAll()).decode("utf-8")
             if not error_string:
                 error_string = reply.attribute(
-                    QNetworkRequest.HttpReasonPhraseAttribute
+                    QNetworkRequest.Attribute.HttpReasonPhraseAttribute
                 )
 
         if error_string:
@@ -1580,7 +1580,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             Logger.log("e", error_string)
             return
 
-        location_url = reply.header(QNetworkRequest.LocationHeader)
+        location_url = reply.header(QNetworkRequest.KnownHeaders.LocationHeader)
         Logger.log(
             "d", "Resource created on OctoPrint instance: %s", location_url.toString()
         )
@@ -1780,7 +1780,11 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self, target: str, content_type: Optional[str] = "application/json"
     ) -> QNetworkRequest:
         request = QNetworkRequest(QUrl(self._api_url + target))
-#        request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+        try:
+            request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+        except AttributeError:
+            # in Qt6, this is no longer possible (or required), see https://doc.qt.io/qt-6/network-changes-qt6.html#redirect-policies
+            pass
 
         request.setRawHeader(b"X-Api-Key", self._api_key)
         request.setRawHeader(b"User-Agent", self._user_agent.encode())
