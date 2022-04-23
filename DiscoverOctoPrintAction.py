@@ -592,9 +592,12 @@ class DiscoverOctoPrintAction(MachineAction):
                             "w", "Received invalid JSON from octoprint instance."
                         )
 
+                    base_url = reply.url().toString()
+                    base_url = base_url[:base_url.find("/plugin/appkeys/request")]
+
                     if json_data:
                         app_token = json_data["app_token"]  # unused; app_token is included in location header
-                        auth_dialog_url = json_data["auth_dialog"]
+                        auth_dialog_url = json_data["auth_dialog"] if "auth_dialog" in json_data else base_url
                     else:
                         (
                             instance,
