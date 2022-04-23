@@ -12,6 +12,7 @@ try:
         QSslConfiguration,
         QSslSocket,
     )
+    QNetworkRequestAttributes = QNetworkRequest.Attribute
 except ImportError:
     from PyQt5.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QByteArray
     from PyQt5.QtGui import QImage, QPainter
@@ -23,6 +24,7 @@ except ImportError:
         QSslConfiguration,
         QSslSocket,
     )
+    QNetworkRequestAttributes = QNetworkRequest.Attribute
 
 from UM.Logger import Logger
 
@@ -118,7 +120,7 @@ class NetworkMJPGImage(QQuickPaintedItem):
 
         self._image_request = QNetworkRequest(self._source_url)
         try:
-            self._image_request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+            self._image_request.setAttribute(QNetworkRequestAttributes.FollowRedirectsAttribute, True)
         except AttributeError:
             # in Qt6, this is no longer possible (or required), see https://doc.qt.io/qt-6/network-changes-qt6.html#redirect-policies
             pass

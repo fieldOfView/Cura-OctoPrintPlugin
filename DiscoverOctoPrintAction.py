@@ -23,6 +23,11 @@ try:
         QSslConfiguration,
         QSslSocket,
     )
+
+    QNetworkAccessManagerOperations = QNetworkAccessManager.Operation
+    QNetworkRequestKnownHeaders = QNetworkRequest.KnownHeaders
+    QNetworkRequestAttributes = QNetworkRequest.Attribute
+
 except ImportError:
     from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
     from PyQt5.QtGui import QDesktopServices
@@ -33,6 +38,11 @@ except ImportError:
         QSslConfiguration,
         QSslSocket,
     )
+
+    QNetworkAccessManagerOperations = QNetworkAccessManager
+    QNetworkRequestKnownHeaders = QNetworkRequest
+    QNetworkRequestAttributes = QNetworkRequest
+
     USE_QT5 = True
 
 from .NetworkReplyTimeout import NetworkReplyTimeout
@@ -547,7 +557,7 @@ class DiscoverOctoPrintAction(MachineAction):
         )
 
     def _onRequestFailed(self, reply: QNetworkReply) -> None:
-        if reply.operation() == QNetworkAccessManager.Operation.GetOperation:
+        if reply.operation() == QNetworkAccessManagerOperations.GetOperation:
             if (
                 "api/settings" in reply.url().toString()
             ):  # OctoPrint settings dump from /settings:
@@ -562,7 +572,7 @@ class DiscoverOctoPrintAction(MachineAction):
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply: QNetworkReply) -> None:
 
-        http_status_code = reply.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
+        http_status_code = reply.attribute(QNetworkRequestAttributes.HttpStatusCodeAttribute)
         if not http_status_code:
             # Received no or empty reply
             self._onRequestFailed(reply)
@@ -570,7 +580,7 @@ class DiscoverOctoPrintAction(MachineAction):
 
         json_data = None
 
-        if reply.operation() == QNetworkAccessManager.Operation.PostOperation:
+        if reply.operation() == QNetworkAccessManagerOperations.PostOperation:
             if (
                 "/plugin/appkeys/request" in reply.url().toString()
             ):  # Initial AppKey request
@@ -602,7 +612,7 @@ class DiscoverOctoPrintAction(MachineAction):
                     if not self._appkey_request:
                         return
                     self._appkey_request.setUrl(
-                        reply.header(QNetworkRequest.KnownHeaders.LocationHeader)
+                        reply.header(QNetworkRequestKnownHeaders.LocationHeader)
                     )
                     self._appkey_request.setRawHeader(b"Content-Type", b"")
                     self._appkey_poll_timer.start()
@@ -620,7 +630,7 @@ class DiscoverOctoPrintAction(MachineAction):
                     )
                     self._appkey_request = None  # type: Optional[QNetworkRequest]
 
-        if reply.operation() == QNetworkAccessManager.Operation.GetOperation:
+        if reply.operation() == QNetworkAccessManagerOperations.GetOperation:
             if (
                 "/plugin/appkeys/probe" in reply.url().toString()
             ):  # Probe for AppKey support
