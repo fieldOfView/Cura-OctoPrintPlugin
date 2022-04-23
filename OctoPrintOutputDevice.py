@@ -913,7 +913,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
     ##  Handler for all requests that have finished.
     def _onRequestFinished(self, reply: QNetworkReply) -> None:
-        if reply.error() == QNetworkReply.TimeoutError:
+        if reply.error() == QNetworkReply.NetworkError.TimeoutError:
             Logger.log("w", "Received a timeout on a request to the instance")
             self._connection_state_before_timeout = self._connection_state
             self.setConnectionState(cast(ConnectionState, UnifiedConnectionState.Error))
@@ -921,7 +921,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if (
             self._connection_state_before_timeout
-            and reply.error() == QNetworkReply.NoError
+            and reply.error() == QNetworkReply.NetworkError.NoError
         ):
             #  There was a timeout, but we got a correct answer again.
             if self._last_response_time:
@@ -933,15 +933,15 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self.setConnectionState(self._connection_state_before_timeout)
             self._connection_state_before_timeout = None
 
-        if reply.error() == QNetworkReply.NoError:
+        if reply.error() == QNetworkReply.NetworkError.NoError:
             self._last_response_time = time()
 
-        http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        http_status_code = reply.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
         if not http_status_code:
             # Received no or empty reply
             return
 
-        if reply.operation() == QNetworkAccessManager.GetOperation:
+        if reply.operation() == QNetworkAccessManager.Operation.GetOperation:
             if self._api_prefix + "printerprofiles" in reply.url().toString():
                 if http_status_code == 200:
                     try:
@@ -1780,17 +1780,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         self, target: str, content_type: Optional[str] = "application/json"
     ) -> QNetworkRequest:
         request = QNetworkRequest(QUrl(self._api_url + target))
-        request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
+#        request.setAttribute(QNetworkRequest.FollowRedirectsAttribute, True)
 
         request.setRawHeader(b"X-Api-Key", self._api_key)
         request.setRawHeader(b"User-Agent", self._user_agent.encode())
 
         if content_type is not None:
-            request.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
+            request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, content_type)
 
         # ignore SSL errors (eg for self-signed certificates)
         ssl_configuration = QSslConfiguration.defaultConfiguration()
-        ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
+        ssl_configuration.setPeerVerifyMode(QSslSocket.PeerVerifyMode.VerifyNone)
         request.setSslConfiguration(ssl_configuration)
 
         if self._basic_auth_data:
@@ -1806,9 +1806,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if not content_header.startswith("form-data;"):
             content_header = "form-data; " + content_header
-        part.setHeader(QNetworkRequest.ContentDispositionHeader, content_header)
+        part.setHeader(QNetworkRequest.KnownHeaders.ContentDispositionHeader, content_header)
         if content_type is not None:
-            part.setHeader(QNetworkRequest.ContentTypeHeader, content_type)
+            part.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, content_type)
 
         part.setBody(data)
         return part
