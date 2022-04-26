@@ -1,11 +1,11 @@
 // Copyright (c) 2022 Aldo Hoeben / fieldOfView
 // OctoPrintPlugin is released under the terms of the AGPLv3 or higher.
 
-import QtQuick 2.7
+import QtQuick 2.10
 import QtQuick.Controls 2.3
 
-import UM 1.3 as UM
-import Cura 1.0 as Cura
+import UM 1.5 as UM
+import Cura 1.1 as Cura
 import OctoPrintPlugin 1.0 as OctoPrintPlugin
 
 Component
@@ -108,7 +108,7 @@ Component
                 id: webcamSelector
                 model: webcamsModel
 
-                delegate: UM.SimpleButton
+                delegate: Cura.ActionButton
                 {
                     id: control
                     text: model.name.toUpperCase()
@@ -117,13 +117,12 @@ Component
 
                     anchors.verticalCenter: parent.verticalCenter
                     ButtonGroup.group: webcamSelectorGroup
-                    height: UM.Theme.getSize("main_window_header_button").height
+                    height: UM.Theme.getSize("setting_control").height
 
                     onClicked: activeIndex = index
 
                     background: Rectangle
                     {
-                        id: backgroundRectangle
                         implicitHeight: control.height
                         radius: UM.Theme.getSize("action_button_radius").width
 
@@ -131,14 +130,11 @@ Component
                         opacity: (control.checked || control.hovered) ? 1 : 0.5
                     }
 
-                    contentItem: Label
+                    contentItem: UM.Label
                     {
-                        id: contents
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
                         height: control.height
-                        leftPadding: UM.Theme.getSize("default_margin").width
-                        rightPadding: leftPadding
 
                         text: control.text
                         font: UM.Theme.getFont("medium")
