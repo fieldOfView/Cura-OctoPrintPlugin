@@ -37,7 +37,6 @@ from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutp
 USE_QT5 = False
 try:
     from PyQt6.QtNetwork import (
-        QHttpMultiPart,
         QHttpPart,
         QNetworkRequest,
         QNetworkAccessManager,
@@ -59,7 +58,6 @@ try:
     QNetworkReplyNetworkErrors = QNetworkReply.NetworkError
 except ImportError:
     from PyQt5.QtNetwork import (
-        QHttpMultiPart,
         QHttpPart,
         QNetworkRequest,
         QNetworkAccessManager,
