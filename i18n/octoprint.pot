@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OctoPrint Connection Plugin\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-04-26 16:26+0000\n"
+"POT-Creation-Date: 2022-04-28 16:54+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -67,9 +67,9 @@ msgid "Stop waiting for the printer and queue the print job instead"
 msgstr ""
 
 #: OctoPrintOutputDevice.py:665 OctoPrintOutputDevice.py:786
-#: OctoPrintOutputDevice.py:1670 qml_qt5/UploadOptions.qml:107
-#: qml_qt5/ManualInstanceDialog.qml:319 qml/UploadOptions.qml:109
-#: qml/ManualInstanceDialog.qml:323
+#: OctoPrintOutputDevice.py:1670 qml_qt5/ManualInstanceDialog.qml:319
+#: qml_qt5/UploadOptions.qml:107 qml/ManualInstanceDialog.qml:323
+#: qml/UploadOptions.qml:109
 msgctxt "@action:button"
 msgid "Cancel"
 msgstr ""
@@ -254,44 +254,6 @@ msgctxt "@action:tooltip"
 msgid "Stop waiting for the G-code analysis and start printing immediately"
 msgstr ""
 
-#: qml_qt5/UploadOptions.qml:14 qml/UploadOptions.qml:14
-msgctxt "@action:button"
-msgid "Upload to OctoPrint Options"
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:37 qml_qt5/ManualInstanceDialog.qml:225
-#: qml/UploadOptions.qml:39 qml/ManualInstanceDialog.qml:229
-msgctxt "@label"
-msgid "Path"
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:56 qml/UploadOptions.qml:58
-msgctxt "@label"
-msgid "Filename"
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:78 qml/UploadOptions.qml:80
-msgctxt "@label"
-msgid "A file extenstion will be added automatically."
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:91 qml_qt5/DiscoverOctoPrintAction.qml:445
-#: qml/UploadOptions.qml:93 qml/DiscoverOctoPrintAction.qml:431
-msgctxt "@label"
-msgid "Start print job after uploading"
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:98 qml_qt5/DiscoverOctoPrintAction.qml:456
-#: qml/UploadOptions.qml:100 qml/DiscoverOctoPrintAction.qml:442
-msgctxt "@label"
-msgid "Select print job after uploading"
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:111 qml/UploadOptions.qml:113
-msgctxt "@action:button"
-msgid "OK"
-msgstr ""
-
 #: qml_qt5/DiscoverOctoPrintAction.qml:77 qml/DiscoverOctoPrintAction.qml:76
 msgctxt "@title"
 msgid "Connect to OctoPrint"
@@ -375,6 +337,18 @@ msgstr ""
 #: qml_qt5/DiscoverOctoPrintAction.qml:429 qml/DiscoverOctoPrintAction.qml:416
 msgctxt "@label"
 msgid "You can get the API key through the OctoPrint web page."
+msgstr ""
+
+#: qml_qt5/DiscoverOctoPrintAction.qml:445 qml_qt5/UploadOptions.qml:91
+#: qml/DiscoverOctoPrintAction.qml:431 qml/UploadOptions.qml:93
+msgctxt "@label"
+msgid "Start print job after uploading"
+msgstr ""
+
+#: qml_qt5/DiscoverOctoPrintAction.qml:456 qml_qt5/UploadOptions.qml:98
+#: qml/DiscoverOctoPrintAction.qml:442 qml/UploadOptions.qml:100
+msgctxt "@label"
+msgid "Select print job after uploading"
 msgstr ""
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:471 qml/DiscoverOctoPrintAction.qml:457
@@ -462,6 +436,12 @@ msgctxt "@label"
 msgid "Port Number"
 msgstr ""
 
+#: qml_qt5/ManualInstanceDialog.qml:225 qml_qt5/UploadOptions.qml:37
+#: qml/ManualInstanceDialog.qml:229 qml/UploadOptions.qml:39
+msgctxt "@label"
+msgid "Path"
+msgstr ""
+
 #: qml_qt5/ManualInstanceDialog.qml:262 qml/ManualInstanceDialog.qml:266
 msgctxt "@label"
 msgid ""
@@ -487,4 +467,24 @@ msgstr ""
 #: qml_qt5/ManualInstanceDialog.qml:327 qml/ManualInstanceDialog.qml:331
 msgctxt "@action:button"
 msgid "Ok"
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:14 qml/UploadOptions.qml:14
+msgctxt "@action:button"
+msgid "Upload to OctoPrint Options"
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:56 qml/UploadOptions.qml:58
+msgctxt "@label"
+msgid "Filename"
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:78 qml/UploadOptions.qml:80
+msgctxt "@label"
+msgid "A file extenstion will be added automatically."
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:111 qml/UploadOptions.qml:113
+msgctxt "@action:button"
+msgid "OK"
 msgstr ""
