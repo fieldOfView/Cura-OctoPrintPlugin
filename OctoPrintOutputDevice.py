@@ -1552,7 +1552,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
             self._progress_message = None  # type:Optional[Message]
 
-        http_status_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        http_status_code = reply.attribute(QNetworkRequestAttributes.HttpStatusCodeAttribute)
         error_string = ""
         if http_status_code == 401 or http_status_code == 403:
             error_string = i18n_catalog.i18nc(
