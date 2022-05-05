@@ -56,6 +56,7 @@ try:
     QNetworkRequestKnownHeaders = QNetworkRequest.KnownHeaders
     QNetworkRequestAttributes = QNetworkRequest.Attribute
     QNetworkReplyNetworkErrors = QNetworkReply.NetworkError
+    QSslSocketPeerVerifyModes = QSslSocket.PeerVerifyMode
 except ImportError:
     from PyQt5.QtNetwork import (
         QHttpPart,
@@ -77,6 +78,7 @@ except ImportError:
     QNetworkRequestKnownHeaders = QNetworkRequest
     QNetworkRequestAttributes = QNetworkRequest
     QNetworkReplyNetworkErrors = QNetworkReply
+    QSslSocketPeerVerifyModes = QSslSocket
 
     USE_QT5 = True
 
@@ -1803,7 +1805,7 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         # ignore SSL errors (eg for self-signed certificates)
         ssl_configuration = QSslConfiguration.defaultConfiguration()
-        ssl_configuration.setPeerVerifyMode(QSslSocket.PeerVerifyMode.VerifyNone)
+        ssl_configuration.setPeerVerifyMode(QSslSocketPeerVerifyModes.VerifyNone)
         request.setSslConfiguration(ssl_configuration)
 
         if self._basic_auth_data:
