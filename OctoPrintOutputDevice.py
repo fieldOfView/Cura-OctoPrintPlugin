@@ -57,6 +57,7 @@ try:
     QNetworkRequestAttributes = QNetworkRequest.Attribute
     QNetworkReplyNetworkErrors = QNetworkReply.NetworkError
     QSslSocketPeerVerifyModes = QSslSocket.PeerVerifyMode
+
 except ImportError:
     from PyQt5.QtNetwork import (
         QHttpPart,

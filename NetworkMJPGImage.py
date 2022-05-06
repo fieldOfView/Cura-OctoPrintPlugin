@@ -13,6 +13,7 @@ try:
         QSslSocket,
     )
     QNetworkRequestAttributes = QNetworkRequest.Attribute
+    QSslSocketPeerVerifyModes = QSslSocket.PeerVerifyMode
 except ImportError:
     from PyQt5.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QByteArray
     from PyQt5.QtGui import QImage, QPainter
@@ -25,6 +26,7 @@ except ImportError:
         QSslSocket,
     )
     QNetworkRequestAttributes = QNetworkRequest.Attribute
+    QSslSocketPeerVerifyModes = QSslSocket
 
 from UM.Logger import Logger
 
@@ -133,7 +135,7 @@ class NetworkMJPGImage(QQuickPaintedItem):
         if self._source_url.scheme().lower() == "https":
             # ignore SSL errors (eg for self-signed certificates)
             ssl_configuration = QSslConfiguration.defaultConfiguration()
-            ssl_configuration.setPeerVerifyMode(QSslSocket.VerifyNone)
+            ssl_configuration.setPeerVerifyMode(QSslSocketPeerVerifyModes.VerifyNone)
             self._image_request.setSslConfiguration(ssl_configuration)
 
         if self._network_manager is None:
