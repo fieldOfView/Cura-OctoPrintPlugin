@@ -22,9 +22,9 @@ jobs:
         run: xgettext --package-name='OctoPrint Connection Plugin' -o i18n/octoprint.pot --join-existing --language=javascript --from-code=UTF-8 -ki18n:1 -ki18nc:1c,2 -ki18np:1,2 -ki18ncp:1c,2,3 $(find -L . -name \*.qml)
       - name: Check diff
         id: git_diff
-        run: echo "##[set-output name=numstat;]$(git diff --numstat i18n)"
+        run: echo "##[set-output name=msgiddiff;]$(git diff i18n | grep '^+msgid')"
 
-      - if: ${{steps.git_diff.outputs.numstat != '1 1 i18n/octoprint.pot'}}
+      - if: ${{steps.git_diff.outputs.msgiddiff != ''}}
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Update i18n template
