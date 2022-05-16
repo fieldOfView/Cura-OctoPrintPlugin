@@ -13,18 +13,25 @@ jobs:
         with:
           apt: gettext
       - uses: actions/checkout@v3
-        with:
-          submodules: "recursive"
+        # NB: no need to check out submodules
+
+      - name: Ensure i18n folder exists
+        run: mkdir -p i18n
+
+      - name: Hash current pot messages
+        id: hash_before
+        run: echo "##[set-output name=i18n_hash;]$(grep '^msgid' i18n/*.pot | sort | sha1sum)"
 
       - name: Find strings in Python files
         run: xgettext --package-name='OctoPrint Connection Plugin' -o i18n/octoprint.pot                 --language=python     --from-code=UTF-8 -ki18n:1 -ki18nc:1c,2 -ki18np:1,2 -ki18ncp:1c,2,3 $(find -L . -name \*.py)
       - name: Find strings in QML files
         run: xgettext --package-name='OctoPrint Connection Plugin' -o i18n/octoprint.pot --join-existing --language=javascript --from-code=UTF-8 -ki18n:1 -ki18nc:1c,2 -ki18np:1,2 -ki18ncp:1c,2,3 $(find -L . -name \*.qml)
-      - name: Check diff
-        id: git_diff
-        run: echo "##[set-output name=msgiddiff;]$(git diff i18n | grep '^+msgid')"
 
-      - if: ${{steps.git_diff.outputs.msgiddiff != ''}}
+      - name: Hash new pot messages
+        id: hash_after
+        run: echo "##[set-output name=i18n_hash;]$(grep '^msgid' i18n/*.pot | sort | sha1sum)"
+
+      - if: ${{steps.hash_after.outputs.i18n_hash != steps.hash_before.outputs.i18n_hash}}
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Update i18n template
