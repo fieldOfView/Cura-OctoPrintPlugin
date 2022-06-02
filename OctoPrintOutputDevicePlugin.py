@@ -39,6 +39,12 @@ else:
         # expand search path so local copies of zeroconf and ifaddr can be imported
         import sys
 
+        original_path = list(sys.path)
+
+        if "zeroconf" in sys.modules:
+            Logger.log("d", "The zeroconf module is already imported; trying to flush it so we can import our own version")
+            sys.modules.pop("zeroconf")
+
         plugin_path = os.path.dirname(os.path.abspath(__file__))
         sys.path.insert(0, os.path.join(plugin_path, "ifaddr"))
         sys.path.insert(0, os.path.join(plugin_path, "python-zeroconf"))
@@ -53,13 +59,16 @@ else:
         )
 
         # restore original path
-        del sys.path[0]  # python-zeroconf
-        del sys.path[0]  # ifaddr
+        sys.path = original_path
 
         Logger.log("d", "Using included Zeroconf module version %s" % zeroconf_version)
     except (FileNotFoundError, ImportError) as exception:
         # fall back to the system-installed version, or what comes with Cura
         Logger.logException("e", "Failed to load included version of Zeroconf module")
+
+        # restore original path
+        sys.path = original_path
+
         from zeroconf import (
             Zeroconf,
             ServiceBrowser,
