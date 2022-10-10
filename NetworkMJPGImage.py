@@ -2,6 +2,10 @@
 # NetworkMJPGImage is released under the terms of the LGPLv3 or higher.
 
 try:
+    from cura.ApplicationMetadata import CuraSDKVersion
+except ImportError: # Cura <= 3.6
+    CuraSDKVersion = "6.0.0"
+if CuraSDKVersion >= "8.0.0":
     from PyQt6.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QByteArray
     from PyQt6.QtGui import QImage, QPainter
     from PyQt6.QtQuick import QQuickPaintedItem
@@ -14,7 +18,7 @@ try:
     )
     QNetworkRequestAttributes = QNetworkRequest.Attribute
     QSslSocketPeerVerifyModes = QSslSocket.PeerVerifyMode
-except ImportError:
+else:
     from PyQt5.QtCore import QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QRect, QByteArray
     from PyQt5.QtGui import QImage, QPainter
     from PyQt5.QtQuick import QQuickPaintedItem

@@ -34,8 +34,12 @@ except ImportError:
 
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 
-USE_QT5 = False
 try:
+    from cura.ApplicationMetadata import CuraSDKVersion
+except ImportError: # Cura <= 3.6
+    CuraSDKVersion = "6.0.0"
+USE_QT5 = False
+if CuraSDKVersion >= "8.0.0":
     from PyQt6.QtNetwork import (
         QHttpPart,
         QNetworkRequest,
@@ -58,7 +62,7 @@ try:
     QNetworkReplyNetworkErrors = QNetworkReply.NetworkError
     QSslSocketPeerVerifyModes = QSslSocket.PeerVerifyMode
 
-except ImportError:
+else:
     from PyQt5.QtNetwork import (
         QHttpPart,
         QNetworkRequest,

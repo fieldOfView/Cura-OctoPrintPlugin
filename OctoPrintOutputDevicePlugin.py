@@ -11,8 +11,12 @@ from UM.Util import parseBool
 from UM.Settings.ContainerStack import ContainerStack
 
 try:
+    from cura.ApplicationMetadata import CuraSDKVersion
+except ImportError: # Cura <= 3.6
+    CuraSDKVersion = "6.0.0"
+if CuraSDKVersion >= "8.0.0":
     from PyQt6.QtCore import QTimer
-except ImportError:
+else:
     from PyQt5.QtCore import QTimer
 
 import time
