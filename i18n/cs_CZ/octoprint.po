@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OctoPrint Connection Plugin\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-05-07 07:47+0000\n"
+"POT-Creation-Date: 2022-10-10 15:31+0000\n"
 "PO-Revision-Date: 2022-08-16 13:39+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -18,137 +18,137 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n>=2 && n<=4 ? 1 : 2);\n"
 "X-Generator: Poedit 3.1\n"
 
-#: DiscoverOctoPrintAction.py:70
+#: DiscoverOctoPrintAction.py:74
 msgctxt "@action"
 msgid "Connect OctoPrint"
 msgstr "Připojení OctoPrintu"
 
-#: OctoPrintOutputDevice.py:250
+#: OctoPrintOutputDevice.py:254
 msgctxt "@action:button"
 msgid "Print with OctoPrint"
 msgstr "Tisk přes OctoPrint"
 
-#: OctoPrintOutputDevice.py:253
+#: OctoPrintOutputDevice.py:257
 msgctxt "@properties:tooltip"
 msgid "Print with OctoPrint"
 msgstr "Tisknout pomocí OctoPrintu"
 
-#: OctoPrintOutputDevice.py:257 OctoPrintOutputDevice.py:1013
+#: OctoPrintOutputDevice.py:261 OctoPrintOutputDevice.py:1019
 #, python-brace-format
 msgctxt "@info:status"
 msgid "Connected to OctoPrint on {0}"
 msgstr "Připojeno k OctoPrintu na {0}"
 
-#: OctoPrintOutputDevice.py:484
+#: OctoPrintOutputDevice.py:488
 #, python-brace-format
 msgctxt "@info:status"
 msgid "Connecting to OctoPrint on {0}"
 msgstr "Připojování k OctoPrintu na {0}"
 
-#: OctoPrintOutputDevice.py:648
+#: OctoPrintOutputDevice.py:652
 msgctxt "@info:status"
 msgid "Waiting for OctoPrint to connect to the printer..."
 msgstr "Čeká se, až se OctoPrint připojí k tiskárně..."
 
-#: OctoPrintOutputDevice.py:650 OctoPrintOutputDevice.py:781
-#: OctoPrintOutputDevice.py:1246 OctoPrintOutputDevice.py:1545
-#: OctoPrintOutputDevice.py:1626 OctoPrintOutputDevice.py:1655
+#: OctoPrintOutputDevice.py:654 OctoPrintOutputDevice.py:785
+#: OctoPrintOutputDevice.py:1252 OctoPrintOutputDevice.py:1558
+#: OctoPrintOutputDevice.py:1648 OctoPrintOutputDevice.py:1677
 msgctxt "@label"
 msgid "OctoPrint"
 msgstr "OctoPrint"
 
-#: OctoPrintOutputDevice.py:658
+#: OctoPrintOutputDevice.py:662
 msgctxt "@action:button"
 msgid "Queue"
 msgstr "Fronta"
 
-#: OctoPrintOutputDevice.py:662
+#: OctoPrintOutputDevice.py:666
 msgctxt "@action:tooltip"
 msgid "Stop waiting for the printer and queue the print job instead"
 msgstr ""
 "Přestaňte čekat na tiskárnu a místo toho zařaďte tiskovou úlohu do fronty"
 
-#: OctoPrintOutputDevice.py:668 OctoPrintOutputDevice.py:789
-#: OctoPrintOutputDevice.py:1673 qml_qt5/ManualInstanceDialog.qml:319
+#: OctoPrintOutputDevice.py:672 OctoPrintOutputDevice.py:793
+#: OctoPrintOutputDevice.py:1695 qml_qt5/ManualInstanceDialog.qml:319
 #: qml_qt5/UploadOptions.qml:107 qml/ManualInstanceDialog.qml:323
 #: qml/UploadOptions.qml:109
 msgctxt "@action:button"
 msgid "Cancel"
 msgstr "Zrušit"
 
-#: OctoPrintOutputDevice.py:670 OctoPrintOutputDevice.py:791
-#: OctoPrintOutputDevice.py:1675
+#: OctoPrintOutputDevice.py:674 OctoPrintOutputDevice.py:795
+#: OctoPrintOutputDevice.py:1697
 msgctxt "@action:tooltip"
 msgid "Abort the print job"
 msgstr "Zrušte tiskovou úlohu"
 
-#: OctoPrintOutputDevice.py:692
+#: OctoPrintOutputDevice.py:696
 msgctxt "@info:status"
 msgid "The printer is offline. Unable to start a new job."
 msgstr "Tiskárna je offline. Nelze zahájit novou práci."
 
-#: OctoPrintOutputDevice.py:696
+#: OctoPrintOutputDevice.py:700
 msgctxt "@info:status"
 msgid "OctoPrint is busy. Unable to start a new job."
 msgstr "OctoPrint je zaneprázdněn. Nelze zahájit novou práci."
 
-#: OctoPrintOutputDevice.py:703 OctoPrintOutputDevice.py:874
-#: OctoPrintOutputDevice.py:1784
+#: OctoPrintOutputDevice.py:707 OctoPrintOutputDevice.py:878
+#: OctoPrintOutputDevice.py:1806
 msgctxt "@label"
 msgid "OctoPrint error"
 msgstr "Chyba OctoPrintu"
 
-#: OctoPrintOutputDevice.py:707
+#: OctoPrintOutputDevice.py:711
 msgctxt "@action:button"
 msgid "Queue job"
 msgstr "Práce ve frontě"
 
-#: OctoPrintOutputDevice.py:711
+#: OctoPrintOutputDevice.py:715
 msgctxt "@action:tooltip"
 msgid "Queue this print job so it can be printed later"
 msgstr ""
 "Zařaďte tuto tiskovou úlohu do fronty, abyste ji mohli vytisknout později"
 
-#: OctoPrintOutputDevice.py:780
+#: OctoPrintOutputDevice.py:784
 msgctxt "@info:status"
 msgid "Sending data to OctoPrint..."
 msgstr "Odesílání dat do OctoPrintu..."
 
-#: OctoPrintOutputDevice.py:873
+#: OctoPrintOutputDevice.py:877
 msgctxt "@info:status"
 msgid "Unable to send data to OctoPrint."
 msgstr "Nelze odeslat data do OctoPrintu."
 
-#: OctoPrintOutputDevice.py:1115
+#: OctoPrintOutputDevice.py:1121
 #, python-brace-format
 msgctxt "@info:status"
 msgid "OctoPrint on {0} does not allow access to the printer state"
 msgstr "OctoPrint na {0} neumožňuje přístup ke stavu tiskárny"
 
-#: OctoPrintOutputDevice.py:1130
+#: OctoPrintOutputDevice.py:1136
 #, python-brace-format
 msgctxt "@info:status"
 msgid "The printer connected to OctoPrint on {0} is not operational"
 msgstr "Tiskárna připojená k OctoPrintu dne {0} není funkční"
 
-#: OctoPrintOutputDevice.py:1142 OctoPrintOutputDevice.py:1290
+#: OctoPrintOutputDevice.py:1148 OctoPrintOutputDevice.py:1296
 #, python-brace-format
 msgctxt "@info:status"
 msgid "OctoPrint on {0} is not running"
 msgstr "OctoPrint na {0} není spuštěn"
 
-#: OctoPrintOutputDevice.py:1241 OctoPrintOutputDevice.py:1257
+#: OctoPrintOutputDevice.py:1247 OctoPrintOutputDevice.py:1263
 msgctxt "@info:status"
 msgid "Streaming file to the SD card of the printer..."
 msgstr "Streamování souboru na SD kartu tiskárny..."
 
-#: OctoPrintOutputDevice.py:1278
+#: OctoPrintOutputDevice.py:1284
 #, python-brace-format
 msgctxt "@info:status"
 msgid "OctoPrint on {0} does not allow access to the job state"
 msgstr "OctoPrint na {0} neumožňuje přístup ke stavu úlohy"
 
-#: OctoPrintOutputDevice.py:1387
+#: OctoPrintOutputDevice.py:1393
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to start print jobs on OctoPrint with the configured API "
@@ -157,7 +157,7 @@ msgstr ""
 "Nemáte povoleno spouštět tiskové úlohy na OctoPrintu pomocí "
 "nakonfigurovaného klíče API."
 
-#: OctoPrintOutputDevice.py:1414
+#: OctoPrintOutputDevice.py:1420
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to control print jobs on OctoPrint with the configured "
@@ -166,7 +166,7 @@ msgstr ""
 "Nemáte povoleno ovládat tiskové úlohy na OctoPrint pomocí nakonfigurovaného "
 "klíče API."
 
-#: OctoPrintOutputDevice.py:1431
+#: OctoPrintOutputDevice.py:1437
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to send gcode commands to OctoPrint with the configured "
@@ -175,23 +175,23 @@ msgstr ""
 "Nemáte povoleno odesílat příkazy gcode do OctoPrintu s nakonfigurovaným "
 "klíčem API."
 
-#: OctoPrintOutputDevice.py:1453 OctoPrintOutputDevice.py:1460
+#: OctoPrintOutputDevice.py:1459 OctoPrintOutputDevice.py:1466
 msgctxt "@label"
 msgid "Anonymous user"
 msgstr "Anonymní uživatel"
 
-#: OctoPrintOutputDevice.py:1467
+#: OctoPrintOutputDevice.py:1473
 msgctxt "@label"
 msgid "Unknown user"
 msgstr "Neznámý uživatel"
 
-#: OctoPrintOutputDevice.py:1473
+#: OctoPrintOutputDevice.py:1479
 msgctxt "@info:error"
 msgid "You are not allowed to access to OctoPrint with the configured API key."
 msgstr ""
 "Nemáte povolen přístup k OctoPrintu pomocí nakonfigurovaného klíče API."
 
-#: OctoPrintOutputDevice.py:1487
+#: OctoPrintOutputDevice.py:1493
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to control printer connections on OctoPrint with the "
@@ -200,18 +200,23 @@ msgstr ""
 "Nemáte povoleno ovládat připojení tiskárny na OctoPrintu pomocí "
 "nakonfigurovaného klíče API."
 
-#: OctoPrintOutputDevice.py:1506
+#: OctoPrintOutputDevice.py:1512
 msgctxt "@info:error"
 msgid "You are not allowed to access OctoPrint with the configured API key."
 msgstr ""
 "Nemáte povolen přístup k OctoPrintu pomocí nakonfigurovaného klíče API."
 
-#: OctoPrintOutputDevice.py:1541
+#: OctoPrintOutputDevice.py:1526 OctoPrintOutputDevice.py:1603
+msgctxt "@info:error"
+msgid "OctoPrint responded with an unknown error"
+msgstr ""
+
+#: OctoPrintOutputDevice.py:1554
 msgctxt "@info:status"
 msgid "Storing data on OctoPrint"
 msgstr "Ukládání dat na OctoPrint"
 
-#: OctoPrintOutputDevice.py:1563
+#: OctoPrintOutputDevice.py:1578
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to upload files to OctoPrint with the configured API key."
@@ -219,12 +224,12 @@ msgstr ""
 "Nemáte oprávnění nahrávat soubory do OctoPrintu pomocí nakonfigurovaného "
 "klíče API."
 
-#: OctoPrintOutputDevice.py:1569
+#: OctoPrintOutputDevice.py:1584
 msgctxt "@info:error"
 msgid "Can't store a print job on SD card of the printer at this time."
 msgstr "V tuto chvíli nelze uložit tiskovou úlohu na SD kartu tiskárny."
 
-#: OctoPrintOutputDevice.py:1574
+#: OctoPrintOutputDevice.py:1589
 msgctxt "@info:error"
 msgid ""
 "Can't store the print job with the same name as the one that is currently "
@@ -232,40 +237,40 @@ msgid ""
 msgstr ""
 "Nelze uložit tiskovou úlohu se stejným názvem jako ta, která se právě tiskne."
 
-#: OctoPrintOutputDevice.py:1619
+#: OctoPrintOutputDevice.py:1641
 #, python-brace-format
 msgctxt "@info:status"
 msgid "Saved to OctoPrint as {0}"
 msgstr "Uloženo do OctoPrintu jako {0}"
 
-#: OctoPrintOutputDevice.py:1624
+#: OctoPrintOutputDevice.py:1646
 msgctxt "@info:status"
 msgid "Saved to OctoPrint"
 msgstr "Uloženo do OctoPrintu"
 
-#: OctoPrintOutputDevice.py:1629 qml_qt5/OctoPrintComponents.qml:24
+#: OctoPrintOutputDevice.py:1651 qml_qt5/OctoPrintComponents.qml:24
 #: qml/OctoPrintComponents.qml:22
 msgctxt "@action:button"
 msgid "OctoPrint..."
 msgstr "OctoPrint..."
 
-#: OctoPrintOutputDevice.py:1631 qml_qt5/OctoPrintComponents.qml:23
+#: OctoPrintOutputDevice.py:1653 qml_qt5/OctoPrintComponents.qml:23
 #: qml/OctoPrintComponents.qml:21
 msgctxt "@info:tooltip"
 msgid "Open the OctoPrint web interface"
 msgstr "Otevřete webové rozhraní OctoPrintu"
 
-#: OctoPrintOutputDevice.py:1653
+#: OctoPrintOutputDevice.py:1675
 msgctxt "@info:status"
 msgid "Waiting for OctoPrint to complete G-code analysis..."
 msgstr "Čekání, až OctoPrint dokončí analýzu G-kódu..."
 
-#: OctoPrintOutputDevice.py:1663
+#: OctoPrintOutputDevice.py:1685
 msgctxt "@action:button"
 msgid "Print now"
 msgstr "Vytiskněte nyní"
 
-#: OctoPrintOutputDevice.py:1667
+#: OctoPrintOutputDevice.py:1689
 msgctxt "@action:tooltip"
 msgid "Stop waiting for the G-code analysis and start printing immediately"
 msgstr "Přestaňte čekat na analýzu G-kódu a začněte ihned tisknout"
