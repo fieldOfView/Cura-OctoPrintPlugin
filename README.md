@@ -20,7 +20,7 @@ When cloning the repository, make sure to use the `--recursive` flag to include 
 
 The configuration folder can be found via Help -> Show Configuration Folder inside Cura.
 This opens the following folder:
-* Windows: `%APPDATA%\cura\<Cura version>\, (usually `C:\Users\<your username>\AppData\Roaming\cura\<Cura version>\`)
+* Windows: `%APPDATA%\cura\<Cura version>\`, (usually `C:\Users\<your username>\AppData\Roaming\cura\<Cura version>\`)
 * Mac OS: `$HOME/Library/Application Support/cura/<Cura version>/`
 * Linux: `$HOME/.local/share/cura/<Cura version>/`
 
