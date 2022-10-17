@@ -5,12 +5,12 @@ on:
     branches-ignore:
       - 'release'
       - '**.**'
-      
+
 jobs:
    update_translation:
      name: "Update plugin translation"
      runs-on: "ubuntu-latest"
-     
+
      steps:
       - name: "Translation"
         id: translation
@@ -19,7 +19,7 @@ jobs:
           translation_folder: 'i18n'
           translation_name: 'octoprint'
           plugin_name: 'OctoPrint Connection Plugin'
-          
+
       - if: ${{ steps.translation.outputs.template_updated || steps.translation.outputs.locales_updated }}
         name: 'Create Pull Request'
         uses: peter-evans/create-pull-request@v4
@@ -30,4 +30,3 @@ jobs:
           body: 'Translation was automatically updated'
           commit-message: '[CI] Translation update'
           labels: 'translation'
-          
