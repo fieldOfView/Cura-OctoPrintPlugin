@@ -5,10 +5,14 @@ from UM.Application import Application
 from UM.Version import Version
 from UM.Util import parseBool
 
-USE_QT5 = False
 try:
+    from cura.ApplicationMetadata import CuraSDKVersion
+except ImportError: # Cura <= 3.6
+    CuraSDKVersion = "6.0.0"
+USE_QT5 = False
+if CuraSDKVersion >= "8.0.0":
     from PyQt6.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot
-except ImportError:
+else:
     from PyQt5.QtCore import QObject, pyqtSignal, pyqtProperty, pyqtSlot
     USE_QT5 = True
 

@@ -1,70 +1,72 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the OctoPrint Connection Plugin package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# FIRST AUTHOR michael.gruz@gmail, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: OctoPrint Connection Plugin\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-10-10 15:31+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2022-08-16 13:39+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: cs_CZ\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n>=2 && n<=4 ? 1 : 2);\n"
+"X-Generator: Poedit 3.1\n"
 
 #: DiscoverOctoPrintAction.py:74
 msgctxt "@action"
 msgid "Connect OctoPrint"
-msgstr ""
+msgstr "Připojení OctoPrintu"
 
 #: OctoPrintOutputDevice.py:254
 msgctxt "@action:button"
 msgid "Print with OctoPrint"
-msgstr ""
+msgstr "Tisk přes OctoPrint"
 
 #: OctoPrintOutputDevice.py:257
 msgctxt "@properties:tooltip"
 msgid "Print with OctoPrint"
-msgstr ""
+msgstr "Tisknout pomocí OctoPrintu"
 
 #: OctoPrintOutputDevice.py:261 OctoPrintOutputDevice.py:1019
 #, python-brace-format
 msgctxt "@info:status"
 msgid "Connected to OctoPrint on {0}"
-msgstr ""
+msgstr "Připojeno k OctoPrintu na {0}"
 
 #: OctoPrintOutputDevice.py:488
 #, python-brace-format
 msgctxt "@info:status"
 msgid "Connecting to OctoPrint on {0}"
-msgstr ""
+msgstr "Připojování k OctoPrintu na {0}"
 
 #: OctoPrintOutputDevice.py:652
 msgctxt "@info:status"
 msgid "Waiting for OctoPrint to connect to the printer..."
-msgstr ""
+msgstr "Čeká se, až se OctoPrint připojí k tiskárně..."
 
 #: OctoPrintOutputDevice.py:654 OctoPrintOutputDevice.py:785
 #: OctoPrintOutputDevice.py:1252 OctoPrintOutputDevice.py:1558
 #: OctoPrintOutputDevice.py:1648 OctoPrintOutputDevice.py:1677
 msgctxt "@label"
 msgid "OctoPrint"
-msgstr ""
+msgstr "OctoPrint"
 
 #: OctoPrintOutputDevice.py:662
 msgctxt "@action:button"
 msgid "Queue"
-msgstr ""
+msgstr "Fronta"
 
 #: OctoPrintOutputDevice.py:666
 msgctxt "@action:tooltip"
 msgid "Stop waiting for the printer and queue the print job instead"
 msgstr ""
+"Přestaňte čekat na tiskárnu a místo toho zařaďte tiskovou úlohu do fronty"
 
 #: OctoPrintOutputDevice.py:672 OctoPrintOutputDevice.py:793
 #: OctoPrintOutputDevice.py:1695 qml_qt5/ManualInstanceDialog.qml:319
@@ -72,78 +74,79 @@ msgstr ""
 #: qml/UploadOptions.qml:109
 msgctxt "@action:button"
 msgid "Cancel"
-msgstr ""
+msgstr "Zrušit"
 
 #: OctoPrintOutputDevice.py:674 OctoPrintOutputDevice.py:795
 #: OctoPrintOutputDevice.py:1697
 msgctxt "@action:tooltip"
 msgid "Abort the print job"
-msgstr ""
+msgstr "Zrušte tiskovou úlohu"
 
 #: OctoPrintOutputDevice.py:696
 msgctxt "@info:status"
 msgid "The printer is offline. Unable to start a new job."
-msgstr ""
+msgstr "Tiskárna je offline. Nelze zahájit novou práci."
 
 #: OctoPrintOutputDevice.py:700
 msgctxt "@info:status"
 msgid "OctoPrint is busy. Unable to start a new job."
-msgstr ""
+msgstr "OctoPrint je zaneprázdněn. Nelze zahájit novou práci."
 
 #: OctoPrintOutputDevice.py:707 OctoPrintOutputDevice.py:878
 #: OctoPrintOutputDevice.py:1806
 msgctxt "@label"
 msgid "OctoPrint error"
-msgstr ""
+msgstr "Chyba OctoPrintu"
 
 #: OctoPrintOutputDevice.py:711
 msgctxt "@action:button"
 msgid "Queue job"
-msgstr ""
+msgstr "Práce ve frontě"
 
 #: OctoPrintOutputDevice.py:715
 msgctxt "@action:tooltip"
 msgid "Queue this print job so it can be printed later"
 msgstr ""
+"Zařaďte tuto tiskovou úlohu do fronty, abyste ji mohli vytisknout později"
 
 #: OctoPrintOutputDevice.py:784
 msgctxt "@info:status"
 msgid "Sending data to OctoPrint..."
-msgstr ""
+msgstr "Odesílání dat do OctoPrintu..."
 
 #: OctoPrintOutputDevice.py:877
 msgctxt "@info:status"
 msgid "Unable to send data to OctoPrint."
-msgstr ""
+msgstr "Nelze odeslat data do OctoPrintu."
 
 #: OctoPrintOutputDevice.py:1121
 #, python-brace-format
 msgctxt "@info:status"
 msgid "OctoPrint on {0} does not allow access to the printer state"
-msgstr ""
+msgstr "OctoPrint na {0} neumožňuje přístup ke stavu tiskárny"
 
 #: OctoPrintOutputDevice.py:1136
 #, python-brace-format
 msgctxt "@info:status"
 msgid "The printer connected to OctoPrint on {0} is not operational"
-msgstr ""
+msgstr "Tiskárna připojená k OctoPrintu dne {0} není funkční"
 
 #: OctoPrintOutputDevice.py:1148 OctoPrintOutputDevice.py:1296
 #, python-brace-format
 msgctxt "@info:status"
 msgid "OctoPrint on {0} is not running"
-msgstr ""
+msgstr "OctoPrint na {0} není spuštěn"
 
 #: OctoPrintOutputDevice.py:1247 OctoPrintOutputDevice.py:1263
 msgctxt "@info:status"
 msgid "Streaming file to the SD card of the printer..."
-msgstr ""
+msgstr "Streamování souboru na SD kartu tiskárny..."
 
 #: OctoPrintOutputDevice.py:1284
 #, python-brace-format
 msgctxt "@info:status"
 msgid "OctoPrint on {0} does not allow access to the job state"
-msgstr ""
+msgstr "OctoPrint na {0} neumožňuje přístup ke stavu úlohy"
 
 #: OctoPrintOutputDevice.py:1393
 msgctxt "@info:error"
@@ -151,6 +154,8 @@ msgid ""
 "You are not allowed to start print jobs on OctoPrint with the configured API "
 "key."
 msgstr ""
+"Nemáte povoleno spouštět tiskové úlohy na OctoPrintu pomocí "
+"nakonfigurovaného klíče API."
 
 #: OctoPrintOutputDevice.py:1420
 msgctxt "@info:error"
@@ -158,6 +163,8 @@ msgid ""
 "You are not allowed to control print jobs on OctoPrint with the configured "
 "API key."
 msgstr ""
+"Nemáte povoleno ovládat tiskové úlohy na OctoPrint pomocí nakonfigurovaného "
+"klíče API."
 
 #: OctoPrintOutputDevice.py:1437
 msgctxt "@info:error"
@@ -165,21 +172,24 @@ msgid ""
 "You are not allowed to send gcode commands to OctoPrint with the configured "
 "API key."
 msgstr ""
+"Nemáte povoleno odesílat příkazy gcode do OctoPrintu s nakonfigurovaným "
+"klíčem API."
 
 #: OctoPrintOutputDevice.py:1459 OctoPrintOutputDevice.py:1466
 msgctxt "@label"
 msgid "Anonymous user"
-msgstr ""
+msgstr "Anonymní uživatel"
 
 #: OctoPrintOutputDevice.py:1473
 msgctxt "@label"
 msgid "Unknown user"
-msgstr ""
+msgstr "Neznámý uživatel"
 
 #: OctoPrintOutputDevice.py:1479
 msgctxt "@info:error"
 msgid "You are not allowed to access to OctoPrint with the configured API key."
 msgstr ""
+"Nemáte povolen přístup k OctoPrintu pomocí nakonfigurovaného klíče API."
 
 #: OctoPrintOutputDevice.py:1493
 msgctxt "@info:error"
@@ -187,11 +197,14 @@ msgid ""
 "You are not allowed to control printer connections on OctoPrint with the "
 "configured API key."
 msgstr ""
+"Nemáte povoleno ovládat připojení tiskárny na OctoPrintu pomocí "
+"nakonfigurovaného klíče API."
 
 #: OctoPrintOutputDevice.py:1512
 msgctxt "@info:error"
 msgid "You are not allowed to access OctoPrint with the configured API key."
 msgstr ""
+"Nemáte povolen přístup k OctoPrintu pomocí nakonfigurovaného klíče API."
 
 #: OctoPrintOutputDevice.py:1526 OctoPrintOutputDevice.py:1603
 msgctxt "@info:error"
@@ -201,18 +214,20 @@ msgstr ""
 #: OctoPrintOutputDevice.py:1554
 msgctxt "@info:status"
 msgid "Storing data on OctoPrint"
-msgstr ""
+msgstr "Ukládání dat na OctoPrint"
 
 #: OctoPrintOutputDevice.py:1578
 msgctxt "@info:error"
 msgid ""
 "You are not allowed to upload files to OctoPrint with the configured API key."
 msgstr ""
+"Nemáte oprávnění nahrávat soubory do OctoPrintu pomocí nakonfigurovaného "
+"klíče API."
 
 #: OctoPrintOutputDevice.py:1584
 msgctxt "@info:error"
 msgid "Can't store a print job on SD card of the printer at this time."
-msgstr ""
+msgstr "V tuto chvíli nelze uložit tiskovou úlohu na SD kartu tiskárny."
 
 #: OctoPrintOutputDevice.py:1589
 msgctxt "@info:error"
@@ -220,161 +235,162 @@ msgid ""
 "Can't store the print job with the same name as the one that is currently "
 "printing."
 msgstr ""
+"Nelze uložit tiskovou úlohu se stejným názvem jako ta, která se právě tiskne."
 
 #: OctoPrintOutputDevice.py:1641
 #, python-brace-format
 msgctxt "@info:status"
 msgid "Saved to OctoPrint as {0}"
-msgstr ""
+msgstr "Uloženo do OctoPrintu jako {0}"
 
 #: OctoPrintOutputDevice.py:1646
 msgctxt "@info:status"
 msgid "Saved to OctoPrint"
-msgstr ""
+msgstr "Uloženo do OctoPrintu"
 
 #: OctoPrintOutputDevice.py:1651 qml_qt5/OctoPrintComponents.qml:24
 #: qml/OctoPrintComponents.qml:22
 msgctxt "@action:button"
 msgid "OctoPrint..."
-msgstr ""
+msgstr "OctoPrint..."
 
 #: OctoPrintOutputDevice.py:1653 qml_qt5/OctoPrintComponents.qml:23
 #: qml/OctoPrintComponents.qml:21
 msgctxt "@info:tooltip"
 msgid "Open the OctoPrint web interface"
-msgstr ""
+msgstr "Otevřete webové rozhraní OctoPrintu"
 
 #: OctoPrintOutputDevice.py:1675
 msgctxt "@info:status"
 msgid "Waiting for OctoPrint to complete G-code analysis..."
-msgstr ""
+msgstr "Čekání, až OctoPrint dokončí analýzu G-kódu..."
 
 #: OctoPrintOutputDevice.py:1685
 msgctxt "@action:button"
 msgid "Print now"
-msgstr ""
+msgstr "Vytiskněte nyní"
 
 #: OctoPrintOutputDevice.py:1689
 msgctxt "@action:tooltip"
 msgid "Stop waiting for the G-code analysis and start printing immediately"
-msgstr ""
+msgstr "Přestaňte čekat na analýzu G-kódu a začněte ihned tisknout"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:77 qml/DiscoverOctoPrintAction.qml:76
 msgctxt "@title"
 msgid "Connect to OctoPrint"
-msgstr ""
+msgstr "Připojení k OctoPrintu"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:98 qml/DiscoverOctoPrintAction.qml:94
 msgctxt "@label"
 msgid "Select your OctoPrint instance from the list below."
-msgstr ""
+msgstr "Vyberte svou instanci OctoPrintu ze seznamu níže."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:108 qml/DiscoverOctoPrintAction.qml:104
 msgctxt "@action:button"
 msgid "Add"
-msgstr ""
+msgstr "Přidat"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:118 qml/DiscoverOctoPrintAction.qml:114
 msgctxt "@action:button"
 msgid "Edit"
-msgstr ""
+msgstr "Upravit"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:134 qml/DiscoverOctoPrintAction.qml:130
 msgctxt "@action:button"
 msgid "Remove"
-msgstr ""
+msgstr "Odstranit"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:142 qml/DiscoverOctoPrintAction.qml:138
 msgctxt "@action:button"
 msgid "Refresh"
-msgstr ""
+msgstr "Obnovit"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:239 qml/DiscoverOctoPrintAction.qml:231
 msgctxt "@label"
 msgid "Automatically discover local OctoPrint instances"
-msgstr ""
+msgstr "Automaticky zjistit místní instance OctoPrintu"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:277 qml/DiscoverOctoPrintAction.qml:267
 msgctxt "@label"
 msgid "Address"
-msgstr ""
+msgstr "Adresa"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:289 qml/DiscoverOctoPrintAction.qml:278
 msgctxt "@label"
 msgid "Version"
-msgstr ""
+msgstr "Verze"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:301 qml/DiscoverOctoPrintAction.qml:288
 msgctxt "@label"
 msgid "API Key"
-msgstr ""
+msgstr "API Klíč"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:319 qml/DiscoverOctoPrintAction.qml:308
 msgctxt "@action"
 msgid "Request..."
-msgstr ""
+msgstr "Žádost..."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:331 qml/DiscoverOctoPrintAction.qml:319
 msgctxt "@label"
 msgid "Username"
-msgstr ""
+msgstr "Uživatel"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:405 qml/DiscoverOctoPrintAction.qml:392
 msgctxt "@label"
 msgid "Please enter the API key to access OctoPrint."
-msgstr ""
+msgstr "Zadejte klíč API pro přístup k OctoPrintu."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:411 qml/DiscoverOctoPrintAction.qml:398
 msgctxt "@label"
 msgid "OctoPrint is not available."
-msgstr ""
+msgstr "OctoPrint není k dispozici."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:421 qml/DiscoverOctoPrintAction.qml:408
 msgctxt "@label"
 msgid "The API key is invalid."
-msgstr ""
+msgstr "Klíč API je neplatný."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:426 qml/DiscoverOctoPrintAction.qml:413
 msgctxt "@label"
 msgid "Checking the API key..."
-msgstr ""
+msgstr "Kontrola klíče API..."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:429 qml/DiscoverOctoPrintAction.qml:416
 msgctxt "@label"
 msgid "You can get the API key through the OctoPrint web page."
-msgstr ""
+msgstr "Klíč API můžete získat prostřednictvím webové stránky OctoPrintu."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:445 qml_qt5/UploadOptions.qml:91
 #: qml/DiscoverOctoPrintAction.qml:431 qml/UploadOptions.qml:93
 msgctxt "@label"
 msgid "Start print job after uploading"
-msgstr ""
+msgstr "Po nahrání spusťit tiskovou úlohu"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:456 qml_qt5/UploadOptions.qml:98
 #: qml/DiscoverOctoPrintAction.qml:442 qml/UploadOptions.qml:100
 msgctxt "@label"
 msgid "Select print job after uploading"
-msgstr ""
+msgstr "Po nahrání vyber tiskovou úlohu"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:471 qml/DiscoverOctoPrintAction.qml:457
 msgctxt "@label"
 msgid "Turn on printer with"
-msgstr ""
+msgstr "Zapněte tiskárnu pomocí"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:530 qml/DiscoverOctoPrintAction.qml:519
 msgctxt "@label"
 msgid "Unknown plug"
-msgstr ""
+msgstr "Neznámá zástrčka"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:552 qml/DiscoverOctoPrintAction.qml:541
 msgctxt "@label"
 msgid "Connect to printer before sending print job"
-msgstr ""
+msgstr "Před odesláním tiskové úlohy se připoj k tiskárně"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:563 qml/DiscoverOctoPrintAction.qml:552
 msgctxt "@label"
 msgid "Store G-code on the SD card of the printer"
-msgstr ""
+msgstr "Uložte G-kód na SD kartu tiskárny"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:576 qml/DiscoverOctoPrintAction.qml:564
 msgctxt "@label"
@@ -382,21 +398,23 @@ msgid ""
 "Note: Transferring files to the printer SD card takes very long. Using this "
 "option is not recommended."
 msgstr ""
+"Poznámka: Přenos souborů na kartu SD tiskárny trvá velmi dlouho. Použití "
+"této možnosti se nedoporučuje."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:581 qml/DiscoverOctoPrintAction.qml:569
 msgctxt "@label"
 msgid "Confirm print job options before sending"
-msgstr ""
+msgstr "Před odesláním potvrďit možnosti tiskové úlohy"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:591 qml/DiscoverOctoPrintAction.qml:579
 msgctxt "@label"
 msgid "Show webcam image"
-msgstr ""
+msgstr "Zobrazit webovou kameru"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:602 qml/DiscoverOctoPrintAction.qml:590
 msgctxt "@label"
 msgid "Set G-code flavor to \"Marlin\""
-msgstr ""
+msgstr "Nastavit příchuť G-code na \"Marlin\""
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:608 qml/DiscoverOctoPrintAction.qml:596
 msgctxt "@label"
@@ -405,47 +423,50 @@ msgid ""
 "flavor to \"Marlin\" fixes this, but overrides material settings on your "
 "printer."
 msgstr ""
+"Poznámka: Tisk UltiGCode pomocí OctoPrintu nefunguje. Nastavení varianty G-"
+"code na \"Marlin\" to opraví, ale přepíše nastavení materiálu na vaší "
+"tiskárně."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:622 qml/DiscoverOctoPrintAction.qml:609
 msgctxt "@action"
 msgid "Open in browser..."
-msgstr ""
+msgstr "Otevřít v prohlížeči..."
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:634 qml/DiscoverOctoPrintAction.qml:621
 msgctxt "@action:button"
 msgid "Disconnect"
-msgstr ""
+msgstr "Odpojit"
 
 #: qml_qt5/DiscoverOctoPrintAction.qml:637 qml/DiscoverOctoPrintAction.qml:624
 msgctxt "@action:button"
 msgid "Connect"
-msgstr ""
+msgstr "Připojit"
 
 #: qml_qt5/ManualInstanceDialog.qml:24 qml/ManualInstanceDialog.qml:24
 msgctxt "@title:window"
 msgid "Manually added OctoPrint instance"
-msgstr ""
+msgstr "Ručně přidaná instance OctoPrintu"
 
 #: qml_qt5/ManualInstanceDialog.qml:162 qml/ManualInstanceDialog.qml:166
 msgctxt "@label"
 msgid "Instance Name"
-msgstr ""
+msgstr "Název instance"
 
 #: qml_qt5/ManualInstanceDialog.qml:179 qml/ManualInstanceDialog.qml:183
 msgctxt "@label"
 msgid "IP Address or Hostname"
-msgstr ""
+msgstr "IP adresa nebo název hostitele"
 
 #: qml_qt5/ManualInstanceDialog.qml:197 qml/ManualInstanceDialog.qml:201
 msgctxt "@label"
 msgid "Port Number"
-msgstr ""
+msgstr "Číslo portu"
 
 #: qml_qt5/ManualInstanceDialog.qml:225 qml_qt5/UploadOptions.qml:37
 #: qml/ManualInstanceDialog.qml:229 qml/UploadOptions.qml:39
 msgctxt "@label"
 msgid "Path"
-msgstr ""
+msgstr "Cesta"
 
 #: qml_qt5/ManualInstanceDialog.qml:262 qml/ManualInstanceDialog.qml:266
 msgctxt "@label"
@@ -453,43 +474,45 @@ msgid ""
 "In order to use HTTPS or a HTTP username and password, you need to configure "
 "a reverse proxy or another service."
 msgstr ""
+"Abyste mohli používat HTTPS nebo HTTP uživatelské jméno a heslo, musíte "
+"nakonfigurovat reverzní proxy nebo jinou službu."
 
 #: qml_qt5/ManualInstanceDialog.qml:267 qml/ManualInstanceDialog.qml:271
 msgctxt "@label"
 msgid "Use HTTPS"
-msgstr ""
+msgstr "Použijte HTTPS"
 
 #: qml_qt5/ManualInstanceDialog.qml:291 qml/ManualInstanceDialog.qml:295
 msgctxt "@label"
 msgid "HTTP username"
-msgstr ""
+msgstr "HTTP uživatelské jméno"
 
 #: qml_qt5/ManualInstanceDialog.qml:304 qml/ManualInstanceDialog.qml:308
 msgctxt "@label"
 msgid "HTTP password"
-msgstr ""
+msgstr "HTTP heslo"
 
 #: qml_qt5/ManualInstanceDialog.qml:327 qml/ManualInstanceDialog.qml:331
 msgctxt "@action:button"
 msgid "Ok"
-msgstr ""
+msgstr "Ok"
 
 #: qml_qt5/UploadOptions.qml:14 qml/UploadOptions.qml:14
 msgctxt "@action:button"
 msgid "Upload to OctoPrint Options"
-msgstr ""
+msgstr "Nahrát do Možnosti OctoPrintu"
 
 #: qml_qt5/UploadOptions.qml:56 qml/UploadOptions.qml:58
 msgctxt "@label"
 msgid "Filename"
-msgstr ""
+msgstr "Název souboru"
 
 #: qml_qt5/UploadOptions.qml:78 qml/UploadOptions.qml:80
 msgctxt "@label"
 msgid "A file extenstion will be added automatically."
-msgstr ""
+msgstr "Přípona souboru bude přidána automaticky."
 
 #: qml_qt5/UploadOptions.qml:111 qml/UploadOptions.qml:113
 msgctxt "@action:button"
 msgid "OK"
-msgstr ""
+msgstr "OK"

@@ -11,8 +11,12 @@ from UM.Util import parseBool
 from UM.Settings.ContainerStack import ContainerStack
 
 try:
+    from cura.ApplicationMetadata import CuraSDKVersion
+except ImportError: # Cura <= 3.6
+    CuraSDKVersion = "6.0.0"
+if CuraSDKVersion >= "8.0.0":
     from PyQt6.QtCore import QTimer
-except ImportError:
+else:
     from PyQt5.QtCore import QTimer
 
 import time
@@ -38,10 +42,30 @@ else:
         # import the included version of python-zeroconf
         # expand search path so local copies of zeroconf and ifaddr can be imported
         import sys
+        import importlib.util
+
+        original_path = list(sys.path)
+
+        if "zeroconf" in sys.modules:
+            Logger.log(
+                "d",
+                "The zeroconf module is already imported; trying to flush it so we can import our own version",
+            )
+            sys.modules.pop("zeroconf")
 
         plugin_path = os.path.dirname(os.path.abspath(__file__))
         sys.path.insert(0, os.path.join(plugin_path, "ifaddr"))
-        sys.path.insert(0, os.path.join(plugin_path, "python-zeroconf"))
+
+        zeroconf_spec = importlib.util.spec_from_file_location(
+            "zeroconf",
+            os.path.join(plugin_path, "python-zeroconf", "zeroconf", "__init__.py"),
+        )
+        zeroconf_module = importlib.util.module_from_spec(zeroconf_spec)
+        sys.modules["zeroconf"] = zeroconf_module
+
+        zeroconf_spec.loader.exec_module(
+            zeroconf_module
+        )  # must be called after adding zeroconf to sys.modules
 
         from zeroconf import (
             Zeroconf,
@@ -53,13 +77,16 @@ else:
         )
 
         # restore original path
-        del sys.path[0]  # python-zeroconf
-        del sys.path[0]  # ifaddr
+        sys.path = original_path
 
         Logger.log("d", "Using included Zeroconf module version %s" % zeroconf_version)
     except (FileNotFoundError, ImportError) as exception:
         # fall back to the system-installed version, or what comes with Cura
         Logger.logException("e", "Failed to load included version of Zeroconf module")
+
+        # restore original path
+        sys.path = original_path
+
         from zeroconf import (
             Zeroconf,
             ServiceBrowser,

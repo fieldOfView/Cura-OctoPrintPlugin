@@ -455,7 +455,7 @@ Cura.MachineAction
                         id: autoSelectCheckBox
                         text: catalog.i18nc("@label", "Select print job after uploading")
                         enabled: manager.instanceApiKeyAccepted && !autoPrintCheckBox.checked
-                        checked: Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_select") == "true"
+                        checked: Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_auto_select") == "true" || (!enabled && autoPrintCheckBox.checked)
                         onClicked:
                         {
                             manager.setContainerMetaDataEntry(activeMachineId, "octoprint_auto_select", String(checked))
@@ -470,7 +470,7 @@ Cura.MachineAction
                             id: autoPowerControlCheckBox
                             text: catalog.i18nc("@label", "Turn on printer with")
                             visible: autoPowerControlPlugs.visible
-                            enabled: autoPrintCheckBox.checked
+                            enabled: autoPrintCheckBox.checked || autoSelectCheckBox.checked
                             anchors.verticalCenter: autoPowerControlPlugs.verticalCenter
                             checked: manager.instanceApiKeyAccepted && Cura.ContainerManager.getContainerMetaDataEntry(activeMachineId, "octoprint_power_control") == "true"
                             onClicked:

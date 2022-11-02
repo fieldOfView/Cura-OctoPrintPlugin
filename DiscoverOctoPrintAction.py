@@ -12,8 +12,12 @@ from cura.CuraApplication import CuraApplication
 from cura.MachineAction import MachineAction
 from cura.Settings.CuraStackBuilder import CuraStackBuilder
 
-USE_QT5 = False
 try:
+    from cura.ApplicationMetadata import CuraSDKVersion
+except ImportError: # Cura <= 3.6
+    CuraSDKVersion = "6.0.0"
+USE_QT5 = False
+if CuraSDKVersion >= "8.0.0":
     from PyQt6.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
     from PyQt6.QtGui import QDesktopServices
     from PyQt6.QtNetwork import (
@@ -29,7 +33,7 @@ try:
     QNetworkRequestAttributes = QNetworkRequest.Attribute
     QSslSocketPeerVerifyModes = QSslSocket.PeerVerifyMode
 
-except ImportError:
+else:
     from PyQt5.QtCore import pyqtSignal, pyqtProperty, pyqtSlot, QUrl, QObject, QTimer
     from PyQt5.QtGui import QDesktopServices
     from PyQt5.QtNetwork import (

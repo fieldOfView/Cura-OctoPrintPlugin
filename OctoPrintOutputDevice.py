@@ -34,8 +34,12 @@ except ImportError:
 
 from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutputDevice
 
-USE_QT5 = False
 try:
+    from cura.ApplicationMetadata import CuraSDKVersion
+except ImportError: # Cura <= 3.6
+    CuraSDKVersion = "6.0.0"
+USE_QT5 = False
+if CuraSDKVersion >= "8.0.0":
     from PyQt6.QtNetwork import (
         QHttpPart,
         QNetworkRequest,
@@ -58,7 +62,7 @@ try:
     QNetworkReplyNetworkErrors = QNetworkReply.NetworkError
     QSslSocketPeerVerifyModes = QSslSocket.PeerVerifyMode
 
-except ImportError:
+else:
     from PyQt5.QtNetwork import (
         QHttpPart,
         QNetworkRequest,
@@ -953,6 +957,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             # Received no or empty reply
             return
 
+        content_type = bytes(reply.rawHeader(b"Content-Type")).decode("utf-8")
+
         if reply.operation() == QNetworkAccessManagerOperations.GetOperation:
             if self._api_prefix + "printerprofiles" in reply.url().toString():
                 if http_status_code == 200:
@@ -1507,10 +1513,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 )
             else:
                 # Received another error reply
-                error_string = bytes(reply.readAll()).decode("utf-8")
-                if not error_string:
-                    error_string = reply.attribute(
-                        QNetworkRequestAttributes.HttpReasonPhraseAttribute
+                if content_type == "text/plain":
+                    error_string = bytes(reply.readAll()).decode("utf-8")
+                    if not error_string:
+                        error_string = reply.attribute(
+                            QNetworkRequestAttributes.HttpReasonPhraseAttribute
+                        )
+                    error_string = error_string[:100]
+                else:
+                    error_string = i18n_catalog.i18nc(
+                        "@info:error",
+                        "OctoPrint responded with an unknown error",
                     )
 
             self._showErrorMessage(error_string)
@@ -1557,6 +1570,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         http_status_code = reply.attribute(QNetworkRequestAttributes.HttpStatusCodeAttribute)
         error_string = ""
+        content_type = bytes(reply.rawHeader(b"Content-Type")).decode("utf-8")
+
         if http_status_code == 401 or http_status_code == 403:
             error_string = i18n_catalog.i18nc(
                 "@info:error",
@@ -1575,10 +1590,17 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                 )
 
         elif http_status_code >= 400:
-            error_string = bytes(reply.readAll()).decode("utf-8")
-            if not error_string:
-                error_string = reply.attribute(
-                    QNetworkRequestAttributes.HttpReasonPhraseAttribute
+            if content_type == "text/plain":
+                error_string = bytes(reply.readAll()).decode("utf-8")
+                if not error_string:
+                    error_string = reply.attribute(
+                        QNetworkRequestAttributes.HttpReasonPhraseAttribute
+                    )
+                error_string = error_string[:100]
+            else:
+                error_string = i18n_catalog.i18nc(
+                    "@info:error",
+                    "OctoPrint responded with an unknown error",
                 )
 
         if error_string:

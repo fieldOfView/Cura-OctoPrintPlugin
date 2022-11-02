@@ -2,9 +2,13 @@
 # NetworkReplyTimeout is released under the terms of the AGPLv3 or higher.
 
 try:
+    from cura.ApplicationMetadata import CuraSDKVersion
+except ImportError: # Cura <= 3.6
+    CuraSDKVersion = "6.0.0"
+if CuraSDKVersion >= "8.0.0":
     from PyQt6.QtCore import QObject, QTimer
     from PyQt6.QtNetwork import QNetworkReply
-except ImportError:
+else:
     from PyQt5.QtCore import QObject, QTimer
     from PyQt5.QtNetwork import QNetworkReply
 
