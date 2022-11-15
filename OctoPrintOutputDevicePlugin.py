@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 else:
     try:
         # import the included version of python-zeroconf
-        # expand search path so local copies of zeroconf and ifaddr can be imported
+        # expand search path so local copies of zeroconf, ifaddr and async-timeout can be imported
         import sys
         import importlib.util
 
@@ -55,6 +55,7 @@ else:
 
         plugin_path = os.path.dirname(os.path.abspath(__file__))
         sys.path.insert(0, os.path.join(plugin_path, "ifaddr"))
+        sys.path.insert(0, os.path.join(plugin_path, "async-timeout"))
 
         zeroconf_spec = importlib.util.spec_from_file_location(
             "zeroconf",
@@ -80,7 +81,7 @@ else:
         sys.path = original_path
 
         Logger.log("d", "Using included Zeroconf module version %s" % zeroconf_version)
-    except (FileNotFoundError, ImportError) as exception:
+    except (FileNotFoundError, ModuleNotFoundError, ImportError) as exception:
         # fall back to the system-installed version, or what comes with Cura
         Logger.logException("e", "Failed to load included version of Zeroconf module")
 

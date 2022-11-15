@@ -34,6 +34,10 @@ install(DIRECTORY ifaddr
     DESTINATION lib/cura/plugins/OctoPrintPlugin/ifaddr
 )
 
+install(DIRECTORY async-timeout
+    DESTINATION lib/cura/plugins/OctoPrintPlugin/async-timeout
+)
+
 install(DIRECTORY i18n
     DESTINATION lib/cura/plugins/OctoPrintPlugin/i18n
 )

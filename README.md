@@ -71,5 +71,8 @@ older versions of Cura because that version has bugs.
 ### [ifaddr](https://github.com/pydron/ifaddr) as maintained by pydron.
 ifaddr is licensed under the MIT license.
 
-The module is included in the OctoPrintPlugin because it is a dependency of
-python-zeroconf and it is not included with older versions of Cura
+### [async-timeout](https://github.com/aio-libs/async-timeout) as maintained by aio-libs
+async-timeout is licensed under the Apache License, Version 2.0.
+
+ifaddr and async-timeout are included in the OctoPrintPlugin because it is a dependency
+of python-zeroconf and they are not included with older versions of Cura.

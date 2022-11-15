@@ -4,3 +4,6 @@
 [submodule "ifaddr"]
 	path = ifaddr
 	url = https://github.com/pydron/ifaddr
+[submodule "async-timeout"]
+	path = async-timeout
+	url = https://github.com/aio-libs/async-timeout
