@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OctoPrint Connection Plugin\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-05-07 07:47+0000\n"
+"POT-Creation-Date: 2022-11-15 10:11+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,11 +16,6 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
-
-#: DiscoverOctoPrintAction.py:70
-msgctxt "@action"
-msgid "Connect OctoPrint"
-msgstr ""
 
 #: OctoPrintOutputDevice.py:250
 msgctxt "@action:button"
@@ -67,9 +62,9 @@ msgid "Stop waiting for the printer and queue the print job instead"
 msgstr ""
 
 #: OctoPrintOutputDevice.py:668 OctoPrintOutputDevice.py:789
-#: OctoPrintOutputDevice.py:1673 qml_qt5/ManualInstanceDialog.qml:319
-#: qml_qt5/UploadOptions.qml:107 qml/ManualInstanceDialog.qml:323
-#: qml/UploadOptions.qml:109
+#: OctoPrintOutputDevice.py:1673 qml_qt5/UploadOptions.qml:107
+#: qml_qt5/ManualInstanceDialog.qml:319 qml/UploadOptions.qml:109
+#: qml/ManualInstanceDialog.qml:323
 msgctxt "@action:button"
 msgid "Cancel"
 msgstr ""
@@ -254,6 +249,96 @@ msgctxt "@action:tooltip"
 msgid "Stop waiting for the G-code analysis and start printing immediately"
 msgstr ""
 
+#: DiscoverOctoPrintAction.py:70
+msgctxt "@action"
+msgid "Connect OctoPrint"
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:14 qml/UploadOptions.qml:14
+msgctxt "@action:button"
+msgid "Upload to OctoPrint Options"
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:37 qml_qt5/ManualInstanceDialog.qml:225
+#: qml/UploadOptions.qml:39 qml/ManualInstanceDialog.qml:229
+msgctxt "@label"
+msgid "Path"
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:56 qml/UploadOptions.qml:58
+msgctxt "@label"
+msgid "Filename"
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:78 qml/UploadOptions.qml:80
+msgctxt "@label"
+msgid "A file extenstion will be added automatically."
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:91 qml_qt5/DiscoverOctoPrintAction.qml:445
+#: qml/UploadOptions.qml:93 qml/DiscoverOctoPrintAction.qml:431
+msgctxt "@label"
+msgid "Start print job after uploading"
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:98 qml_qt5/DiscoverOctoPrintAction.qml:456
+#: qml/UploadOptions.qml:100 qml/DiscoverOctoPrintAction.qml:442
+msgctxt "@label"
+msgid "Select print job after uploading"
+msgstr ""
+
+#: qml_qt5/UploadOptions.qml:111 qml/UploadOptions.qml:113
+msgctxt "@action:button"
+msgid "OK"
+msgstr ""
+
+#: qml_qt5/ManualInstanceDialog.qml:24 qml/ManualInstanceDialog.qml:24
+msgctxt "@title:window"
+msgid "Manually added OctoPrint instance"
+msgstr ""
+
+#: qml_qt5/ManualInstanceDialog.qml:162 qml/ManualInstanceDialog.qml:166
+msgctxt "@label"
+msgid "Instance Name"
+msgstr ""
+
+#: qml_qt5/ManualInstanceDialog.qml:179 qml/ManualInstanceDialog.qml:183
+msgctxt "@label"
+msgid "IP Address or Hostname"
+msgstr ""
+
+#: qml_qt5/ManualInstanceDialog.qml:197 qml/ManualInstanceDialog.qml:201
+msgctxt "@label"
+msgid "Port Number"
+msgstr ""
+
+#: qml_qt5/ManualInstanceDialog.qml:262 qml/ManualInstanceDialog.qml:266
+msgctxt "@label"
+msgid ""
+"In order to use HTTPS or a HTTP username and password, you need to configure "
+"a reverse proxy or another service."
+msgstr ""
+
+#: qml_qt5/ManualInstanceDialog.qml:267 qml/ManualInstanceDialog.qml:271
+msgctxt "@label"
+msgid "Use HTTPS"
+msgstr ""
+
+#: qml_qt5/ManualInstanceDialog.qml:291 qml/ManualInstanceDialog.qml:295
+msgctxt "@label"
+msgid "HTTP username"
+msgstr ""
+
+#: qml_qt5/ManualInstanceDialog.qml:304 qml/ManualInstanceDialog.qml:308
+msgctxt "@label"
+msgid "HTTP password"
+msgstr ""
+
+#: qml_qt5/ManualInstanceDialog.qml:327 qml/ManualInstanceDialog.qml:331
+msgctxt "@action:button"
+msgid "Ok"
+msgstr ""
+
 #: qml_qt5/DiscoverOctoPrintAction.qml:77 qml/DiscoverOctoPrintAction.qml:76
 msgctxt "@title"
 msgid "Connect to OctoPrint"
@@ -339,18 +424,6 @@ msgctxt "@label"
 msgid "You can get the API key through the OctoPrint web page."
 msgstr ""
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:445 qml_qt5/UploadOptions.qml:91
-#: qml/DiscoverOctoPrintAction.qml:431 qml/UploadOptions.qml:93
-msgctxt "@label"
-msgid "Start print job after uploading"
-msgstr ""
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:456 qml_qt5/UploadOptions.qml:98
-#: qml/DiscoverOctoPrintAction.qml:442 qml/UploadOptions.qml:100
-msgctxt "@label"
-msgid "Select print job after uploading"
-msgstr ""
-
 #: qml_qt5/DiscoverOctoPrintAction.qml:471 qml/DiscoverOctoPrintAction.qml:457
 msgctxt "@label"
 msgid "Turn on printer with"
@@ -414,77 +487,4 @@ msgstr ""
 #: qml_qt5/DiscoverOctoPrintAction.qml:637 qml/DiscoverOctoPrintAction.qml:624
 msgctxt "@action:button"
 msgid "Connect"
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:24 qml/ManualInstanceDialog.qml:24
-msgctxt "@title:window"
-msgid "Manually added OctoPrint instance"
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:162 qml/ManualInstanceDialog.qml:166
-msgctxt "@label"
-msgid "Instance Name"
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:179 qml/ManualInstanceDialog.qml:183
-msgctxt "@label"
-msgid "IP Address or Hostname"
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:197 qml/ManualInstanceDialog.qml:201
-msgctxt "@label"
-msgid "Port Number"
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:225 qml_qt5/UploadOptions.qml:37
-#: qml/ManualInstanceDialog.qml:229 qml/UploadOptions.qml:39
-msgctxt "@label"
-msgid "Path"
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:262 qml/ManualInstanceDialog.qml:266
-msgctxt "@label"
-msgid ""
-"In order to use HTTPS or a HTTP username and password, you need to configure "
-"a reverse proxy or another service."
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:267 qml/ManualInstanceDialog.qml:271
-msgctxt "@label"
-msgid "Use HTTPS"
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:291 qml/ManualInstanceDialog.qml:295
-msgctxt "@label"
-msgid "HTTP username"
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:304 qml/ManualInstanceDialog.qml:308
-msgctxt "@label"
-msgid "HTTP password"
-msgstr ""
-
-#: qml_qt5/ManualInstanceDialog.qml:327 qml/ManualInstanceDialog.qml:331
-msgctxt "@action:button"
-msgid "Ok"
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:14 qml/UploadOptions.qml:14
-msgctxt "@action:button"
-msgid "Upload to OctoPrint Options"
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:56 qml/UploadOptions.qml:58
-msgctxt "@label"
-msgid "Filename"
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:78 qml/UploadOptions.qml:80
-msgctxt "@label"
-msgid "A file extenstion will be added automatically."
-msgstr ""
-
-#: qml_qt5/UploadOptions.qml:111 qml/UploadOptions.qml:113
-msgctxt "@action:button"
-msgid "OK"
 msgstr ""
