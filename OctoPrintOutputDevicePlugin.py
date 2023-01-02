@@ -49,7 +49,7 @@ else:
         if "zeroconf" in sys.modules:
             Logger.log(
                 "d",
-                "The zeroconf module is already imported; trying to flush it so we can import our own version",
+                "The zeroconf module is already imported; flush it so we can import our own version",
             )
             sys.modules.pop("zeroconf")
 
@@ -59,7 +59,7 @@ else:
 
         zeroconf_spec = importlib.util.spec_from_file_location(
             "zeroconf",
-            os.path.join(plugin_path, "python-zeroconf", "zeroconf", "__init__.py"),
+            os.path.join(plugin_path, "python-zeroconf", "src", "zeroconf", "__init__.py"),
         )
         zeroconf_module = importlib.util.module_from_spec(zeroconf_spec)
         sys.modules["zeroconf"] = zeroconf_module
