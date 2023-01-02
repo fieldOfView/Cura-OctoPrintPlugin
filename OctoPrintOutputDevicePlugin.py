@@ -28,6 +28,12 @@ import ipaddress
 
 from typing import Any, Dict, List, Union, Optional, TYPE_CHECKING
 
+try:
+    ìmport_exceptions = (SyntaxError, FileNotFoundError, ModuleNotFoundError, ImportError)
+except NameError:
+    # Python 3.5 does not know the ModuleNotFoundError
+    ìmport_exceptions = (SyntaxError, FileNotFoundError, ImportError)
+
 if TYPE_CHECKING:
     # for MYPY, fall back to the system-installed version
     from zeroconf import (
@@ -45,13 +51,14 @@ else:
         import importlib.util
 
         original_path = list(sys.path)
+        original_zeroconf_module = None
 
         if "zeroconf" in sys.modules:
             Logger.log(
                 "d",
-                "The zeroconf module is already imported; flush it so we can import our own version",
+                "The zeroconf module is already imported; flush it to use a newer version",
             )
-            sys.modules.pop("zeroconf")
+            original_zeroconf_module = sys.modules.pop("zeroconf")
 
         plugin_path = os.path.dirname(os.path.abspath(__file__))
         sys.path.insert(0, os.path.join(plugin_path, "ifaddr"))
@@ -81,25 +88,39 @@ else:
         sys.path = original_path
 
         Logger.log("d", "Using included Zeroconf module version %s" % zeroconf_version)
-    except (FileNotFoundError, ModuleNotFoundError, ImportError) as exception:
+    except ìmport_exceptions as exception:
         # fall back to the system-installed version, or what comes with Cura
         Logger.logException("e", "Failed to load included version of Zeroconf module")
 
         # restore original path
         sys.path = original_path
+        if original_zeroconf_module:
+            sys.modules["zeroconf"] = original_zeroconf_module
 
-        from zeroconf import (
-            Zeroconf,
-            ServiceBrowser,
-            ServiceStateChange,
-            ServiceInfo,
-            DNSAddress,
-            __version__ as zeroconf_version,
-        )
+        try:
+            from zeroconf import (
+                Zeroconf,
+                ServiceBrowser,
+                ServiceStateChange,
+                ServiceInfo,
+                DNSAddress,
+                __version__ as zeroconf_version,
+            )
 
-        Logger.log(
-            "w", "Falling back to default Zeroconf module version %s" % zeroconf_version
-        )
+            Logger.log(
+                "w", "Falling back to default Zeroconf module version %s" % zeroconf_version
+            )
+        except ImportError:
+            Zeroconf = None
+            ServiceBrowser = None
+            ServiceStateChange = None
+            ServiceInfo = None
+            DNSAddress = None
+
+            Logger.log(
+                "w", "Zeroconf could not be loaded; Auto-discovery is not available"
+            )
+
 
 if TYPE_CHECKING:
     from cura.PrinterOutput.PrinterOutputModel import PrinterOutputModel
