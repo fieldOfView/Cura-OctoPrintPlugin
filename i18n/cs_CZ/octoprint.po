@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: OctoPrint Connection Plugin\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-10 15:31+0000\n"
+"POT-Creation-Date: 2023-02-03 17:13+0000\n"
 "PO-Revision-Date: 2022-08-16 13:39+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -69,9 +69,9 @@ msgstr ""
 "Přestaňte čekat na tiskárnu a místo toho zařaďte tiskovou úlohu do fronty"
 
 #: OctoPrintOutputDevice.py:672 OctoPrintOutputDevice.py:793
-#: OctoPrintOutputDevice.py:1695 qml_qt5/ManualInstanceDialog.qml:319
-#: qml_qt5/UploadOptions.qml:107 qml/ManualInstanceDialog.qml:323
-#: qml/UploadOptions.qml:109
+#: OctoPrintOutputDevice.py:1695 qml/UploadOptions.qml:109
+#: qml/ManualInstanceDialog.qml:323 qml_qt5/UploadOptions.qml:107
+#: qml_qt5/ManualInstanceDialog.qml:319
 msgctxt "@action:button"
 msgid "Cancel"
 msgstr "Zrušit"
@@ -248,14 +248,14 @@ msgctxt "@info:status"
 msgid "Saved to OctoPrint"
 msgstr "Uloženo do OctoPrintu"
 
-#: OctoPrintOutputDevice.py:1651 qml_qt5/OctoPrintComponents.qml:24
-#: qml/OctoPrintComponents.qml:22
+#: OctoPrintOutputDevice.py:1651 qml/OctoPrintComponents.qml:22
+#: qml_qt5/OctoPrintComponents.qml:24
 msgctxt "@action:button"
 msgid "OctoPrint..."
 msgstr "OctoPrint..."
 
-#: OctoPrintOutputDevice.py:1653 qml_qt5/OctoPrintComponents.qml:23
-#: qml/OctoPrintComponents.qml:21
+#: OctoPrintOutputDevice.py:1653 qml/OctoPrintComponents.qml:21
+#: qml_qt5/OctoPrintComponents.qml:23
 msgctxt "@info:tooltip"
 msgid "Open the OctoPrint web interface"
 msgstr "Otevřete webové rozhraní OctoPrintu"
@@ -275,124 +275,150 @@ msgctxt "@action:tooltip"
 msgid "Stop waiting for the G-code analysis and start printing immediately"
 msgstr "Přestaňte čekat na analýzu G-kódu a začněte ihned tisknout"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:77 qml/DiscoverOctoPrintAction.qml:76
-msgctxt "@title"
-msgid "Connect to OctoPrint"
-msgstr "Připojení k OctoPrintu"
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:98 qml/DiscoverOctoPrintAction.qml:94
-msgctxt "@label"
-msgid "Select your OctoPrint instance from the list below."
-msgstr "Vyberte svou instanci OctoPrintu ze seznamu níže."
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:108 qml/DiscoverOctoPrintAction.qml:104
+#: qml/UploadOptions.qml:14 qml_qt5/UploadOptions.qml:14
 msgctxt "@action:button"
-msgid "Add"
-msgstr "Přidat"
+msgid "Upload to OctoPrint Options"
+msgstr "Nahrát do Možnosti OctoPrintu"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:118 qml/DiscoverOctoPrintAction.qml:114
-msgctxt "@action:button"
-msgid "Edit"
-msgstr "Upravit"
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:134 qml/DiscoverOctoPrintAction.qml:130
-msgctxt "@action:button"
-msgid "Remove"
-msgstr "Odstranit"
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:142 qml/DiscoverOctoPrintAction.qml:138
-msgctxt "@action:button"
-msgid "Refresh"
-msgstr "Obnovit"
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:239 qml/DiscoverOctoPrintAction.qml:231
+#: qml/UploadOptions.qml:39 qml/ManualInstanceDialog.qml:229
+#: qml_qt5/UploadOptions.qml:37 qml_qt5/ManualInstanceDialog.qml:225
 msgctxt "@label"
-msgid "Automatically discover local OctoPrint instances"
-msgstr "Automaticky zjistit místní instance OctoPrintu"
+msgid "Path"
+msgstr "Cesta"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:277 qml/DiscoverOctoPrintAction.qml:267
+#: qml/UploadOptions.qml:58 qml_qt5/UploadOptions.qml:56
 msgctxt "@label"
-msgid "Address"
-msgstr "Adresa"
+msgid "Filename"
+msgstr "Název souboru"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:289 qml/DiscoverOctoPrintAction.qml:278
+#: qml/UploadOptions.qml:80 qml_qt5/UploadOptions.qml:78
 msgctxt "@label"
-msgid "Version"
-msgstr "Verze"
+msgid "A file extenstion will be added automatically."
+msgstr "Přípona souboru bude přidána automaticky."
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:301 qml/DiscoverOctoPrintAction.qml:288
-msgctxt "@label"
-msgid "API Key"
-msgstr "API Klíč"
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:319 qml/DiscoverOctoPrintAction.qml:308
-msgctxt "@action"
-msgid "Request..."
-msgstr "Žádost..."
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:331 qml/DiscoverOctoPrintAction.qml:319
-msgctxt "@label"
-msgid "Username"
-msgstr "Uživatel"
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:405 qml/DiscoverOctoPrintAction.qml:392
-msgctxt "@label"
-msgid "Please enter the API key to access OctoPrint."
-msgstr "Zadejte klíč API pro přístup k OctoPrintu."
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:411 qml/DiscoverOctoPrintAction.qml:398
-msgctxt "@label"
-msgid "OctoPrint is not available."
-msgstr "OctoPrint není k dispozici."
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:421 qml/DiscoverOctoPrintAction.qml:408
-msgctxt "@label"
-msgid "The API key is invalid."
-msgstr "Klíč API je neplatný."
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:426 qml/DiscoverOctoPrintAction.qml:413
-msgctxt "@label"
-msgid "Checking the API key..."
-msgstr "Kontrola klíče API..."
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:429 qml/DiscoverOctoPrintAction.qml:416
-msgctxt "@label"
-msgid "You can get the API key through the OctoPrint web page."
-msgstr "Klíč API můžete získat prostřednictvím webové stránky OctoPrintu."
-
-#: qml_qt5/DiscoverOctoPrintAction.qml:445 qml_qt5/UploadOptions.qml:91
-#: qml/DiscoverOctoPrintAction.qml:431 qml/UploadOptions.qml:93
+#: qml/UploadOptions.qml:93 qml/DiscoverOctoPrintAction.qml:431
+#: qml_qt5/UploadOptions.qml:91 qml_qt5/DiscoverOctoPrintAction.qml:445
 msgctxt "@label"
 msgid "Start print job after uploading"
 msgstr "Po nahrání spusťit tiskovou úlohu"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:456 qml_qt5/UploadOptions.qml:98
-#: qml/DiscoverOctoPrintAction.qml:442 qml/UploadOptions.qml:100
+#: qml/UploadOptions.qml:100 qml/DiscoverOctoPrintAction.qml:442
+#: qml_qt5/UploadOptions.qml:98 qml_qt5/DiscoverOctoPrintAction.qml:456
 msgctxt "@label"
 msgid "Select print job after uploading"
 msgstr "Po nahrání vyber tiskovou úlohu"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:471 qml/DiscoverOctoPrintAction.qml:457
+#: qml/UploadOptions.qml:113 qml_qt5/UploadOptions.qml:111
+msgctxt "@action:button"
+msgid "OK"
+msgstr "OK"
+
+#: qml/DiscoverOctoPrintAction.qml:76 qml_qt5/DiscoverOctoPrintAction.qml:77
+msgctxt "@title"
+msgid "Connect to OctoPrint"
+msgstr "Připojení k OctoPrintu"
+
+#: qml/DiscoverOctoPrintAction.qml:94 qml_qt5/DiscoverOctoPrintAction.qml:98
+msgctxt "@label"
+msgid "Select your OctoPrint instance from the list below."
+msgstr "Vyberte svou instanci OctoPrintu ze seznamu níže."
+
+#: qml/DiscoverOctoPrintAction.qml:104 qml_qt5/DiscoverOctoPrintAction.qml:108
+msgctxt "@action:button"
+msgid "Add"
+msgstr "Přidat"
+
+#: qml/DiscoverOctoPrintAction.qml:114 qml_qt5/DiscoverOctoPrintAction.qml:118
+msgctxt "@action:button"
+msgid "Edit"
+msgstr "Upravit"
+
+#: qml/DiscoverOctoPrintAction.qml:130 qml_qt5/DiscoverOctoPrintAction.qml:134
+msgctxt "@action:button"
+msgid "Remove"
+msgstr "Odstranit"
+
+#: qml/DiscoverOctoPrintAction.qml:138 qml_qt5/DiscoverOctoPrintAction.qml:142
+msgctxt "@action:button"
+msgid "Refresh"
+msgstr "Obnovit"
+
+#: qml/DiscoverOctoPrintAction.qml:231 qml_qt5/DiscoverOctoPrintAction.qml:239
+msgctxt "@label"
+msgid "Automatically discover local OctoPrint instances"
+msgstr "Automaticky zjistit místní instance OctoPrintu"
+
+#: qml/DiscoverOctoPrintAction.qml:267 qml_qt5/DiscoverOctoPrintAction.qml:277
+msgctxt "@label"
+msgid "Address"
+msgstr "Adresa"
+
+#: qml/DiscoverOctoPrintAction.qml:278 qml_qt5/DiscoverOctoPrintAction.qml:289
+msgctxt "@label"
+msgid "Version"
+msgstr "Verze"
+
+#: qml/DiscoverOctoPrintAction.qml:288 qml_qt5/DiscoverOctoPrintAction.qml:301
+msgctxt "@label"
+msgid "API Key"
+msgstr "API Klíč"
+
+#: qml/DiscoverOctoPrintAction.qml:308 qml_qt5/DiscoverOctoPrintAction.qml:319
+msgctxt "@action"
+msgid "Request..."
+msgstr "Žádost..."
+
+#: qml/DiscoverOctoPrintAction.qml:319 qml_qt5/DiscoverOctoPrintAction.qml:331
+msgctxt "@label"
+msgid "Username"
+msgstr "Uživatel"
+
+#: qml/DiscoverOctoPrintAction.qml:392 qml_qt5/DiscoverOctoPrintAction.qml:405
+msgctxt "@label"
+msgid "Please enter the API key to access OctoPrint."
+msgstr "Zadejte klíč API pro přístup k OctoPrintu."
+
+#: qml/DiscoverOctoPrintAction.qml:398 qml_qt5/DiscoverOctoPrintAction.qml:411
+msgctxt "@label"
+msgid "OctoPrint is not available."
+msgstr "OctoPrint není k dispozici."
+
+#: qml/DiscoverOctoPrintAction.qml:408 qml_qt5/DiscoverOctoPrintAction.qml:421
+msgctxt "@label"
+msgid "The API key is invalid."
+msgstr "Klíč API je neplatný."
+
+#: qml/DiscoverOctoPrintAction.qml:413 qml_qt5/DiscoverOctoPrintAction.qml:426
+msgctxt "@label"
+msgid "Checking the API key..."
+msgstr "Kontrola klíče API..."
+
+#: qml/DiscoverOctoPrintAction.qml:416 qml_qt5/DiscoverOctoPrintAction.qml:429
+msgctxt "@label"
+msgid "You can get the API key through the OctoPrint web page."
+msgstr "Klíč API můžete získat prostřednictvím webové stránky OctoPrintu."
+
+#: qml/DiscoverOctoPrintAction.qml:457 qml_qt5/DiscoverOctoPrintAction.qml:471
 msgctxt "@label"
 msgid "Turn on printer with"
 msgstr "Zapněte tiskárnu pomocí"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:530 qml/DiscoverOctoPrintAction.qml:519
+#: qml/DiscoverOctoPrintAction.qml:519 qml_qt5/DiscoverOctoPrintAction.qml:530
 msgctxt "@label"
 msgid "Unknown plug"
 msgstr "Neznámá zástrčka"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:552 qml/DiscoverOctoPrintAction.qml:541
+#: qml/DiscoverOctoPrintAction.qml:541 qml_qt5/DiscoverOctoPrintAction.qml:552
 msgctxt "@label"
 msgid "Connect to printer before sending print job"
 msgstr "Před odesláním tiskové úlohy se připoj k tiskárně"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:563 qml/DiscoverOctoPrintAction.qml:552
+#: qml/DiscoverOctoPrintAction.qml:552 qml_qt5/DiscoverOctoPrintAction.qml:563
 msgctxt "@label"
 msgid "Store G-code on the SD card of the printer"
 msgstr "Uložte G-kód na SD kartu tiskárny"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:576 qml/DiscoverOctoPrintAction.qml:564
+#: qml/DiscoverOctoPrintAction.qml:564 qml_qt5/DiscoverOctoPrintAction.qml:576
 msgctxt "@label"
 msgid ""
 "Note: Transferring files to the printer SD card takes very long. Using this "
@@ -401,22 +427,22 @@ msgstr ""
 "Poznámka: Přenos souborů na kartu SD tiskárny trvá velmi dlouho. Použití "
 "této možnosti se nedoporučuje."
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:581 qml/DiscoverOctoPrintAction.qml:569
+#: qml/DiscoverOctoPrintAction.qml:569 qml_qt5/DiscoverOctoPrintAction.qml:581
 msgctxt "@label"
 msgid "Confirm print job options before sending"
 msgstr "Před odesláním potvrďit možnosti tiskové úlohy"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:591 qml/DiscoverOctoPrintAction.qml:579
+#: qml/DiscoverOctoPrintAction.qml:579 qml_qt5/DiscoverOctoPrintAction.qml:591
 msgctxt "@label"
 msgid "Show webcam image"
 msgstr "Zobrazit webovou kameru"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:602 qml/DiscoverOctoPrintAction.qml:590
+#: qml/DiscoverOctoPrintAction.qml:590 qml_qt5/DiscoverOctoPrintAction.qml:602
 msgctxt "@label"
 msgid "Set G-code flavor to \"Marlin\""
 msgstr "Nastavit příchuť G-code na \"Marlin\""
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:608 qml/DiscoverOctoPrintAction.qml:596
+#: qml/DiscoverOctoPrintAction.qml:596 qml_qt5/DiscoverOctoPrintAction.qml:608
 msgctxt "@label"
 msgid ""
 "Note: Printing UltiGCode using OctoPrint does not work. Setting G-code "
@@ -427,48 +453,42 @@ msgstr ""
 "code na \"Marlin\" to opraví, ale přepíše nastavení materiálu na vaší "
 "tiskárně."
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:622 qml/DiscoverOctoPrintAction.qml:609
+#: qml/DiscoverOctoPrintAction.qml:609 qml_qt5/DiscoverOctoPrintAction.qml:622
 msgctxt "@action"
 msgid "Open in browser..."
 msgstr "Otevřít v prohlížeči..."
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:634 qml/DiscoverOctoPrintAction.qml:621
+#: qml/DiscoverOctoPrintAction.qml:621 qml_qt5/DiscoverOctoPrintAction.qml:634
 msgctxt "@action:button"
 msgid "Disconnect"
 msgstr "Odpojit"
 
-#: qml_qt5/DiscoverOctoPrintAction.qml:637 qml/DiscoverOctoPrintAction.qml:624
+#: qml/DiscoverOctoPrintAction.qml:624 qml_qt5/DiscoverOctoPrintAction.qml:637
 msgctxt "@action:button"
 msgid "Connect"
 msgstr "Připojit"
 
-#: qml_qt5/ManualInstanceDialog.qml:24 qml/ManualInstanceDialog.qml:24
+#: qml/ManualInstanceDialog.qml:24 qml_qt5/ManualInstanceDialog.qml:24
 msgctxt "@title:window"
 msgid "Manually added OctoPrint instance"
 msgstr "Ručně přidaná instance OctoPrintu"
 
-#: qml_qt5/ManualInstanceDialog.qml:162 qml/ManualInstanceDialog.qml:166
+#: qml/ManualInstanceDialog.qml:166 qml_qt5/ManualInstanceDialog.qml:162
 msgctxt "@label"
 msgid "Instance Name"
 msgstr "Název instance"
 
-#: qml_qt5/ManualInstanceDialog.qml:179 qml/ManualInstanceDialog.qml:183
+#: qml/ManualInstanceDialog.qml:183 qml_qt5/ManualInstanceDialog.qml:179
 msgctxt "@label"
 msgid "IP Address or Hostname"
 msgstr "IP adresa nebo název hostitele"
 
-#: qml_qt5/ManualInstanceDialog.qml:197 qml/ManualInstanceDialog.qml:201
+#: qml/ManualInstanceDialog.qml:201 qml_qt5/ManualInstanceDialog.qml:197
 msgctxt "@label"
 msgid "Port Number"
 msgstr "Číslo portu"
 
-#: qml_qt5/ManualInstanceDialog.qml:225 qml_qt5/UploadOptions.qml:37
-#: qml/ManualInstanceDialog.qml:229 qml/UploadOptions.qml:39
-msgctxt "@label"
-msgid "Path"
-msgstr "Cesta"
-
-#: qml_qt5/ManualInstanceDialog.qml:262 qml/ManualInstanceDialog.qml:266
+#: qml/ManualInstanceDialog.qml:266 qml_qt5/ManualInstanceDialog.qml:262
 msgctxt "@label"
 msgid ""
 "In order to use HTTPS or a HTTP username and password, you need to configure "
@@ -477,42 +497,22 @@ msgstr ""
 "Abyste mohli používat HTTPS nebo HTTP uživatelské jméno a heslo, musíte "
 "nakonfigurovat reverzní proxy nebo jinou službu."
 
-#: qml_qt5/ManualInstanceDialog.qml:267 qml/ManualInstanceDialog.qml:271
+#: qml/ManualInstanceDialog.qml:271 qml_qt5/ManualInstanceDialog.qml:267
 msgctxt "@label"
 msgid "Use HTTPS"
 msgstr "Použijte HTTPS"
 
-#: qml_qt5/ManualInstanceDialog.qml:291 qml/ManualInstanceDialog.qml:295
+#: qml/ManualInstanceDialog.qml:295 qml_qt5/ManualInstanceDialog.qml:291
 msgctxt "@label"
 msgid "HTTP username"
 msgstr "HTTP uživatelské jméno"
 
-#: qml_qt5/ManualInstanceDialog.qml:304 qml/ManualInstanceDialog.qml:308
+#: qml/ManualInstanceDialog.qml:308 qml_qt5/ManualInstanceDialog.qml:304
 msgctxt "@label"
 msgid "HTTP password"
 msgstr "HTTP heslo"
 
-#: qml_qt5/ManualInstanceDialog.qml:327 qml/ManualInstanceDialog.qml:331
+#: qml/ManualInstanceDialog.qml:331 qml_qt5/ManualInstanceDialog.qml:327
 msgctxt "@action:button"
 msgid "Ok"
 msgstr "Ok"
-
-#: qml_qt5/UploadOptions.qml:14 qml/UploadOptions.qml:14
-msgctxt "@action:button"
-msgid "Upload to OctoPrint Options"
-msgstr "Nahrát do Možnosti OctoPrintu"
-
-#: qml_qt5/UploadOptions.qml:56 qml/UploadOptions.qml:58
-msgctxt "@label"
-msgid "Filename"
-msgstr "Název souboru"
-
-#: qml_qt5/UploadOptions.qml:78 qml/UploadOptions.qml:80
-msgctxt "@label"
-msgid "A file extenstion will be added automatically."
-msgstr "Přípona souboru bude přidána automaticky."
-
-#: qml_qt5/UploadOptions.qml:111 qml/UploadOptions.qml:113
-msgctxt "@action:button"
-msgid "OK"
-msgstr "OK"
