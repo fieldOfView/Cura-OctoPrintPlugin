@@ -36,7 +36,7 @@ from cura.PrinterOutput.NetworkedPrinterOutputDevice import NetworkedPrinterOutp
 
 try:
     from cura.ApplicationMetadata import CuraSDKVersion
-except ImportError: # Cura <= 3.6
+except ImportError:  # Cura <= 3.6
     CuraSDKVersion = "6.0.0"
 USE_QT5 = False
 if CuraSDKVersion >= "8.0.0":
@@ -105,13 +105,10 @@ if TYPE_CHECKING:
 from UM.Resources import Resources
 
 Resources.addSearchPath(
-    os.path.join(os.path.abspath(os.path.dirname(__file__)))
+    os.path.abspath(os.path.dirname(__file__))
 )  # Plugin translation file import
 
 i18n_catalog = i18nCatalog("octoprint")
-
-if i18n_catalog.hasTranslationLoaded():
-    Logger.log("i", "OctoPrint Plugin translation loaded!")
 
 
 ##  The current processing state of the backend.
@@ -133,6 +130,7 @@ class UnifiedConnectionState(IntEnum):
 
 
 AxisInformation = namedtuple("AxisInformation", ["speed", "inverted"])
+
 
 ##  OctoPrint connected (wifi / lan) printer using the OctoPrint API
 @signalemitter
@@ -952,7 +950,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         if reply.error() == QNetworkReplyNetworkErrors.NoError:
             self._last_response_time = time()
 
-        http_status_code = reply.attribute(QNetworkRequestAttributes.HttpStatusCodeAttribute)
+        http_status_code = reply.attribute(
+            QNetworkRequestAttributes.HttpStatusCodeAttribute
+        )
         if not http_status_code:
             # Received no or empty reply
             return
@@ -980,11 +980,14 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                                 for axis in ["x", "y", "z", "e"]:
                                     self._axis_information[axis] = AxisInformation(
                                         speed=printer_profile["axes"][axis]["speed"],
-                                        inverted=printer_profile["axes"][axis]["inverted"],
+                                        inverted=printer_profile["axes"][axis][
+                                            "inverted"
+                                        ],
                                     )
                             except KeyError:
                                 Logger.log(
-                                    "w", "Unable to retreive axes information from OctoPrint printer profile."
+                                    "w",
+                                    "Unable to retreive axes information from OctoPrint printer profile.",
                                 )
 
                             self.additionalDataChanged.emit()
@@ -1188,7 +1191,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                         state = json_data["state"]
                         if not isinstance(state, str):
                             Logger.log(
-                                "e", "Encountered non-string print job state: %s" % state
+                                "e",
+                                "Encountered non-string print job state: %s" % state,
                             )
                         elif state.startswith("Error"):
                             print_job_state = "error"
@@ -1213,7 +1217,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
                             print_job_state = "offline"
                         else:
                             Logger.log(
-                                "w", "Encountered unexpected print job state: %s" % state
+                                "w",
+                                "Encountered unexpected print job state: %s" % state,
                             )
                     print_job.updateState(print_job_state)
 
@@ -1568,7 +1573,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
             self._progress_message.hide()
             self._progress_message = None  # type:Optional[Message]
 
-        http_status_code = reply.attribute(QNetworkRequestAttributes.HttpStatusCodeAttribute)
+        http_status_code = reply.attribute(
+            QNetworkRequestAttributes.HttpStatusCodeAttribute
+        )
         error_string = ""
         content_type = bytes(reply.rawHeader(b"Content-Type")).decode("utf-8")
 
@@ -1581,7 +1588,8 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         elif http_status_code == 409:
             if "files/sdcard" in reply.url().toString():
                 error_string = i18n_catalog.i18nc(
-                    "@info:error", "Can't store a print job on SD card of the printer at this time."
+                    "@info:error",
+                    "Can't store a print job on SD card of the printer at this time.",
                 )
             else:
                 error_string = i18n_catalog.i18nc(
@@ -1815,7 +1823,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
     ) -> QNetworkRequest:
         request = QNetworkRequest(QUrl(self._api_url + target))
         try:
-            request.setAttribute(QNetworkRequestAttributes.FollowRedirectsAttribute, True)
+            request.setAttribute(
+                QNetworkRequestAttributes.FollowRedirectsAttribute, True
+            )
         except AttributeError:
             # in Qt6, this is no longer possible (or required), see https://doc.qt.io/qt-6/network-changes-qt6.html#redirect-policies
             pass
@@ -1824,7 +1834,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
         request.setRawHeader(b"User-Agent", self._user_agent.encode())
 
         if content_type is not None:
-            request.setHeader(QNetworkRequestKnownHeaders.ContentTypeHeader, content_type)
+            request.setHeader(
+                QNetworkRequestKnownHeaders.ContentTypeHeader, content_type
+            )
 
         # ignore SSL errors (eg for self-signed certificates)
         ssl_configuration = QSslConfiguration.defaultConfiguration()
@@ -1844,7 +1856,9 @@ class OctoPrintOutputDevice(NetworkedPrinterOutputDevice):
 
         if not content_header.startswith("form-data;"):
             content_header = "form-data; " + content_header
-        part.setHeader(QNetworkRequestKnownHeaders.ContentDispositionHeader, content_header)
+        part.setHeader(
+            QNetworkRequestKnownHeaders.ContentDispositionHeader, content_header
+        )
         if content_type is not None:
             part.setHeader(QNetworkRequestKnownHeaders.ContentTypeHeader, content_type)
 
